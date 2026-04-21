@@ -27,8 +27,11 @@ export default function Home() {
       setBooks([]);
     }
 
+    const startTime = Date.now();
+
     try {
       const results = await searchBooks(searchQuery, pageNum);
+      const searchDurationMs = Date.now() - startTime;
       
       if (pageNum === 1) {
         setBooks(results.books);
@@ -43,7 +46,7 @@ export default function Home() {
 
       // Log search to Supabase
       if (pageNum === 1) {
-        await logSearch(searchQuery, results.totalResults);
+        await logSearch(searchQuery, results.totalResults, searchDurationMs);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ في البحث');

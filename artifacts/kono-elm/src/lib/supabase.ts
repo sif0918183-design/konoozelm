@@ -8,7 +8,11 @@ export const supabase = supabaseUrl && supabaseAnonKey
   : null;
 
 // Log search to Supabase
-export async function logSearch(query: string, resultsCount: number) {
+export async function logSearch(
+  query: string, 
+  resultsCount: number, 
+  searchDurationMs?: number
+) {
   if (!supabase) {
     console.log('Supabase not configured, skipping log');
     return;
@@ -20,6 +24,8 @@ export async function logSearch(query: string, resultsCount: number) {
       .insert({
         query,
         results_count: resultsCount,
+        search_duration_ms: searchDurationMs,
+        user_agent: typeof window !== 'undefined' ? navigator.userAgent : null,
         created_at: new Date().toISOString(),
       });
 
@@ -28,5 +34,28 @@ export async function logSearch(query: string, resultsCount: number) {
     }
   } catch (error) {
     console.error('Error logging search:', error);
+  }
+}
+
+// Get search statistics from Supabase
+export async function getSearchStats(days: number = 7) {
+  if (!supabase) {
+    console.log('Supabase not configured');
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .rpc('get_search_stats', { days });
+
+    if (error) {
+      console.error('Error getting search stats:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error getting search stats:', error);
+    return null;
   }
 }
