@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd artifacts/kono-elm && npm install && npm run build",
+  "outputDirectory": "artifacts/kono-elm/.next",
+  "installCommand": "cd artifacts/kono-elm && npm install"
+}
