@@ -98,12 +98,66 @@ async function resolvePdfFilename(identifier: string): Promise<string | null> {
 }
 
 async function downloadUrlFor(identifier: string): Promise<string> {
-  const name = await resolvePdfFilename(identifier);
-  if (name) {
-    return `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(name)}`;
-  }
-  return fallbackDownloadUrl(identifier);
+  // Return our proxy endpoint URL instead of direct Archive.org URL
+  // This allows proper Content-Length and Content-Disposition headers
+  return `/api/books/download?identifier=${encodeURIComponent(identifier)}`;
 }
+
+router.get("/books/download", async (req, res) => {
+  const identifier = req.query.identifier as string;
+  if (!identifier) {
+    res.status(400).json({ error: "Missing identifier parameter" });
+    return;
+  }
+
+  try {
+    // Get the PDF filename and URL
+    const pdfName = await resolvePdfFilename(identifier);
+    const fileName = pdfName || `${identifier}.pdf`;
+    const archiveUrl = `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(fileName)}`;
+
+    // First, try to get file size from HEAD request
+    let fileSize: number | null = null;
+    try {
+      const headRes = await fetch(archiveUrl, { method: "HEAD" });
+      if (headRes.ok) {
+        const contentLength = headRes.headers.get("content-length");
+        if (contentLength) {
+          fileSize = parseInt(contentLength, 10);
+        }
+      }
+    } catch {
+      // Continue without file size if HEAD fails
+    }
+
+    // Set proper headers for download
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+    
+    if (fileSize !== null) {
+      res.setHeader("Content-Length", fileSize);
+    }
+
+    // Stream the file directly from Archive.org
+    const archiveRes = await fetch(archiveUrl);
+    if (!archiveRes.ok) {
+      res.status(502).json({ error: "Failed to download from Archive.org" });
+      return;
+    }
+
+    // Pipe the response directly to the client
+    res.status(200);
+    if (archiveRes.body) {
+      for await (const chunk of archiveRes.body) {
+        res.write(chunk);
+      }
+    }
+    res.end();
+  } catch (err) {
+    req.log.error({ err }, "Download proxy error");
+    res.status(502).json({ error: "Download failed" });
+  }
+});
 
 router.get("/books/search", async (req, res) => {
   const parsed = SearchBooksQueryParams.safeParse(req.query);
