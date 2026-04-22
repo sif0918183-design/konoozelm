@@ -48,10 +48,14 @@ export default function DownloadModal({
   }, [isOpen]);
 
   const handleStartDownload = useCallback(() => {
-    const link = document.createElement('a');
-    link.href = optimizeArchiveUrl(fileUrl);
-    // Set the download attribute with the desired filename
+    const optimizedUrl = optimizeArchiveUrl(fileUrl);
     const downloadName = bookTitle.endsWith('.pdf') ? bookTitle : `${bookTitle}.pdf`;
+
+    // Use our local API proxy to bypass CORS and force download
+    const proxyUrl = `/api/download?url=${encodeURIComponent(optimizedUrl)}&filename=${encodeURIComponent(downloadName)}`;
+
+    const link = document.createElement('a');
+    link.href = proxyUrl;
     link.setAttribute('download', downloadName);
     link.style.display = 'none';
     document.body.appendChild(link);
