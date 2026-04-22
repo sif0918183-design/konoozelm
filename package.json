@@ -7,6 +7,11 @@
     "dev": "pnpm --filter kono-elm dev"
   },
   "private": true,
+  "dependencies": {
+    "next": "14.2.18",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
   "devDependencies": {
     "typescript": "~5.9.2",
     "prettier": "^3.8.1"

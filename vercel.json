@@ -1,4 +1,5 @@
 {
   "framework": "nextjs",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "artifacts/kono-elm/.next"
 }
