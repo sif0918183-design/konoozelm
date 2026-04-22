@@ -1,3 +1,10 @@
+export interface BookFile {
+  name: string;
+  url: string;
+  format?: string;
+  size?: string;
+}
+
 export interface Book {
   identifier: string;
   title: string;
@@ -8,6 +15,7 @@ export interface Book {
   coverImage?: string;
   downloadLink?: string;
   previewLink?: string;
+  files?: BookFile[];
 }
 
 export interface SearchResult {
@@ -72,41 +80,44 @@ export async function searchBooks(
 }
 
 /**
- * Get direct download link for PDF
+ * Get all PDF files for a book
  */
-export async function getPdfDownloadLink(identifier: string): Promise<string | null> {
+export async function getBookFiles(identifier: string): Promise<BookFile[]> {
   try {
     const response = await fetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
     
     if (!response.ok) {
-      return null;
+      return [];
     }
 
     const data = await response.json();
-    
-    // Look for PDF file
-    const pdfFile = data.files?.find((file: any) => 
-      file.format === 'PDF' || 
-      (file.name && file.name.toLowerCase().endsWith('.pdf'))
-    );
-
-    if (pdfFile) {
-      return `https://archive.org/download/${identifier}/${pdfFile.name}`;
-    }
-
-    // Fallback: try to find any PDF in the files
     const files = data.files || [];
-    for (const file of files) {
-      if (file.name && file.name.toLowerCase().endsWith('.pdf')) {
-        return `https://archive.org/download/${identifier}/${file.name}`;
-      }
-    }
 
-    return null;
+    // Filter for PDF files and map to BookFile interface
+    return files
+      .filter((file: any) =>
+        file.name &&
+        file.name.toLowerCase().endsWith('.pdf') &&
+        !file.name.toLowerCase().endsWith('_text.pdf') // Exclude OCR text PDFs if they exist
+      )
+      .map((file: any) => ({
+        name: file.title || file.name.replace('.pdf', '').replace(/_/g, ' '),
+        url: `https://archive.org/download/${identifier}/${encodeURIComponent(file.name)}`,
+        format: file.format,
+        size: file.size
+      }));
   } catch (error) {
-    console.error('Error getting PDF link:', error);
-    return null;
+    console.error('Error getting book files:', error);
+    return [];
   }
+}
+
+/**
+ * Get direct download link for PDF (Backward compatibility or simple use case)
+ */
+export async function getPdfDownloadLink(identifier: string): Promise<string | null> {
+  const files = await getBookFiles(identifier);
+  return files.length > 0 ? files[0].url : null;
 }
 
 /**
@@ -128,16 +139,20 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
     const publisher = data.metadata?.publisher;
     const description = data.metadata?.description;
 
-    // Find PDF link
-    let downloadLink: string | undefined;
+    // Find PDF links
     const files = data.files || [];
-    
-    for (const file of files) {
-      if (file.name && file.name.toLowerCase().endsWith('.pdf')) {
-        downloadLink = `https://archive.org/download/${identifier}/${file.name}`;
-        break;
-      }
-    }
+    const bookFiles: BookFile[] = files
+      .filter((file: any) =>
+        file.name &&
+        file.name.toLowerCase().endsWith('.pdf') &&
+        !file.name.toLowerCase().endsWith('_text.pdf')
+      )
+      .map((file: any) => ({
+        name: file.title || file.name.replace('.pdf', '').replace(/_/g, ' '),
+        url: `https://archive.org/download/${identifier}/${encodeURIComponent(file.name)}`,
+        format: file.format,
+        size: file.size
+      }));
 
     return {
       identifier,
@@ -148,7 +163,8 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
       description,
       coverImage: `https://archive.org/services/img/${identifier}`,
       previewLink: `https://archive.org/details/${identifier}`,
-      downloadLink,
+      downloadLink: bookFiles.length > 0 ? bookFiles[0].url : undefined,
+      files: bookFiles
     };
   } catch (error) {
     console.error('Error getting book details:', error);

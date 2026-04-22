@@ -2,48 +2,60 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { BookOpen, Download, Loader2 } from 'lucide-react';
-import { type Book, getPdfDownloadLink } from '@/lib/archive-api';
+import { BookOpen, Download, Loader2, Layers } from 'lucide-react';
+import { type Book, type BookFile, getBookFiles } from '@/lib/archive-api';
 import { cn } from '@/lib/utils';
+import BookPartsDialog from './BookPartsDialog';
 
 interface BookCardProps {
   book: Book;
 }
 
 export default function BookCard({ book }: BookCardProps) {
-  const [downloadLink, setDownloadLink] = useState<string | null>(null);
-  const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+  const [files, setFiles] = useState<BookFile[]>([]);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [showPartsDialog, setShowPartsDialog] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'read' | 'download'>('read');
 
   useEffect(() => {
-    // Get PDF download link when component mounts
-    const fetchPdfLink = async () => {
-      setIsLoadingPdf(true);
+    const fetchFiles = async () => {
+      setIsLoadingFiles(true);
       try {
-        const link = await getPdfDownloadLink(book.identifier);
-        setDownloadLink(link);
+        const bookFiles = await getBookFiles(book.identifier);
+        setFiles(bookFiles);
       } catch (error) {
-        console.error('Error fetching PDF link:', error);
+        console.error('Error fetching book files:', error);
       } finally {
-        setIsLoadingPdf(false);
+        setIsLoadingFiles(false);
       }
     };
 
-    fetchPdfLink();
+    fetchFiles();
   }, [book.identifier]);
 
-  const handleReadOnline = () => {
-    window.open(book.previewLink, '_blank');
+  const handleRead = () => {
+    if (files.length > 1) {
+      setDialogMode('read');
+      setShowPartsDialog(true);
+    } else if (files.length === 1) {
+      window.open(files[0].url, '_blank');
+    } else {
+      window.open(book.previewLink, '_blank');
+    }
   };
 
   const handleDownload = () => {
-    if (downloadLink) {
-      window.open(downloadLink, '_blank');
+    if (files.length > 1) {
+      setDialogMode('download');
+      setShowPartsDialog(true);
+    } else if (files.length === 1) {
+      window.open(files[0].url, '_blank');
     }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100">
+    <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100/50 flex flex-col h-full overflow-hidden">
       {/* Cover Image */}
       <div className="relative h-48 bg-gray-100 overflow-hidden">
         {!imageError ? (
@@ -61,58 +73,72 @@ export default function BookCard({ book }: BookCardProps) {
           </div>
         )}
         
-        {/* Year Badge */}
-        {book.year && (
-          <span className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-            {book.year}
-          </span>
-        )}
+        {/* Badges */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+          {book.year && (
+            <span className="bg-white/90 backdrop-blur-sm text-primary-900 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-gray-100">
+              {book.year}
+            </span>
+          )}
+          {files.length > 1 && (
+            <span className="bg-gold-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+              <Layers className="w-3 h-3" />
+              متعدد الأجزاء ({files.length})
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="font-bold text-gray-800 mb-2 line-clamp-2" title={book.title}>
+      <div className="p-5 flex flex-col flex-1">
+        <h3 className="font-bold text-gray-800 mb-3 line-clamp-2 leading-snug group-hover:text-primary-800 transition-colors" title={book.title}>
           {book.title}
         </h3>
         
-        {book.author && (
-          <p className="text-sm text-gray-500 mb-1 truncate" title={book.author}>
-            المؤلف: {book.author}
-          </p>
-        )}
+        <div className="space-y-1 mb-4 flex-1">
+          {book.author && (
+            <p className="text-sm text-gray-600 flex items-center gap-2" title={book.author}>
+              <span className="text-gray-400 font-medium">المؤلف:</span>
+              <span className="truncate">{book.author}</span>
+            </p>
+          )}
 
-        {book.publisher && (
-          <p className="text-xs text-gray-400 truncate mb-3" title={book.publisher}>
-            الناشر: {book.publisher}
-          </p>
-        )}
+          {book.publisher && (
+            <p className="text-xs text-gray-500 flex items-center gap-2" title={book.publisher}>
+              <span className="text-gray-400 font-medium">الناشر:</span>
+              <span className="truncate">{book.publisher}</span>
+            </p>
+          )}
+        </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-3 mt-auto">
           <button
-            onClick={handleReadOnline}
+            onClick={handleRead}
+            disabled={isLoadingFiles}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium text-sm",
-              "bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+              "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300",
+              "bg-primary-900 text-white hover:bg-primary-800 hover:shadow-lg hover:shadow-primary-900/20 active:scale-95 disabled:opacity-50"
             )}
           >
-            <BookOpen className="w-4 h-4" />
+            {isLoadingFiles ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <BookOpen className="w-4 h-4" />
+            )}
             قراءة
           </button>
           
           <button
             onClick={handleDownload}
-            disabled={isLoadingPdf || !downloadLink}
+            disabled={isLoadingFiles || files.length === 0}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium text-sm",
-              "bg-gold-500 text-white hover:bg-gold-600 transition-colors",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
+              "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300",
+              "bg-gold-50 text-gold-700 border border-gold-200 hover:bg-gold-500 hover:text-white hover:border-gold-500 active:scale-95 disabled:opacity-50"
             )}
           >
-            {isLoadingPdf ? (
+            {isLoadingFiles ? (
               <Loader2 className="w-4 h-4 animate-spin" />
-            ) : downloadLink ? (
-              <Download className="w-4 h-4" />
             ) : (
               <Download className="w-4 h-4" />
             )}
@@ -120,6 +146,15 @@ export default function BookCard({ book }: BookCardProps) {
           </button>
         </div>
       </div>
+
+      {showPartsDialog && (
+        <BookPartsDialog
+          book={book}
+          files={files}
+          mode={dialogMode}
+          onClose={() => setShowPartsDialog(false)}
+        />
+      )}
     </div>
   );
 }
