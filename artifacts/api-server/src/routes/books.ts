@@ -7,6 +7,7 @@ import {
   PopularSearchesResponse,
   SearchStatsResponse,
 } from "@workspace/api-zod";
+import { Readable } from "node:stream";
 
 const router: IRouter = Router();
 
@@ -138,24 +139,25 @@ router.get("/books/download", async (req, res) => {
       res.setHeader("Content-Length", fileSize);
     }
 
-    // Stream the file directly from Archive.org
+    // Stream the file directly from Archive.org using Node.js streams
     const archiveRes = await fetch(archiveUrl);
     if (!archiveRes.ok) {
       res.status(502).json({ error: "Failed to download from Archive.org" });
       return;
     }
 
-    // Pipe the response directly to the client
-    res.status(200);
+    // Use Node.js Readable stream to pipe the response
     if (archiveRes.body) {
-      for await (const chunk of archiveRes.body) {
-        res.write(chunk);
-      }
+      const readable = Readable.fromWeb(archiveRes.body as any);
+      readable.pipe(res);
+    } else {
+      res.end();
     }
-    res.end();
   } catch (err) {
     req.log.error({ err }, "Download proxy error");
-    res.status(502).json({ error: "Download failed" });
+    if (!res.headersSent) {
+      res.status(502).json({ error: "Download failed" });
+    }
   }
 });
 
