@@ -244,11 +244,9 @@ export default function Home() {
                             قراءة أونلاين
                           </a>
                         </Button>
-                        <Button asChild variant="outline" className="w-full border-primary/20 text-primary hover:bg-primary/5 font-medium">
-                          <a href={book.downloadUrl} download target="_blank" rel="noopener noreferrer">
-                            <Download className="w-4 h-4 ml-2" />
-                            تحميل مباشر
-                          </a>
+                        <Button variant="outline" className="w-full border-primary/20 text-primary hover:bg-primary/5 font-medium" onClick={() => window.open(book.downloadUrl, '_blank')}>
+                          <Download className="w-4 h-4 ml-2" />
+                          تحميل مباشر
                         </Button>
                       </CardFooter>
                     </Card>

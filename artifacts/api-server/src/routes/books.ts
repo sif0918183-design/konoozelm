@@ -98,12 +98,70 @@ async function resolvePdfFilename(identifier: string): Promise<string | null> {
 }
 
 async function downloadUrlFor(identifier: string): Promise<string> {
-  const name = await resolvePdfFilename(identifier);
-  if (name) {
-    return `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(name)}`;
-  }
-  return fallbackDownloadUrl(identifier);
+  // Return our proxy endpoint URL instead of direct Archive.org URL
+  // This allows proper Content-Length and Content-Disposition headers
+  return `/api/books/download?identifier=${encodeURIComponent(identifier)}`;
 }
+
+router.get("/books/download", async (req, res) => {
+  const identifier = req.query.identifier as string;
+  if (!identifier) {
+    res.status(400).json({ error: "Missing identifier parameter" });
+    return;
+  }
+
+  try {
+    // Get the PDF filename and URL
+    const pdfName = await resolvePdfFilename(identifier);
+    const fileName = pdfName || `${identifier}.pdf`;
+    const archiveUrl = `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(fileName)}`;
+
+    // Set proper headers for download
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+
+    // Use fetch with proper redirect handling and stream directly
+    const archiveRes = await fetch(archiveUrl, {
+      redirect: "follow",
+    });
+    
+    if (!archiveRes.ok) {
+      res.status(502).json({ error: "Failed to download from Archive.org" });
+      return;
+    }
+
+    // Get content-length from the response if available
+    const contentLength = archiveRes.headers.get("content-length");
+    if (contentLength) {
+      res.setHeader("Content-Length", contentLength);
+    }
+
+    // Stream the response directly to the client using native fetch body
+    if (archiveRes.body) {
+      archiveRes.body.pipeTo(
+        new WritableStream({
+          write(chunk) {
+            res.write(chunk);
+          },
+          close() {
+            res.end();
+          },
+          abort(err) {
+            req.log.error({ err }, "Stream aborted");
+            res.destroy(err);
+          },
+        })
+      );
+    } else {
+      res.end();
+    }
+  } catch (err) {
+    req.log.error({ err }, "Download proxy error");
+    if (!res.headersSent) {
+      res.status(502).json({ error: "Download failed" });
+    }
+  }
+});
 
 router.get("/books/search", async (req, res) => {
   const parsed = SearchBooksQueryParams.safeParse(req.query);
