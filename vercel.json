@@ -1,0 +1,4 @@
+{
+  "framework": "nextjs",
+  "outputDirectory": "artifacts/kono-elm/.next"
+}
