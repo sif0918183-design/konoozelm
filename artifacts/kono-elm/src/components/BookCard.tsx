@@ -6,6 +6,7 @@ import { BookOpen, Download, Loader2, Layers } from 'lucide-react';
 import { type Book, type BookFile, getBookFiles } from '@/lib/archive-api';
 import { cn } from '@/lib/utils';
 import BookPartsDialog from './BookPartsDialog';
+import DownloadModal from './DownloadModal';
 
 interface BookCardProps {
   book: Book;
@@ -17,6 +18,8 @@ export default function BookCard({ book }: BookCardProps) {
   const [imageError, setImageError] = useState(false);
   const [showPartsDialog, setShowPartsDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'read' | 'download'>('read');
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<BookFile | null>(null);
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -50,8 +53,14 @@ export default function BookCard({ book }: BookCardProps) {
       setDialogMode('download');
       setShowPartsDialog(true);
     } else if (files.length === 1) {
-      window.open(files[0].url, '_blank');
+      setSelectedFile(files[0]);
+      setShowDownloadModal(true);
     }
+  };
+
+  const triggerDownload = (file: BookFile) => {
+    setSelectedFile(file);
+    setShowDownloadModal(true);
   };
 
   return (
@@ -153,6 +162,20 @@ export default function BookCard({ book }: BookCardProps) {
           files={files}
           mode={dialogMode}
           onClose={() => setShowPartsDialog(false)}
+          onDownload={triggerDownload}
+        />
+      )}
+
+      {showDownloadModal && selectedFile && (
+        <DownloadModal
+          isOpen={showDownloadModal}
+          onClose={() => {
+            setShowDownloadModal(false);
+            setSelectedFile(null);
+          }}
+          fileUrl={selectedFile.url}
+          fileName={selectedFile.name}
+          bookTitle={book.title}
         />
       )}
     </div>
