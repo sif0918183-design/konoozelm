@@ -2,6 +2,7 @@
 
 import { X, BookOpen, Download } from 'lucide-react';
 import type { Book, BookFile } from '@/lib/archive-api';
+import { formatBytes } from '@/lib/utils';
 
 interface BookPartsDialogProps {
   book: Book;
@@ -53,9 +54,16 @@ export default function BookPartsDialog({ book, files, onClose, mode, onDownload
                   <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm">
                     {index + 1}
                   </div>
-                  <span className="font-medium text-gray-800 group-hover:text-primary-900">
-                    {file.name}
-                  </span>
+                  <div className="flex flex-col text-right">
+                    <span className="font-medium text-gray-800 group-hover:text-primary-900">
+                      {file.name}
+                    </span>
+                    {file.size && (
+                      <span className="text-[10px] text-gray-400 font-bold">
+                        {formatBytes(parseInt(file.size))}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {mode === 'read' ? (
                   <BookOpen className="w-5 h-5 text-primary-600" />
