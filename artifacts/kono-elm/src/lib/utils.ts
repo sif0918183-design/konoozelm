@@ -17,12 +17,16 @@ export function optimizeArchiveUrl(url: string): string {
     const pathParts = urlObj.pathname.split('/').filter(Boolean);
 
     // Check if it's an /items/ or /details/ URL
+    // Handle patterns like /0/items/ID/FILE or /items/ID/FILE
     const itemsIndex = pathParts.findIndex(p => p === 'items' || p === 'details' || p === 'download');
 
-    if (itemsIndex !== -1 && pathParts.length > itemsIndex + 2) {
+    if (itemsIndex !== -1 && pathParts.length > itemsIndex + 1) {
       const identifier = pathParts[itemsIndex + 1];
-      const fileName = pathParts.slice(itemsIndex + 2).join('/');
-      return `https://archive.org/download/${identifier}/${fileName}`;
+      if (pathParts.length > itemsIndex + 2) {
+        const fileName = pathParts.slice(itemsIndex + 2).join('/');
+        return `https://archive.org/download/${identifier}/${fileName}`;
+      }
+      return `https://archive.org/download/${identifier}`;
     }
 
     // Fallback: just ensure domain is archive.org if it's already a download link
