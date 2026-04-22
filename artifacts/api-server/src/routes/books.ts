@@ -7,7 +7,6 @@ import {
   PopularSearchesResponse,
   SearchStatsResponse,
 } from "@workspace/api-zod";
-import { Readable } from "node:stream";
 
 const router: IRouter = Router();
 
@@ -117,39 +116,42 @@ router.get("/books/download", async (req, res) => {
     const fileName = pdfName || `${identifier}.pdf`;
     const archiveUrl = `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(fileName)}`;
 
-    // First, try to get file size from HEAD request
-    let fileSize: number | null = null;
-    try {
-      const headRes = await fetch(archiveUrl, { method: "HEAD" });
-      if (headRes.ok) {
-        const contentLength = headRes.headers.get("content-length");
-        if (contentLength) {
-          fileSize = parseInt(contentLength, 10);
-        }
-      }
-    } catch {
-      // Continue without file size if HEAD fails
-    }
-
     // Set proper headers for download
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
-    
-    if (fileSize !== null) {
-      res.setHeader("Content-Length", fileSize);
-    }
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
 
-    // Stream the file directly from Archive.org using Node.js streams
-    const archiveRes = await fetch(archiveUrl);
+    // Use fetch with proper redirect handling and stream directly
+    const archiveRes = await fetch(archiveUrl, {
+      redirect: "follow",
+    });
+    
     if (!archiveRes.ok) {
       res.status(502).json({ error: "Failed to download from Archive.org" });
       return;
     }
 
-    // Use Node.js Readable stream to pipe the response
+    // Get content-length from the response if available
+    const contentLength = archiveRes.headers.get("content-length");
+    if (contentLength) {
+      res.setHeader("Content-Length", contentLength);
+    }
+
+    // Stream the response directly to the client using native fetch body
     if (archiveRes.body) {
-      const readable = Readable.fromWeb(archiveRes.body as any);
-      readable.pipe(res);
+      archiveRes.body.pipeTo(
+        new WritableStream({
+          write(chunk) {
+            res.write(chunk);
+          },
+          close() {
+            res.end();
+          },
+          abort(err) {
+            req.log.error({ err }, "Stream aborted");
+            res.destroy(err);
+          },
+        })
+      );
     } else {
       res.end();
     }
