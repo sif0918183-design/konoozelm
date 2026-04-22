@@ -176,6 +176,7 @@ export default function BookCard({ book }: BookCardProps) {
           fileUrl={selectedFile.url}
           fileName={selectedFile.name}
           bookTitle={book.title}
+          fileSize={selectedFile.size}
         />
       )}
     </div>

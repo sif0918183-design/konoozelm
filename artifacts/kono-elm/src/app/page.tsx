@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Search, BookOpen, Download, Loader2, AlertCircle } from 'lucide-react';
+import { Search, BookOpen, Download, Loader2, AlertCircle, Activity, Clock, History } from 'lucide-react';
 import { searchBooks, type Book } from '@/lib/archive-api';
 import { logSearch } from '@/lib/supabase';
 import BookCard from '@/components/BookCard';
@@ -67,43 +67,80 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-cream-50 font-tajawal">
+    <div className="min-h-screen bg-[#fcfcf8] font-tajawal">
       {/* Header */}
-      <header className="bg-primary-900 text-white pt-20 pb-24 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="absolute top-0 left-0 w-64 h-64 border-4 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 border-4 border-white/20 rounded-full translate-x-1/3 translate-y-1/3" />
-        </div>
-
+      <header className="pt-20 pb-12 px-4 relative overflow-hidden">
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tight text-gold-200">
+          <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tight text-primary-900">
             موسوعة كنوز العلم
           </h1>
-          <p className="text-lg md:text-2xl text-primary-100/90 mb-10 font-medium">
-            البوابة الذكية للمخطوطات والكتب الإسلامية
+          <p className="text-lg md:text-xl text-primary-700/70 mb-2 font-medium">
+            المكتبة الإلكترونية الشاملة للكتب والرسائل والمخطوطات الإسلامية
+          </p>
+          <p className="text-sm md:text-base text-primary-600/60 mb-10 font-bold flex items-center justify-center gap-2">
+            <span>📚</span>
+            يتم حفظ موضع قراءتك تلقائيًا لتيسير استكمال المطالعة من حيث توقفت
           </p>
           
           {/* Search Form */}
-          <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto group">
-            <div className="relative">
-              <Search className="absolute right-5 top-1/2 -translate-y-1/2 text-primary-900/40 w-6 h-6 group-focus-within:text-primary-900 transition-colors" />
+          <form onSubmit={handleSubmit} className="relative max-w-3xl mx-auto group mb-12">
+            <div className="relative flex items-center bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-2 transition-all focus-within:shadow-[0_8px_30px_rgb(21,71,52,0.08)] focus-within:border-primary-900/20">
+              <Search className="absolute right-6 text-gray-400 w-5 h-5" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="ابحث بالعنوان، المؤلف، أو الموضوع..."
-                className="w-full px-8 py-5 pr-16 text-lg text-gray-900 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl focus:outline-none focus:ring-4 focus:ring-gold-500/30 transition-all border-2 border-transparent focus:border-gold-500/50"
+                placeholder="ابحث عن كتاب، مؤلف، أو موضوع..."
+                className="w-full px-12 py-4 text-lg text-gray-900 bg-transparent focus:outline-none"
                 dir="rtl"
               />
               <button
                 type="submit"
                 disabled={isLoading || !query.trim()}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 bg-primary-900 text-gold-200 hover:text-white px-8 py-3 rounded-xl font-bold hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg active:scale-95"
+                className="bg-primary-900 text-white px-10 py-3.5 rounded-xl font-bold hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
               >
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'بحث'}
               </button>
             </div>
           </form>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-12">
+            {[
+              { label: 'نشاط الموسوعة', value: '١', sub: 'عملية بحث كلية', icon: Activity },
+              { label: 'الكتب المُكتشَفة', value: '١', sub: 'موضوع ومؤلف فريد', icon: BookOpen },
+              { label: 'آخر ٢٤ ساعة', value: '١', sub: 'عملية بحث حديثة', icon: Clock },
+            ].map((stat, i) => (
+              <div key={i} className="bg-white p-8 rounded-2xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col items-center justify-center text-center group hover:border-primary-900/10 transition-all">
+                <stat.icon className="w-8 h-8 text-primary-900/20 mb-4 group-hover:text-primary-900 transition-colors" />
+                <h3 className="text-sm font-bold text-gray-800 mb-2">{stat.label}</h3>
+                <p className="text-4xl font-black text-primary-900 mb-2">{stat.value}</p>
+                <p className="text-[10px] text-gray-400 font-bold">{stat.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Trending Searches */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2 text-primary-900 font-bold text-sm">
+              <Search className="w-4 h-4" />
+              <span>عمليات البحث الشائعة</span>
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {['صحيح البخاري'].map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => {
+                    setQuery(tag);
+                    handleSearch(tag);
+                  }}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-6 py-2 rounded-full text-xs font-bold transition-colors"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </header>
 

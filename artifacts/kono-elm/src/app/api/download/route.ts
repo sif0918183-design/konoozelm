@@ -33,6 +33,16 @@ export async function GET(request: NextRequest) {
     const encodedFilename = encodeURIComponent(filename);
     headers.set('Content-Disposition', `attachment; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`);
 
+    // Forward size and range headers to enable browser progress tracking
+    const contentLength = response.headers.get('Content-Length');
+    if (contentLength) {
+      headers.set('Content-Length', contentLength);
+    }
+    const acceptRanges = response.headers.get('Accept-Ranges');
+    if (acceptRanges) {
+      headers.set('Accept-Ranges', acceptRanges);
+    }
+
     return new NextResponse(fileStream, {
       status: 200,
       headers,
