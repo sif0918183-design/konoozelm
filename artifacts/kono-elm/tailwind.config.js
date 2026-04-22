@@ -46,6 +46,7 @@ module.exports = {
       fontFamily: {
         arabic: ['var(--font-tajawal)', 'Noto Sans Arabic', 'system-ui', 'sans-serif'],
         tajawal: ['var(--font-tajawal)', 'sans-serif'],
+        amiri: ['var(--font-amiri)', 'serif'],
       },
     },
   },

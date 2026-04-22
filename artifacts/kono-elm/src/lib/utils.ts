@@ -40,3 +40,21 @@ export function optimizeArchiveUrl(url: string): string {
 
   return url;
 }
+
+/**
+ * Formats bytes to human readable string in Arabic
+ */
+export function formatBytes(bytes: number | string | undefined, decimals = 2) {
+  if (!bytes) return 'غير معروف';
+
+  const b = typeof bytes === 'string' ? parseInt(bytes, 10) : bytes;
+  if (isNaN(b) || b === 0) return '0 بايت';
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['بايت', 'كيلوبايت', 'ميجابايت', 'جيجابايت', 'تيرابايت'];
+
+  const i = Math.floor(Math.log(b) / Math.log(k));
+
+  return parseFloat((b / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
