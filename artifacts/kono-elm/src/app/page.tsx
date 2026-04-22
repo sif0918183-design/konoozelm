@@ -92,13 +92,13 @@ export default function Home() {
           {/* Search Form */}
           <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto group">
             <div className="relative">
-              <Search className="absolute right-5 top-1/2 -translate-y-1/2 text-primary-900/40 w-6 h-6 group-focus-within:text-primary-900 transition-colors" />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-primary-900/40 w-5 h-5 group-focus-within:text-primary-900 transition-colors" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="ابحث بالعنوان، المؤلف، أو الموضوع..."
-                className="w-full px-8 py-5 pr-16 text-lg text-gray-900 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl focus:outline-none focus:ring-4 focus:ring-gold-500/30 transition-all border-2 border-transparent focus:border-gold-500/50"
+                className="w-full pl-24 pr-11 py-4 text-right text-base md:text-lg text-gray-900 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl focus:outline-none focus:ring-4 focus:ring-gold-500/30 transition-all border-2 border-transparent focus:border-gold-500/50 block"
                 dir="rtl"
               />
               <button

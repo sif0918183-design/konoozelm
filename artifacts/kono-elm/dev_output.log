@@ -1,0 +1,38 @@
+
+> kono-elm@1.0.0 dev /app/artifacts/kono-elm
+> next dev
+
+ ⚠ Port 3000 is in use, trying 3001 instead.
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3001
+
+ ✓ Starting...
+ ✓ Ready in 3.7s
+ ○ Compiling / ...
+ ✓ Compiled / in 8.4s (654 modules)
+ GET / 200 in 9496ms
+ ✓ Compiled in 1055ms (329 modules)
+ ✓ Compiled in 5.1s (636 modules)
+ GET / 200 in 2114ms
+ ✓ Compiled in 492ms (636 modules)
+ GET / 200 in 146ms
+ ✓ Compiled in 727ms (636 modules)
+ GET / 200 in 90ms
+ ✓ Compiled in 533ms (636 modules)
+ GET / 200 in 67ms
+ ✓ Compiled in 577ms (636 modules)
+ GET / 200 in 65ms
+ ✓ Compiled in 504ms (636 modules)
+ GET / 200 in 80ms
+ ✓ Compiled in 636ms (636 modules)
+ GET / 200 in 67ms
+ ✓ Compiled in 552ms (636 modules)
+ GET / 200 in 71ms
+ ✓ Compiled in 2.8s (329 modules)
+ ✓ Compiled / in 280ms (307 modules)
+ GET / 200 in 369ms
+ ✓ Compiled in 513ms (636 modules)
+ ✓ Compiled in 493ms (636 modules)
+ ✓ Compiled in 401ms (636 modules)
+ ✓ Compiled in 427ms (636 modules)
+ GET / 200 in 102ms
