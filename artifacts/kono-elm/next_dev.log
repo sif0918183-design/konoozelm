@@ -1,0 +1,13 @@
+
+> kono-elm@1.0.0 dev /app/artifacts/kono-elm
+> next dev
+
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1778ms
+ ○ Compiling / ...
+ ✓ Compiled / in 7.5s (609 modules)
+ GET / 200 in 8333ms
+ ✓ Compiled in 853ms (314 modules)

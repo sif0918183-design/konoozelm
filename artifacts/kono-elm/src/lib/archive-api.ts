@@ -31,7 +31,7 @@ export async function searchBooks(
   const params = new URLSearchParams({
     q: `${query} AND mediatype:texts`,
     fl: 'identifier,title,creator,date,publisher,description,downloadable',
-    sort: 'downloadable desc,date desc',
+    sort: 'date desc',
     rows: pageSize.toString(),
     page: page.toString(),
     output: 'json',
@@ -44,6 +44,10 @@ export async function searchBooks(
   }
 
   const data = await response.json();
+
+  if (data.error) {
+    throw new Error(`Archive.org API error: ${data.error}`);
+  }
   
   const books: Book[] = (data.response?.docs || []).map((item: any) => ({
     identifier: item.identifier,
