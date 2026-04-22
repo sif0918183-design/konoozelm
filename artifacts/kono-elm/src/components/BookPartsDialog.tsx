@@ -8,11 +8,16 @@ interface BookPartsDialogProps {
   files: BookFile[];
   onClose: () => void;
   mode: 'read' | 'download';
+  onDownload?: (file: BookFile) => void;
 }
 
-export default function BookPartsDialog({ book, files, onClose, mode }: BookPartsDialogProps) {
-  const handleAction = (url: string) => {
-    window.open(url, '_blank');
+export default function BookPartsDialog({ book, files, onClose, mode, onDownload }: BookPartsDialogProps) {
+  const handleAction = (file: BookFile) => {
+    if (mode === 'download' && onDownload) {
+      onDownload(file);
+    } else {
+      window.open(file.url, '_blank');
+    }
     onClose();
   };
 
@@ -41,7 +46,7 @@ export default function BookPartsDialog({ book, files, onClose, mode }: BookPart
             {files.map((file, index) => (
               <button
                 key={index}
-                onClick={() => handleAction(file.url)}
+                onClick={() => handleAction(file)}
                 className="w-full flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-primary-50 hover:border-primary-200 transition-all text-right group"
               >
                 <div className="flex items-center gap-3">
