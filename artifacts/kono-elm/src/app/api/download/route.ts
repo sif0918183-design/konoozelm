@@ -29,6 +29,17 @@ export async function GET(request: NextRequest) {
 
     const headers = new Headers();
     headers.set('Content-Type', 'application/pdf');
+
+    // Forward relevant headers from Archive.org
+    const contentLength = response.headers.get('content-length');
+    if (contentLength) {
+      headers.set('Content-Length', contentLength);
+    }
+
+    const acceptRanges = response.headers.get('accept-ranges');
+    if (acceptRanges) {
+      headers.set('Accept-Ranges', acceptRanges);
+    }
     // Force download with the provided filename, supporting UTF-8 (Arabic characters)
     const encodedFilename = encodeURIComponent(filename);
     headers.set('Content-Disposition', `attachment; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { X, Download, Info } from 'lucide-react';
-import { cn, optimizeArchiveUrl } from '@/lib/utils';
+import { cn, optimizeArchiveUrl, formatBytes } from '@/lib/utils';
 
 interface DownloadModalProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface DownloadModalProps {
   fileUrl: string;
   fileName: string;
   bookTitle: string;
+  fileSize?: string | number;
 }
 
 export default function DownloadModal({
@@ -18,6 +19,7 @@ export default function DownloadModal({
   fileUrl,
   fileName,
   bookTitle,
+  fileSize,
 }: DownloadModalProps) {
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -147,7 +149,14 @@ export default function DownloadModal({
             {/* Progress Section */}
             <div className="w-full space-y-4 mb-10">
               <div className="flex justify-between items-end mb-2">
-                <span className="text-sm font-bold text-primary-700">نسبة التحضير</span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-primary-700">نسبة التحضير</span>
+                  {fileSize && (
+                    <span className="text-[10px] text-gray-400 font-medium" dir="rtl">
+                      {formatBytes((Number(fileSize) * progress) / 100)} من {formatBytes(fileSize)}
+                    </span>
+                  )}
+                </div>
                 <span className="text-2xl font-black text-primary-900">{Math.round(progress)}%</span>
               </div>
 

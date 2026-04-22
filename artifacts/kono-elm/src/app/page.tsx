@@ -67,21 +67,27 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-cream-50 font-tajawal">
+    <div className="min-h-screen bg-[#fcfcf8] font-tajawal">
       {/* Header */}
-      <header className="bg-primary-900 text-white pt-20 pb-24 px-4 relative overflow-hidden">
+      <header className="bg-primary-900 text-white pt-12 md:pt-20 pb-20 md:pb-24 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute top-0 left-0 w-64 h-64 border-4 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 right-0 w-96 h-96 border-4 border-white/20 rounded-full translate-x-1/3 translate-y-1/3" />
         </div>
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tight text-gold-200">
-            موسوعة كنوز العلم
+          <h1 className="text-4xl md:text-6xl font-amiri font-bold mb-4 tracking-tight text-gold-200 drop-shadow-sm">
+            مُوسُوعَةُ كُنُوزِ العِلْمِ
           </h1>
-          <p className="text-lg md:text-2xl text-primary-100/90 mb-10 font-medium">
-            البوابة الذكية للمخطوطات والكتب الإسلامية
-          </p>
+          <div className="flex flex-col gap-3 mb-10">
+            <p className="text-sm md:text-lg text-primary-100/90 font-medium max-w-2xl mx-auto">
+              المكتبة الإلكترونية الشاملة للكتب والرسائل والمخطوطات الإسلامية
+            </p>
+            <div className="inline-flex items-center justify-center gap-2 text-[10px] md:text-xs text-gold-200/80 bg-white/5 py-1.5 px-4 rounded-full self-center border border-white/10 backdrop-blur-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-gold-400 animate-pulse" />
+              📚 يتم حفظ موضع قراءتك تلقائيًا لتيسير استكمال المطالعة من حيث توقفت
+            </div>
+          </div>
           
           {/* Search Form */}
           <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto group">
@@ -120,10 +126,10 @@ export default function Home() {
         {/* Results Info */}
         {hasSearched && !error && (
           <div className="mb-6 flex items-center justify-between">
-            <p className="text-gray-600">
+            <p className="text-white bg-primary-800/40 backdrop-blur-md px-4 py-1.5 rounded-full text-sm border border-white/10">
               {!isLoading && (
                 <>
-                  تم العثور على <span className="font-bold text-primary-700">{totalResults}</span> كتاب
+                  تم العثور على <span className="font-bold text-gold-200">{totalResults}</span> كتاب
                 </>
               )}
             </p>
