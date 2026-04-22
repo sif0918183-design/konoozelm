@@ -1,0 +1,76 @@
+'use client';
+
+import { X, BookOpen, Download } from 'lucide-react';
+import type { Book, BookFile } from '@/lib/archive-api';
+
+interface BookPartsDialogProps {
+  book: Book;
+  files: BookFile[];
+  onClose: () => void;
+  mode: 'read' | 'download';
+}
+
+export default function BookPartsDialog({ book, files, onClose, mode }: BookPartsDialogProps) {
+  const handleAction = (url: string) => {
+    window.open(url, '_blank');
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="p-4 bg-primary-900 text-white flex items-center justify-between">
+          <h3 className="font-bold text-lg truncate flex-1 ml-4">
+            {mode === 'read' ? 'اختر الجزء للقراءة' : 'اختر الجزء للتحميل'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-white/10 rounded-full transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-4">
+          <div className="mb-4">
+            <p className="text-sm text-gray-500 mb-1">الكتاب:</p>
+            <p className="font-bold text-primary-900 line-clamp-2">{book.title}</p>
+          </div>
+
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+            {files.map((file, index) => (
+              <button
+                key={index}
+                onClick={() => handleAction(file.url)}
+                className="w-full flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-primary-50 hover:border-primary-200 transition-all text-right group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm">
+                    {index + 1}
+                  </div>
+                  <span className="font-medium text-gray-800 group-hover:text-primary-900">
+                    {file.name}
+                  </span>
+                </div>
+                {mode === 'read' ? (
+                  <BookOpen className="w-5 h-5 text-primary-600" />
+                ) : (
+                  <Download className="w-5 h-5 text-gold-600" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-200 transition-colors"
+          >
+            إغلاق
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

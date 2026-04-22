@@ -67,35 +67,40 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-cream-50 font-tajawal">
       {/* Header */}
-      <header className="bg-gradient-to-r from-primary-800 to-primary-700 text-white py-12 px-4 shadow-lg">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gold-100">
-            موسوعة كنوز العلم الإلكترونية
+      <header className="bg-primary-900 text-white pt-20 pb-24 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-0 left-0 w-64 h-64 border-4 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 border-4 border-white/20 rounded-full translate-x-1/3 translate-y-1/3" />
+        </div>
+
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tight text-gold-200">
+            موسوعة كنوز العلم
           </h1>
-          <p className="text-lg md:text-xl text-primary-100 mb-8">
-            اكتشف وحمل الكتب الإسلامية من مكتبة Archive.org الشاملة
+          <p className="text-lg md:text-2xl text-primary-100/90 mb-10 font-medium">
+            البوابة الذكية للمخطوطات والكتب الإسلامية
           </p>
           
           {/* Search Form */}
-          <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto">
+          <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto group">
             <div className="relative">
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6" />
+              <Search className="absolute right-5 top-1/2 -translate-y-1/2 text-primary-900/40 w-6 h-6 group-focus-within:text-primary-900 transition-colors" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="ابحث عن كتاب..."
-                className="w-full px-6 py-4 pr-14 text-lg text-gray-800 bg-white rounded-full shadow-lg focus:outline-none focus:ring-4 focus:ring-gold-400/50 transition-all"
+                placeholder="ابحث بالعنوان، المؤلف، أو الموضوع..."
+                className="w-full px-8 py-5 pr-16 text-lg text-gray-900 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl focus:outline-none focus:ring-4 focus:ring-gold-500/30 transition-all border-2 border-transparent focus:border-gold-500/50"
                 dir="rtl"
               />
               <button
                 type="submit"
                 disabled={isLoading || !query.trim()}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-gold-500 to-gold-600 text-white px-6 py-2 rounded-full font-medium hover:from-gold-600 hover:to-gold-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 bg-primary-900 text-gold-200 hover:text-white px-8 py-3 rounded-xl font-bold hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg active:scale-95"
               >
-                بحث
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'بحث'}
               </button>
             </div>
           </form>
@@ -103,7 +108,7 @@ export default function Home() {
       </header>
 
       {/* Results Section */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 -mt-10 relative z-20 pb-20">
         {/* Error Message */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3 text-red-700">
@@ -132,7 +137,7 @@ export default function Home() {
 
         {/* Books Grid */}
         {books.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {books.map((book) => (
               <BookCard key={book.identifier} book={book} />
             ))}
@@ -180,11 +185,20 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-primary-900 text-primary-100 py-6 mt-auto">
+      <footer className="bg-white border-t border-gray-100 py-12 mt-auto">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-sm">
-            موسوعة كنوز العلم الإلكترونية - تعتمد على مكتبة Archive.org
+          <div className="inline-block p-3 bg-primary-50 rounded-2xl mb-4">
+            <BookOpen className="w-8 h-8 text-primary-900" />
+          </div>
+          <p className="text-gray-900 font-bold text-lg mb-2">
+            موسوعة كنوز العلم الإلكترونية
           </p>
+          <p className="text-gray-500 text-sm max-w-md mx-auto">
+            مشروع غير ربحي يهدف لتيسير الوصول للكتب الإسلامية القيمة والمخطوطات النادرة من أرشيف المكتبات العالمية.
+          </p>
+          <div className="mt-8 pt-8 border-t border-gray-50 text-gray-400 text-xs">
+            جميع الحقوق محفوظة © {new Date().getFullYear()} - تعتمد على مكتبة Archive.org
+          </div>
         </div>
       </footer>
     </div>
