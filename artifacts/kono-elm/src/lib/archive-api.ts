@@ -43,16 +43,30 @@ export async function searchBooks(
     return { books: [], totalResults: 0, page, hasMore: false };
   }
 
+  // Utility to safely normalize Archive.org metadata fields
+  const normalizeField = (field: any): string => {
+    if (!field) return '';
+    if (Array.isArray(field)) return field.join(' ');
+    if (typeof field === 'object') return JSON.stringify(field);
+    return String(field);
+  };
+
+  // Simplified Search: Use server-side boosting for relevance without strict local filtering
+  // This ensures standard pagination works and results are plentiful but sorted well
+  const exactPhrase = `"${trimmedQuery}"`;
   const orTerms = searchTerms.length > 1 ? `(${searchTerms.join(' OR ')})` : trimmedQuery;
 
-  // Fetch more candidates to allow for high-precision re-ranking
-  // We fetch up to 100 results per request if it's the first page
-  const fetchSize = page === 1 ? Math.max(pageSize * 5, 100) : pageSize;
+  const formattedQuery = [
+    `title:${exactPhrase}^100`,
+    `title:${orTerms}^10`,
+    `creator:${exactPhrase}^50`,
+    `creator:${orTerms}^5`,
+  ].join(' OR ');
 
   const params = new URLSearchParams({
-    q: `(title:${orTerms} OR creator:${orTerms}) AND format:pdf AND mediatype:texts`,
+    q: `(${formattedQuery}) AND format:pdf AND mediatype:texts`,
     fl: 'identifier,title,creator,date,publisher,description,downloadable',
-    rows: fetchSize.toString(),
+    rows: pageSize.toString(),
     page: page.toString(),
     output: 'json',
   });
@@ -69,97 +83,9 @@ export async function searchBooks(
     throw new Error(`Archive.org API error: ${data.error}`);
   }
   
-  let candidates: any[] = data.response?.docs || [];
+  const docs = data.response?.docs || [];
 
-  // Utility to safely normalize Archive.org metadata fields
-  const normalizeField = (field: any): string => {
-    if (!field) return '';
-    if (Array.isArray(field)) return field.join(' ');
-    if (typeof field === 'object') return JSON.stringify(field);
-    return String(field);
-  };
-
-  // Custom Scoring and Ranking Logic
-  const scoreResult = (item: any) => {
-    const title = normalizeField(item.title).toLowerCase();
-    const creator = normalizeField(item.creator).toLowerCase();
-    const lowerQuery = trimmedQuery.toLowerCase();
-
-    let score = 0;
-
-    // 1. Exact Phrase match in Title (Highest Priority)
-    if (title.includes(lowerQuery)) {
-      score += 10000;
-      // Bonus if it starts with the query
-      if (title.startsWith(lowerQuery)) score += 2000;
-      // Bonus for exact title match
-      if (title === lowerQuery) score += 5000;
-    }
-
-    // 2. All terms present in Title in Order
-    const escapedTerms = searchTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    const inOrderRegex = new RegExp(escapedTerms.join('.*'), 'i');
-    if (inOrderRegex.test(title)) {
-      score += 5000;
-    }
-
-    // 3. Density/Frequency match in Title
-    let matchingTermsCount = 0;
-    searchTerms.forEach(term => {
-      if (title.includes(term.toLowerCase())) {
-        score += 500;
-        matchingTermsCount++;
-      }
-    });
-
-    // 4. Exact Phrase match in Creator
-    if (creator.includes(lowerQuery)) {
-      score += 1000;
-    }
-
-    // 5. Any term match in Creator
-    searchTerms.forEach(term => {
-      if (creator.includes(term.toLowerCase())) {
-        score += 100;
-      }
-    });
-
-    // Length Penalty (Favor shorter, more concise titles)
-    score -= title.length * 0.1;
-
-    return score;
-  };
-
-  // Strict Hard Filter: Only allow results that have a significant title match
-  const filteredCandidates = candidates.filter(item => {
-    const title = normalizeField(item.title).toLowerCase();
-    const lowerQuery = trimmedQuery.toLowerCase();
-
-    // 1. Mandatory Title Check: at least one word must be in the title
-    const titleMatchCount = searchTerms.filter(term => title.includes(term.toLowerCase())).length;
-    const hasAnyTitleMatch = titleMatchCount > 0;
-
-    // 2. Exact Title Phrase match
-    const hasExactTitleMatch = title.includes(lowerQuery);
-
-    // 3. Relevance threshold:
-    // If multiple words, at least 50% must match in title OR it must have exact phrase match in title
-    const meetRelevanceThreshold = searchTerms.length > 1
-      ? (titleMatchCount / searchTerms.length >= 0.5) || hasExactTitleMatch
-      : hasAnyTitleMatch;
-
-    // A result is only valid if it meets the title relevance threshold
-    // Even if the creator matches, the title must be relevant to the search
-    return meetRelevanceThreshold;
-  });
-
-  // Sort by calculated score
-  const sortedCandidates = filteredCandidates.sort((a, b) => scoreResult(b) - scoreResult(a));
-
-  // Take only the requested pageSize
-  const finalResults = sortedCandidates.slice(0, pageSize);
-
-  const books: Book[] = finalResults.map((item: any) => ({
+  const books: Book[] = docs.map((item: any) => ({
     identifier: item.identifier,
     title: normalizeField(item.title) || 'Untitled',
     author: normalizeField(item.creator),
@@ -171,7 +97,7 @@ export async function searchBooks(
   }));
 
   const totalResults = data.response?.numFound || 0;
-  const hasMore = page * fetchSize < totalResults;
+  const hasMore = page * pageSize < totalResults;
 
   return {
     books,
