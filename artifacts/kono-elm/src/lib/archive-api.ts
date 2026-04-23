@@ -36,10 +36,15 @@ export async function searchBooks(
   page: number = 1,
   pageSize: number = 20
 ): Promise<SearchResult> {
+  // Focus search only on title and creator, and ensure PDF format
+  const searchQueries = query.trim().split(/\s+/).filter(Boolean);
+  const formattedQuery = searchQueries.length > 1
+    ? `(title:("${query}") OR creator:("${query}"))`
+    : `(title:(${query}) OR creator:(${query}))`;
+
   const params = new URLSearchParams({
-    q: `${query} AND mediatype:texts`,
+    q: `${formattedQuery} AND mediatype:texts AND format:PDF`,
     fl: 'identifier,title,creator,date,publisher,description,downloadable',
-    sort: 'date desc',
     rows: pageSize.toString(),
     page: page.toString(),
     output: 'json',
