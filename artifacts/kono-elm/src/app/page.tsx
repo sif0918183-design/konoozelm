@@ -6,6 +6,7 @@ import { searchBooks, type Book } from '@/lib/archive-api';
 import { logSearch } from '@/lib/supabase';
 import BookCard from '@/components/BookCard';
 import SearchSkeleton from '@/components/SearchSkeleton';
+import RecentBooks from '@/components/RecentBooks';
 
 export default function Home() {
   const [query, setQuery] = useState('');
@@ -115,6 +116,14 @@ export default function Home() {
 
       {/* Results Section */}
       <main className="max-w-7xl mx-auto px-4 -mt-10 relative z-20 pb-20">
+
+        {/* Recent Books (Always visible if exists) */}
+        {!hasSearched && !isLoading && (
+          <div className="mb-8">
+            <RecentBooks />
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3 text-red-700">
@@ -178,9 +187,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* Initial State */}
-        {!hasSearched && !isLoading && (
-          <div className="text-center py-16">
+        {/* Initial State (Placeholder if no recent books) */}
+        {!hasSearched && !isLoading && books.length === 0 && (
+          <div className="text-center py-8">
             <div className="bg-primary-50 inline-flex p-4 rounded-full mb-4">
               <Search className="w-12 h-12 text-primary-400" />
             </div>

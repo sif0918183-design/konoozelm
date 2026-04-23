@@ -117,7 +117,10 @@ export async function getBookFiles(identifier: string): Promise<BookFile[]> {
  */
 export async function getPdfDownloadLink(identifier: string): Promise<string | null> {
   const files = await getBookFiles(identifier);
-  return files.length > 0 ? files[0].url : null;
+  if (files.length > 0) return files[0].url;
+
+  // Fallback: Try a direct guess if no files returned from API
+  return `https://archive.org/download/${identifier}/${identifier}.pdf`;
 }
 
 /**
