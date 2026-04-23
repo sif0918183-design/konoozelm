@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { X, BookOpen, Download } from 'lucide-react';
 import type { Book, BookFile } from '@/lib/archive-api';
 import { formatBytes } from '@/lib/utils';
@@ -13,11 +14,14 @@ interface BookPartsDialogProps {
 }
 
 export default function BookPartsDialog({ book, files, onClose, mode, onDownload }: BookPartsDialogProps) {
+  const router = useRouter();
+
   const handleAction = (file: BookFile) => {
     if (mode === 'download' && onDownload) {
       onDownload(file);
     } else {
-      window.open(file.url, '_blank');
+      const readerUrl = `/reader?pdf=${encodeURIComponent(file.url)}&title=${encodeURIComponent(book.title)} - ${file.name}`;
+      router.push(readerUrl);
     }
     onClose();
   };

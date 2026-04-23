@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { BookOpen, Download, Loader2, Layers } from 'lucide-react';
 import { type Book, type BookFile, getBookFiles } from '@/lib/archive-api';
 import { cn } from '@/lib/utils';
@@ -13,6 +14,7 @@ interface BookCardProps {
 }
 
 export default function BookCard({ book }: BookCardProps) {
+  const router = useRouter();
   const [files, setFiles] = useState<BookFile[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -42,8 +44,10 @@ export default function BookCard({ book }: BookCardProps) {
       setDialogMode('read');
       setShowPartsDialog(true);
     } else if (files.length === 1) {
-      window.open(files[0].url, '_blank');
+      const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}`;
+      router.push(readerUrl);
     } else {
+      // Fallback if no specific files found yet
       window.open(book.previewLink, '_blank');
     }
   };
