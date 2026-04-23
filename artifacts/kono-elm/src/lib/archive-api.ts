@@ -36,7 +36,7 @@ export async function searchBooks(
   page: number = 1,
   pageSize: number = 20
 ): Promise<SearchResult> {
-  // Balanced search: Broad but with high-precision boosting
+  // Strict tiered search: Title and Creator focused, PDF only
   const trimmedQuery = query.trim();
   const searchTerms = trimmedQuery.split(/\s+/).filter(Boolean);
 
@@ -44,31 +44,28 @@ export async function searchBooks(
     return { books: [], totalResults: 0, page, hasMore: false };
   }
 
-  // Detect if query is Arabic to prioritize Arabic results
-  const isArabic = /[\u0600-\u06FF]/.test(trimmedQuery);
-
   // Construct tiered boosting query
-  // 1. Exact phrase in title (Highest priority)
-  // 2. Terms in proximity in title
-  // 3. All terms in title
-  // 4. All terms in creator
-  // 5. Broad match fallback
+  // Requirement: Prioritize exact sequence and characters (Exact match)
+  // Requirement: Exclude books with no match in Title
+  // Requirement: Must have PDF
 
   const exactPhrase = `"${trimmedQuery}"`;
   const andTerms = searchTerms.length > 1 ? `(${searchTerms.join(' AND ')})` : trimmedQuery;
   const orTerms = searchTerms.length > 1 ? `(${searchTerms.join(' OR ')})` : trimmedQuery;
 
+  // We use AND between (title:match) and format:PDF to satisfy constraints
+  // We use OR inside the title/creator groups for ranking
   const formattedQuery = [
     `title:${exactPhrase}^100`,
-    `title:${exactPhrase}~10^50`,
-    `title:${andTerms}^20`,
-    `creator:${andTerms}^10`,
-    `title:${orTerms}^2`,
+    `title:${andTerms}^50`,
+    `title:${orTerms}^10`,
+    `creator:${exactPhrase}^5`,
+    `creator:${andTerms}^2`,
     `creator:${orTerms}^1`
   ].join(' OR ');
 
   const params = new URLSearchParams({
-    q: `(${formattedQuery}) AND mediatype:texts${isArabic ? ' AND -language:eng' : ''}`,
+    q: `(${formattedQuery}) AND title:${orTerms} AND format:PDF AND mediatype:texts`,
     fl: 'identifier,title,creator,date,publisher,description,downloadable',
     rows: pageSize.toString(),
     page: page.toString(),
