@@ -36,7 +36,7 @@ export async function searchBooks(
   page: number = 1,
   pageSize: number = 20
 ): Promise<SearchResult> {
-  // Flexible search: split query into terms and use OR for broader results
+  // Balanced search: Broad but with high-precision boosting
   const trimmedQuery = query.trim();
   const searchTerms = trimmedQuery.split(/\s+/).filter(Boolean);
 
@@ -44,17 +44,31 @@ export async function searchBooks(
     return { books: [], totalResults: 0, page, hasMore: false };
   }
 
-  // Create an OR-joined version of the terms for Lucene
-  const orJoinedTerms = searchTerms.length > 1
-    ? `(${searchTerms.join(' OR ')})`
-    : searchTerms[0];
+  // Detect if query is Arabic to prioritize Arabic results
+  const isArabic = /[\u0600-\u06FF]/.test(trimmedQuery);
 
-  // Use boosting for title and creator to prioritize relevance
-  // Broad search (orJoinedTerms) matches metadata and full-text (if supported)
-  const formattedQuery = `(title:${orJoinedTerms}^10 OR creator:${orJoinedTerms}^5 OR ${orJoinedTerms})`;
+  // Construct tiered boosting query
+  // 1. Exact phrase in title (Highest priority)
+  // 2. Terms in proximity in title
+  // 3. All terms in title
+  // 4. All terms in creator
+  // 5. Broad match fallback
+
+  const exactPhrase = `"${trimmedQuery}"`;
+  const andTerms = searchTerms.length > 1 ? `(${searchTerms.join(' AND ')})` : trimmedQuery;
+  const orTerms = searchTerms.length > 1 ? `(${searchTerms.join(' OR ')})` : trimmedQuery;
+
+  const formattedQuery = [
+    `title:${exactPhrase}^100`,
+    `title:${exactPhrase}~10^50`,
+    `title:${andTerms}^20`,
+    `creator:${andTerms}^10`,
+    `title:${orTerms}^2`,
+    `creator:${orTerms}^1`
+  ].join(' OR ');
 
   const params = new URLSearchParams({
-    q: `${formattedQuery} AND mediatype:texts`,
+    q: `(${formattedQuery}) AND mediatype:texts${isArabic ? ' AND -language:eng' : ''}`,
     fl: 'identifier,title,creator,date,publisher,description,downloadable',
     rows: pageSize.toString(),
     page: page.toString(),
