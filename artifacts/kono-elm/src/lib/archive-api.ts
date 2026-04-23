@@ -122,10 +122,28 @@ export async function searchBooks(
     return score;
   };
 
-  // Filter out results that don't match any term in the Title (Constraint)
+  // Strict Hard Filter: Only allow results that have a significant title match
   const filteredCandidates = candidates.filter(item => {
     const title = (item.title || '').toLowerCase();
-    return searchTerms.some(term => title.includes(term.toLowerCase()));
+    const creator = (item.creator || '').toLowerCase();
+    const lowerQuery = trimmedQuery.toLowerCase();
+
+    // 1. Mandatory Title Check: at least one word must be in the title
+    const titleMatchCount = searchTerms.filter(term => title.includes(term.toLowerCase())).length;
+    const hasAnyTitleMatch = titleMatchCount > 0;
+
+    // 2. Exact Title Phrase match
+    const hasExactTitleMatch = title.includes(lowerQuery);
+
+    // 3. Relevance threshold:
+    // If multiple words, at least 50% must match in title OR it must have exact phrase match in title
+    const meetRelevanceThreshold = searchTerms.length > 1
+      ? (titleMatchCount / searchTerms.length >= 0.5) || hasExactTitleMatch
+      : hasAnyTitleMatch;
+
+    // A result is only valid if it meets the title relevance threshold
+    // Even if the creator matches, the title must be relevant to the search
+    return meetRelevanceThreshold;
   });
 
   // Sort by calculated score
