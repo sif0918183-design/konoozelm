@@ -36,17 +36,25 @@ export async function searchBooks(
   page: number = 1,
   pageSize: number = 20
 ): Promise<SearchResult> {
-  // Broader search with boosting for title and creator to ensure relevance
+  // Flexible search: split query into terms and use OR for broader results
   const trimmedQuery = query.trim();
-  const searchQueries = trimmedQuery.split(/\s+/).filter(Boolean);
+  const searchTerms = trimmedQuery.split(/\s+/).filter(Boolean);
 
-  // Use boosting: title^10 and creator^5 are much more important than general search
-  const formattedQuery = searchQueries.length > 1
-    ? `(title:("${trimmedQuery}")^10 OR creator:("${trimmedQuery}")^5 OR "${trimmedQuery}")`
-    : `(title:(${trimmedQuery})^10 OR creator:(${trimmedQuery})^5 OR ${trimmedQuery})`;
+  if (searchTerms.length === 0) {
+    return { books: [], totalResults: 0, page, hasMore: false };
+  }
+
+  // Create an OR-joined version of the terms for Lucene
+  const orJoinedTerms = searchTerms.length > 1
+    ? `(${searchTerms.join(' OR ')})`
+    : searchTerms[0];
+
+  // Use boosting for title and creator to prioritize relevance
+  // Broad search (orJoinedTerms) matches metadata and full-text (if supported)
+  const formattedQuery = `(title:${orJoinedTerms}^10 OR creator:${orJoinedTerms}^5 OR ${orJoinedTerms})`;
 
   const params = new URLSearchParams({
-    q: `${formattedQuery} AND mediatype:texts AND format:PDF`,
+    q: `${formattedQuery} AND mediatype:texts`,
     fl: 'identifier,title,creator,date,publisher,description,downloadable',
     rows: pageSize.toString(),
     page: page.toString(),
