@@ -172,7 +172,7 @@ function ReaderContent() {
     };
 
     renderPage();
-  }, [pdf, pageNum, scale, pdfUrl, bookTitle, numPages]);
+  }, [pdf, pageNum, scale, pdfUrl, bookTitle, numPages, rendering]);
 
   const toggleNightMode = () => {
     const newMode = !isNightMode;

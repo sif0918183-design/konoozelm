@@ -108,9 +108,9 @@ export async function searchBooks(
       return { doc, score };
     })
     .filter((item: any): item is { doc: any; score: number } => item !== null)
-    .sort((a, b) => b.score - a.score);
+    .sort((a: { score: number }, b: { score: number }) => b.score - a.score);
 
-  const books: Book[] = scoredDocs.map(({ doc }) => ({
+  const books: Book[] = scoredDocs.map(({ doc }: { doc: any }) => ({
     identifier: doc.identifier,
     title: normalizeField(doc.title) || 'Untitled',
     author: normalizeField(doc.creator),
