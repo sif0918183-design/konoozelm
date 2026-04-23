@@ -71,10 +71,18 @@ export async function searchBooks(
   
   let candidates: any[] = data.response?.docs || [];
 
+  // Utility to safely normalize Archive.org metadata fields
+  const normalizeField = (field: any): string => {
+    if (!field) return '';
+    if (Array.isArray(field)) return field.join(' ');
+    if (typeof field === 'object') return JSON.stringify(field);
+    return String(field);
+  };
+
   // Custom Scoring and Ranking Logic
   const scoreResult = (item: any) => {
-    const title = (item.title || '').toLowerCase();
-    const creator = (item.creator || '').toLowerCase();
+    const title = normalizeField(item.title).toLowerCase();
+    const creator = normalizeField(item.creator).toLowerCase();
     const lowerQuery = trimmedQuery.toLowerCase();
 
     let score = 0;
@@ -124,8 +132,7 @@ export async function searchBooks(
 
   // Strict Hard Filter: Only allow results that have a significant title match
   const filteredCandidates = candidates.filter(item => {
-    const title = (item.title || '').toLowerCase();
-    const creator = (item.creator || '').toLowerCase();
+    const title = normalizeField(item.title).toLowerCase();
     const lowerQuery = trimmedQuery.toLowerCase();
 
     // 1. Mandatory Title Check: at least one word must be in the title
@@ -154,8 +161,8 @@ export async function searchBooks(
 
   const books: Book[] = finalResults.map((item: any) => ({
     identifier: item.identifier,
-    title: item.title || 'Untitled',
-    author: item.creator,
+    title: normalizeField(item.title) || 'Untitled',
+    author: normalizeField(item.creator),
     year: item.date ? item.date.substring(0, 4) : undefined,
     publisher: item.publisher,
     description: item.description,
