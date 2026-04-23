@@ -36,7 +36,6 @@ export async function searchBooks(
   page: number = 1,
   pageSize: number = 20
 ): Promise<SearchResult> {
-  // Strict tiered search: Title and Creator focused, PDF only
   const trimmedQuery = query.trim();
   const searchTerms = trimmedQuery.split(/\s+/).filter(Boolean);
 
@@ -44,30 +43,16 @@ export async function searchBooks(
     return { books: [], totalResults: 0, page, hasMore: false };
   }
 
-  // Construct tiered boosting query
-  // Requirement: Prioritize exact sequence and characters (Exact match)
-  // Requirement: Exclude books with no match in Title
-  // Requirement: Must have PDF
-
-  const exactPhrase = `"${trimmedQuery}"`;
-  const andTerms = searchTerms.length > 1 ? `(${searchTerms.join(' AND ')})` : trimmedQuery;
   const orTerms = searchTerms.length > 1 ? `(${searchTerms.join(' OR ')})` : trimmedQuery;
 
-  // We use AND between (title:match) and format:PDF to satisfy constraints
-  // We use OR inside the title/creator groups for ranking
-  const formattedQuery = [
-    `title:${exactPhrase}^100`,
-    `title:${andTerms}^50`,
-    `title:${orTerms}^10`,
-    `creator:${exactPhrase}^5`,
-    `creator:${andTerms}^2`,
-    `creator:${orTerms}^1`
-  ].join(' OR ');
+  // Fetch more candidates to allow for high-precision re-ranking
+  // We fetch up to 100 results per request if it's the first page
+  const fetchSize = page === 1 ? Math.max(pageSize * 5, 100) : pageSize;
 
   const params = new URLSearchParams({
-    q: `(${formattedQuery}) AND title:${orTerms} AND format:PDF AND mediatype:texts`,
+    q: `(title:${orTerms} OR creator:${orTerms}) AND format:pdf AND mediatype:texts`,
     fl: 'identifier,title,creator,date,publisher,description,downloadable',
-    rows: pageSize.toString(),
+    rows: fetchSize.toString(),
     page: page.toString(),
     output: 'json',
   });
@@ -84,7 +69,72 @@ export async function searchBooks(
     throw new Error(`Archive.org API error: ${data.error}`);
   }
   
-  const books: Book[] = (data.response?.docs || []).map((item: any) => ({
+  let candidates: any[] = data.response?.docs || [];
+
+  // Custom Scoring and Ranking Logic
+  const scoreResult = (item: any) => {
+    const title = (item.title || '').toLowerCase();
+    const creator = (item.creator || '').toLowerCase();
+    const lowerQuery = trimmedQuery.toLowerCase();
+
+    let score = 0;
+
+    // 1. Exact Phrase match in Title (Highest Priority)
+    if (title.includes(lowerQuery)) {
+      score += 10000;
+      // Bonus if it starts with the query
+      if (title.startsWith(lowerQuery)) score += 2000;
+      // Bonus for exact title match
+      if (title === lowerQuery) score += 5000;
+    }
+
+    // 2. All terms present in Title in Order
+    const escapedTerms = searchTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const inOrderRegex = new RegExp(escapedTerms.join('.*'), 'i');
+    if (inOrderRegex.test(title)) {
+      score += 5000;
+    }
+
+    // 3. Density/Frequency match in Title
+    let matchingTermsCount = 0;
+    searchTerms.forEach(term => {
+      if (title.includes(term.toLowerCase())) {
+        score += 500;
+        matchingTermsCount++;
+      }
+    });
+
+    // 4. Exact Phrase match in Creator
+    if (creator.includes(lowerQuery)) {
+      score += 1000;
+    }
+
+    // 5. Any term match in Creator
+    searchTerms.forEach(term => {
+      if (creator.includes(term.toLowerCase())) {
+        score += 100;
+      }
+    });
+
+    // Length Penalty (Favor shorter, more concise titles)
+    score -= title.length * 0.1;
+
+    return score;
+  };
+
+  // Filter out results that don't match any term in the Title (Constraint)
+  const filteredCandidates = candidates.filter(item => {
+    const title = (item.title || '').toLowerCase();
+    return searchTerms.some(term => title.includes(term.toLowerCase()));
+  });
+
+  // Sort by calculated score
+  const sortedCandidates = filteredCandidates.sort((a, b) => scoreResult(b) - scoreResult(a));
+
+  // Take only the requested pageSize
+  const finalResults = sortedCandidates.slice(0, pageSize);
+
+  const books: Book[] = finalResults.map((item: any) => ({
     identifier: item.identifier,
     title: item.title || 'Untitled',
     author: item.creator,
@@ -96,7 +146,7 @@ export async function searchBooks(
   }));
 
   const totalResults = data.response?.numFound || 0;
-  const hasMore = page * pageSize < totalResults;
+  const hasMore = page * fetchSize < totalResults;
 
   return {
     books,
