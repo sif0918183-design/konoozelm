@@ -36,11 +36,14 @@ export async function searchBooks(
   page: number = 1,
   pageSize: number = 20
 ): Promise<SearchResult> {
-  // Focus search only on title and creator, and ensure PDF format
-  const searchQueries = query.trim().split(/\s+/).filter(Boolean);
+  // Broader search with boosting for title and creator to ensure relevance
+  const trimmedQuery = query.trim();
+  const searchQueries = trimmedQuery.split(/\s+/).filter(Boolean);
+
+  // Use boosting: title^10 and creator^5 are much more important than general search
   const formattedQuery = searchQueries.length > 1
-    ? `(title:("${query}") OR creator:("${query}"))`
-    : `(title:(${query}) OR creator:(${query}))`;
+    ? `(title:("${trimmedQuery}")^10 OR creator:("${trimmedQuery}")^5 OR "${trimmedQuery}")`
+    : `(title:(${trimmedQuery})^10 OR creator:(${trimmedQuery})^5 OR ${trimmedQuery})`;
 
   const params = new URLSearchParams({
     q: `${formattedQuery} AND mediatype:texts AND format:PDF`,
