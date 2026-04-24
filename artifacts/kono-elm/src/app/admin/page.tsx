@@ -18,7 +18,9 @@ import {
   X,
   Library,
   Zap,
-  Trash2
+  Trash2,
+  ChevronRight,
+  ChevronLeft
 } from 'lucide-react';
 import { searchBooks, type Book, getBookFiles } from '@/lib/archive-api';
 import { slugify } from '@/lib/utils';
@@ -87,7 +89,10 @@ export default function AdminDashboard() {
   const [selectedCategoryForSuggestions, setSelectedCategoryForSuggestions] = useState<Category | null>(null);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
   const [isBulkAdding, setIsBulkAdding] = useState(false);
-  const [bulkProgress, setBulkProgress] = useState(0);
+
+  // Pagination State for Suggestions
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   useEffect(() => {
     fetchCategories();
@@ -261,6 +266,7 @@ export default function AdminDashboard() {
     setIsSuggesting(true);
     setSuggestions([]);
     setSelectedSuggestions(new Set());
+    setCurrentPage(1);
 
     try {
       const res = await fetch('/api/admin/suggest', {
@@ -294,13 +300,10 @@ export default function AdminDashboard() {
     if (!selectedCategoryForSuggestions || selectedSuggestions.size === 0) return;
 
     setIsBulkAdding(true);
-    setBulkProgress(0);
 
     const selectedBooks = suggestions.filter(s => selectedSuggestions.has(s.id));
 
     try {
-      // In a real production app, you might want to process these in smaller chunks or one by one
-      // to avoid timeouts. For now, we send them all.
       const res = await fetch('/api/admin/books/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -347,6 +350,10 @@ export default function AdminDashboard() {
         }
     } catch (e) {}
   };
+
+  // Pagination Logic
+  const totalPages = Math.ceil(suggestions.length / ITEMS_PER_PAGE);
+  const currentItems = suggestions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-gray-50 font-tajawal" dir="rtl">
@@ -649,7 +656,7 @@ export default function AdminDashboard() {
                   <Zap className="w-6 h-6 text-gold-400" />
                   اقتراحات ذكية لتصنيف: {selectedCategoryForSuggestions.title}
                 </h2>
-                <p className="text-xs text-primary-100 mt-1">تم تصفية هذه الكتب وترتيبها بواسطة الذكاء الاصطناعي لضمان الجودة.</p>
+                <p className="text-xs text-primary-100 mt-1">تم جلب وتصفية {suggestions.length} كتاباً بالذكاء الاصطناعي.</p>
               </div>
               <button
                 onClick={() => setSelectedCategoryForSuggestions(null)}
@@ -664,7 +671,7 @@ export default function AdminDashboard() {
               {isSuggesting ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4 text-gray-500">
                   <Loader2 className="w-12 h-12 animate-spin text-gold-500" />
-                  <p className="font-bold">جاري تحليل الكتب وترتيبها بالذكاء الاصطناعي...</p>
+                  <p className="font-bold text-center px-4">جاري تحليل مئات الكتب وترتيبها بالذكاء الاصطناعي... يرجى الانتظار</p>
                 </div>
               ) : suggestions.length === 0 ? (
                 <div className="text-center py-20 text-gray-500">
@@ -672,60 +679,85 @@ export default function AdminDashboard() {
                   <p>لم يتم العثور على اقتراحات جديدة لهذا التصنيف حالياً.</p>
                 </div>
               ) : (
-                suggestions.map((s) => (
-                  <div
-                    key={s.id}
-                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${selectedSuggestions.has(s.id) ? 'border-gold-500 bg-gold-50/50' : 'border-gray-100 hover:border-gray-200 bg-gray-50/30'}`}
-                    onClick={() => toggleSuggestionSelection(s.id)}
-                  >
-                    <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${selectedSuggestions.has(s.id) ? 'bg-gold-500 border-gold-500 text-white' : 'border-gray-300'}`}>
-                        {selectedSuggestions.has(s.id) && <CheckCircle className="w-4 h-4" />}
+                <>
+                    <div className="space-y-4">
+                        {currentItems.map((s) => (
+                        <div
+                            key={s.id}
+                            className={`flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${selectedSuggestions.has(s.id) ? 'border-gold-500 bg-gold-50/50' : 'border-gray-100 hover:border-gray-200 bg-gray-50/30'}`}
+                            onClick={() => toggleSuggestionSelection(s.id)}
+                        >
+                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${selectedSuggestions.has(s.id) ? 'bg-gold-500 border-gold-500 text-white' : 'border-gray-300'}`}>
+                                {selectedSuggestions.has(s.id) && <CheckCircle className="w-4 h-4" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-gray-900 line-clamp-1">{s.title}</h4>
+                            <p className="text-sm text-gray-500 truncate">{s.author}</p>
+                            </div>
+                            <div className="text-left flex-shrink-0">
+                                <span className="text-[10px] font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                                    ارتباط {s.relevance_score}%
+                                </span>
+                            </div>
+                        </div>
+                        ))}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-gray-900">{s.title}</h4>
-                      <p className="text-sm text-gray-500">{s.author}</p>
-                    </div>
-                    <div className="text-left">
-                        <span className="text-[10px] font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full">
-                            ارتباط {s.relevance_score}%
-                        </span>
-                    </div>
-                  </div>
-                ))
+                </>
               )}
             </div>
 
-            {suggestions.length > 0 && (
-              <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-                <div className="flex gap-2">
+            {suggestions.length > 0 && !isSuggesting && (
+              <div className="p-4 bg-gray-50 border-t border-gray-100 space-y-4">
+                {/* Pagination Controls */}
+                <div className="flex justify-center items-center gap-4 border-b border-gray-200 pb-4">
                     <button
-                        onClick={handleRejectSuggestions}
-                        disabled={selectedSuggestions.size === 0 || isBulkAdding}
-                        className="px-6 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-all flex items-center gap-2"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 bg-white rounded-lg border border-gray-200 disabled:opacity-30"
                     >
-                        <Trash2 className="w-4 h-4" />
-                        استبعاد المختارة
+                        <ChevronRight className="w-5 h-5" />
                     </button>
-                    <p className="text-sm text-gray-500 self-center">تم اختيار {selectedSuggestions.size} كتاباً</p>
+                    <span className="text-sm font-bold text-gray-600">صفحة {currentPage} من {totalPages}</span>
+                    <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 bg-white rounded-lg border border-gray-200 disabled:opacity-30"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
                 </div>
 
-                <button
-                  onClick={handleBulkAdd}
-                  disabled={selectedSuggestions.size === 0 || isBulkAdding}
-                  className="px-10 py-3 bg-primary-900 text-white rounded-xl font-bold hover:bg-primary-800 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
-                >
-                  {isBulkAdding ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      جاري المعالجة...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-5 h-5" />
-                      إضافة الكتب المختارة للنظام
-                    </>
-                  )}
-                </button>
+                <div className="flex justify-between items-center">
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleRejectSuggestions}
+                            disabled={selectedSuggestions.size === 0 || isBulkAdding}
+                            className="px-6 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-all flex items-center gap-2"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            استبعاد المختارة
+                        </button>
+                        <p className="text-sm text-gray-500 self-center">تم اختيار {selectedSuggestions.size} كتاباً</p>
+                    </div>
+
+                    <button
+                    onClick={handleBulkAdd}
+                    disabled={selectedSuggestions.size === 0 || isBulkAdding}
+                    className="px-10 py-3 bg-primary-900 text-white rounded-xl font-bold hover:bg-primary-800 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
+                    >
+                    {isBulkAdding ? (
+                        <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        جاري المعالجة...
+                        </>
+                    ) : (
+                        <>
+                        <Plus className="w-5 h-5" />
+                        إضافة الكتب المختارة للنظام
+                        </>
+                    )}
+                    </button>
+                </div>
               </div>
             )}
 
