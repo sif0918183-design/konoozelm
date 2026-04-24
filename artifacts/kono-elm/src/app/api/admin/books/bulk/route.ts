@@ -17,8 +17,8 @@ export async function POST(request: Request) {
   try {
     const { books, category, categorySlug } = await request.json();
 
-    if (!books || !Array.isArray(books)) {
-      return NextResponse.json({ error: 'Books array is required' }, { status: 400 });
+    if (!books || !Array.isArray(books) || !categorySlug) {
+      return NextResponse.json({ error: 'Books array and category slug are required' }, { status: 400 });
     }
 
     const results = [];
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
           author: seoContent.author,
           description: seoContent.description,
           category: category,
-          category_slug: categorySlug, // FIXED: Ensure category_slug is saved
+          category_slug: categorySlug, // ENSURED
           archiveId: book.id,
           seoTitle: seoContent.seoTitle,
           parts_count: partsCount

@@ -9,9 +9,9 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const decodedSlug = decodeURIComponent(params.categorySlug);
-  const category = await getCategoryBySlug(decodedSlug);
-  if (!category) return { title: 'Category Not Found' };
+  const slug = decodeURIComponent(params.categorySlug);
+  const category = await getCategoryBySlug(slug);
+  if (!category) return { title: 'التصنيف غير موجود' };
 
   return {
     title: `${category.title} - تحميل وقراءة كتب PDF`,
@@ -20,12 +20,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CategoryPage({ params }: Props) {
-  const decodedSlug = decodeURIComponent(params.categorySlug);
-  const category = await getCategoryBySlug(decodedSlug);
+  const slug = decodeURIComponent(params.categorySlug);
+  const category = await getCategoryBySlug(slug);
 
   if (!category) notFound();
 
-  // Standardized Query by Slug
+  // Primary Query by Slug
   const books = await getBooksByCategory(category.slug, 100);
 
   return (
@@ -75,6 +75,7 @@ export default async function CategoryPage({ params }: Props) {
           <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
             <BookOpen className="w-16 h-16 text-gray-200 mx-auto mb-4" />
             <p className="text-gray-500">لا توجد كتب في هذا التصنيف حالياً</p>
+            <p className="text-xs text-gray-300 mt-2">Slug: {category.slug}</p>
           </div>
         )}
       </main>

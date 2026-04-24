@@ -1,3 +1,5 @@
+-- --- Table Structure & Constraints ---
+
 -- Table for tracking user feedback on AI suggestions
 CREATE TABLE IF NOT EXISTS public.smart_book_feedback (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -12,7 +14,7 @@ CREATE TABLE IF NOT EXISTS public.smart_book_feedback (
 CREATE INDEX IF NOT EXISTS idx_smart_book_feedback_archive_id ON public.smart_book_feedback(archive_id);
 CREATE INDEX IF NOT EXISTS idx_smart_book_feedback_category_slug ON public.smart_book_feedback(category_slug);
 
--- Add missing columns to seo_books if they don't exist
+-- Ensure seo_books has correct columns
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='seo_books' AND column_name='seo_title') THEN
@@ -26,34 +28,37 @@ BEGIN
     END IF;
 END $$;
 
--- --- FULL REFACTOR: Standardize Slugs ---
+-- --- FULL REFACTOR: Standardize Slugs & Migration ---
 
--- 1. Unify existing inconsistent slugs in seo_books
-UPDATE public.seo_books SET category_slug = 'كتب-المذهب-الحنفي' WHERE category_slug = 'hanafi';
-UPDATE public.seo_books SET category_slug = 'كتب-المذهب-الشافعي' WHERE category_slug = 'shafii';
-UPDATE public.seo_books SET category_slug = 'كتب-المذهب-المالكي' WHERE category_slug = 'maliki';
-UPDATE public.seo_books SET category_slug = 'كتب-المذهب-الحنبلي' WHERE category_slug = 'hanbali';
+-- 1. Unify existing inconsistent slugs in seo_books (Migration)
+UPDATE public.seo_books SET category_slug = 'كتب-المذهب-الحنفي' WHERE category_slug IN ('hanafi', 'shafii', 'maliki', 'hanbali') OR category_slug IS NULL;
+-- (Note: Above is a broad reset, more specific mapping follows)
 
--- 2. Ensure smart_book_feedback also uses unified slugs
-UPDATE public.smart_book_feedback SET category_slug = 'كتب-المذهب-الحنفي' WHERE category_slug = 'hanafi';
-UPDATE public.smart_book_feedback SET category_slug = 'كتب-المذهب-الشافعي' WHERE category_slug = 'shafii';
-UPDATE public.smart_book_feedback SET category_slug = 'كتب-المذهب-المالكي' WHERE category_slug = 'maliki';
-UPDATE public.smart_book_feedback SET category_slug = 'كتب-المذهب-الحنبلي' WHERE category_slug = 'hanbali';
+UPDATE public.seo_books SET category_slug = 'كتب-المذهب-الحنفي' WHERE category = 'كتب الفقه الحنفي' OR category_slug = 'hanafi';
+UPDATE public.seo_books SET category_slug = 'كتب-المذهب-الشافعي' WHERE category = 'كتب الفقه الشافعي' OR category_slug = 'shafii';
+UPDATE public.seo_books SET category_slug = 'كتب-المذهب-المالكي' WHERE category = 'كتب الفقه المالكي' OR category_slug = 'maliki';
+UPDATE public.seo_books SET category_slug = 'كتب-المذهب-الحنبلي' WHERE category = 'كتب الفقه الحنبلي' OR category_slug = 'hanbali';
 
--- 3. Update category_slug for existing books based on current category title if slug is still missing
--- This uses the same logic as generateCategorySlug (replacing space with hyphen)
+-- 2. Fallback: For any record still missing a slug, generate it from the category title
 UPDATE public.seo_books
 SET category_slug = REPLACE(category, ' ', '-')
 WHERE category_slug IS NULL OR category_slug = '';
 
--- 4. Create index for performance
+-- 3. Cleanup feedback slugs
+UPDATE public.smart_book_feedback SET category_slug = 'كتب-المذهب-الحنفي' WHERE category_slug = 'hanafi';
+UPDATE public.smart_book_feedback SET category_slug = 'كتب-المذهب-الشافعي' WHERE category_slug = 'shafii';
+
+-- 4. Create performance index
 CREATE INDEX IF NOT EXISTS idx_seo_books_category_slug ON public.seo_books(category_slug);
 
--- 5. Add unique constraint to seo_categories.slug if missing (needed for foreign key)
+-- 5. Ensure seo_categories.slug is unique and has hyphenated Arabic format
+UPDATE public.seo_categories SET slug = REPLACE(title, ' ', '-') WHERE slug IN ('hanafi', 'shafii', 'maliki', 'hanbali');
+
+-- 6. Add integrity constraints
+ALTER TABLE public.seo_categories DROP CONSTRAINT IF EXISTS seo_categories_slug_unique;
 ALTER TABLE public.seo_categories ADD CONSTRAINT seo_categories_slug_unique UNIQUE (slug);
 
--- 6. Add Foreign Key for data integrity (optional but recommended for a professional system)
--- We check if it exists first to make script idempotent
+-- Force foreign key link
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_seo_books_category_slug') THEN
@@ -64,17 +69,17 @@ BEGIN
     END IF;
 END $$;
 
--- Ensure seo_books has a unique constraint on archive_id
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'seo_books_archive_id_key'
-    ) THEN
-        ALTER TABLE public.seo_books ADD CONSTRAINT seo_books_archive_id_key UNIQUE (archive_id);
-    END IF;
-END $$;
+-- --- Security Policies (Ensure Public Read) ---
 
--- Enable RLS
-ALTER TABLE public.smart_book_feedback ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.seo_books ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.seo_categories ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public can read seo_books" ON public.seo_books;
+CREATE POLICY "Public can read seo_books" ON public.seo_books FOR SELECT TO public USING (true);
+
+DROP POLICY IF EXISTS "Public can read seo_categories" ON public.seo_categories;
+CREATE POLICY "Public can read seo_categories" ON public.seo_categories FOR SELECT TO public USING (true);
+
+-- Allow service role full access
+DROP POLICY IF EXISTS "Service role has full access to smart_book_feedback" ON public.smart_book_feedback;
 CREATE POLICY "Service role has full access to smart_book_feedback" ON public.smart_book_feedback FOR ALL TO service_role USING (true) WITH CHECK (true);
-CREATE POLICY "Public can read smart_book_feedback" ON public.smart_book_feedback FOR SELECT TO public USING (true);

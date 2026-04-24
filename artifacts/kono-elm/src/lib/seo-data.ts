@@ -6,7 +6,7 @@ export interface SeoBook {
   author: string;
   description: string;
   category: string;
-  category_slug?: string; // Standardized link
+  category_slug?: string;
   archiveId: string;
   seoTitle?: string;
   parts_count?: number;
@@ -188,10 +188,9 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
   return data;
 }
 
-export async function getBooksByCategory(categorySlug: string, limit: number = 10): Promise<SeoBook[]> {
+export async function getBooksByCategory(categorySlug: string, limit: number = 100): Promise<SeoBook[]> {
   if (!supabase) return [];
 
-  // Use category_slug for more reliable querying
   const { data, error } = await supabase
     .from('seo_books')
     .select('*')
