@@ -184,17 +184,32 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
     .eq('slug', slug)
     .maybeSingle();
 
-  if (error) return undefined;
+  if (error) {
+    console.error('Supabase error (getCategoryBySlug):', error);
+    return undefined;
+  }
   return data;
 }
 
-export async function getBooksByCategory(categorySlug: string, limit: number = 100): Promise<SeoBook[]> {
+/**
+ * Robust fetch for books in a category.
+ * Checks both category_slug and category title to ensure legacy and new data are returned.
+ */
+export async function getBooksByCategory(categorySlug: string, categoryTitle?: string, limit: number = 100): Promise<SeoBook[]> {
   if (!supabase) return [];
 
-  const { data, error } = await supabase
+  // Use OR condition to catch books linked via slug OR title
+  let query = supabase
     .from('seo_books')
-    .select('*')
-    .eq('category_slug', categorySlug)
+    .select('*');
+
+  if (categoryTitle) {
+      query = query.or(`category_slug.eq."${categorySlug}",category.eq."${categoryTitle}"`);
+  } else {
+      query = query.eq('category_slug', categorySlug);
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .limit(limit);
 

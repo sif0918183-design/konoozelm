@@ -51,7 +51,7 @@ export default async function BookPage({ params }: Props) {
   const displayAuthor = seoBook?.author || archiveBook?.author || 'غير معروف';
   const authorSlug = slugify(displayAuthor);
   const displayCategory = seoBook?.category || 'عام';
-  const categorySlug = slugify(displayCategory);
+  const categorySlug = seoBook?.category_slug || slugify(displayCategory);
 
   // Mandatory content logic (Fallback)
   const displayDescription = seoBook?.description ||
@@ -59,7 +59,7 @@ export default async function BookPage({ params }: Props) {
 
   // Internal Links
   const [relatedBooks, authorBooks] = await Promise.all([
-    getBooksByCategory(displayCategory, 12),
+    getBooksByCategory(categorySlug, displayCategory, 12),
     getBooksByAuthor(displayAuthor, 12)
   ]);
 
