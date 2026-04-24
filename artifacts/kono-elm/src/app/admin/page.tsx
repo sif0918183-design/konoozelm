@@ -54,6 +54,8 @@ interface Suggestion {
   title: string;
   author: string;
   relevance_score: number;
+  isExisting?: boolean;
+  feedbackStatus?: string | null;
 }
 
 export default function AdminDashboard() {
@@ -88,6 +90,7 @@ export default function AdminDashboard() {
 
   // Smart Suggestion States
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [suggestionQuery, setSuggestionQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [selectedCategoryForSuggestions, setSelectedCategoryForSuggestions] = useState<Category | null>(null);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
@@ -289,18 +292,26 @@ export default function AdminDashboard() {
 
   // --- Smart Suggestion Handlers ---
 
-  const handleSuggestBooks = async (category: Category) => {
+  const handleSuggestBooks = async (category: Category, customQuery?: string) => {
     setSelectedCategoryForSuggestions(category);
     setIsSuggesting(true);
-    setSuggestions([]);
-    setSelectedSuggestions(new Set());
-    setCurrentPage(1);
+
+    if (!customQuery) {
+        setSuggestions([]);
+        setSelectedSuggestions(new Set());
+        setCurrentPage(1);
+        setSuggestionQuery(category.title);
+    }
 
     try {
       const res = await fetch('/api/admin/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category: category.title, categorySlug: category.slug }),
+        body: JSON.stringify({
+            category: category.title,
+            categorySlug: category.slug,
+            query: customQuery || category.title
+        }),
       });
 
       if (res.ok) {
@@ -703,21 +714,43 @@ export default function AdminDashboard() {
       {selectedCategoryForSuggestions && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary-900/40 backdrop-blur-sm">
           <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-6 bg-primary-900 text-white flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Zap className="w-6 h-6 text-gold-400" />
-                  كتب مقترحة لتصنيف: {selectedCategoryForSuggestions.title}
-                </h2>
-                <p className="text-xs text-primary-100 mt-1">تم جلب {suggestions.length} كتاباً من Archive.org.</p>
+            <div className="p-6 bg-primary-900 text-white space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <Zap className="w-6 h-6 text-gold-400" />
+                    كتب مقترحة لتصنيف: {selectedCategoryForSuggestions.title}
+                  </h2>
+                  <p className="text-xs text-primary-100 mt-1">تم جلب {suggestions.length} كتاباً من Archive.org.</p>
+                </div>
+                <button
+                  onClick={() => setSelectedCategoryForSuggestions(null)}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                  disabled={isBulkAdding}
+                >
+                  <X className="w-6 h-6" />
+                </button>
               </div>
-              <button
-                onClick={() => setSelectedCategoryForSuggestions(null)}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                disabled={isBulkAdding}
-              >
-                <X className="w-6 h-6" />
-              </button>
+
+              {/* In-Modal Search */}
+              <div className="relative">
+                <input
+                    type="text"
+                    value={suggestionQuery}
+                    onChange={(e) => setSuggestionQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSuggestBooks(selectedCategoryForSuggestions, suggestionQuery)}
+                    placeholder="ابحث عن كتب أخرى لهذا التصنيف..."
+                    className="w-full bg-white/10 border border-white/20 rounded-xl py-2 px-4 pr-10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-500/50"
+                />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <button
+                    onClick={() => handleSuggestBooks(selectedCategoryForSuggestions, suggestionQuery)}
+                    disabled={isSuggesting}
+                    className="absolute left-1.5 top-1.5 bottom-1.5 bg-gold-500 text-primary-900 px-4 rounded-lg text-xs font-bold hover:bg-gold-400 disabled:opacity-50"
+                >
+                    {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : 'بحث'}
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -734,26 +767,37 @@ export default function AdminDashboard() {
               ) : (
                 <>
                     <div className="space-y-4">
-                        {currentItems.map((s) => (
-                        <div
-                            key={s.id}
-                            className={`flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${selectedSuggestions.has(s.id) ? 'border-gold-500 bg-gold-50/50' : 'border-gray-100 hover:border-gray-200 bg-gray-50/30'}`}
-                            onClick={() => toggleSuggestionSelection(s.id)}
-                        >
-                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${selectedSuggestions.has(s.id) ? 'bg-gold-500 border-gold-500 text-white' : 'border-gray-300'}`}>
-                                {selectedSuggestions.has(s.id) && <CheckCircle className="w-4 h-4" />}
+                        {currentItems.map((s) => {
+                          const isAdded = s.isExisting || s.feedbackStatus === 'selected';
+                          const isRejected = s.feedbackStatus === 'rejected';
+
+                          return (
+                            <div
+                                key={s.id}
+                                className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${isAdded ? 'bg-green-50/50 border-green-100 opacity-70 cursor-not-allowed' : isRejected ? 'bg-red-50/50 border-red-100 opacity-70' : selectedSuggestions.has(s.id) ? 'border-gold-500 bg-gold-50/50 cursor-pointer' : 'border-gray-100 hover:border-gray-200 bg-gray-50/30 cursor-pointer'}`}
+                                onClick={() => !isAdded && toggleSuggestionSelection(s.id)}
+                            >
+                                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${isAdded ? 'bg-green-500 border-green-500 text-white' : selectedSuggestions.has(s.id) ? 'bg-gold-500 border-gold-500 text-white' : 'border-gray-300'}`}>
+                                    {(selectedSuggestions.has(s.id) || isAdded) && <CheckCircle className="w-4 h-4" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-gray-900 line-clamp-1">{s.title}</h4>
+                                <p className="text-sm text-gray-500 truncate">{s.author}</p>
+                                </div>
+                                <div className="text-left flex-shrink-0 flex flex-col gap-1 items-end">
+                                    {isAdded && (
+                                        <span className="text-[10px] font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full">مضاف مسبقاً</span>
+                                    )}
+                                    {isRejected && (
+                                        <span className="text-[10px] font-bold px-2 py-1 bg-red-100 text-red-700 rounded-full">مستبعد</span>
+                                    )}
+                                    {!isAdded && !isRejected && (
+                                        <span className="text-[10px] font-bold px-2 py-1 bg-primary-100 text-primary-700 rounded-full">جديد</span>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-900 line-clamp-1">{s.title}</h4>
-                            <p className="text-sm text-gray-500 truncate">{s.author}</p>
-                            </div>
-                            <div className="text-left flex-shrink-0">
-                                <span className="text-[10px] font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full">
-                                    ارتباط {s.relevance_score}%
-                                </span>
-                            </div>
-                        </div>
-                        ))}
+                          );
+                        })}
                     </div>
                 </>
               )}

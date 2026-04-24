@@ -9,15 +9,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { category, categorySlug } = await request.json();
+    const { category, categorySlug, query } = await request.json();
 
     if (!category || !categorySlug) {
       return NextResponse.json({ error: 'Category and slug are required' }, { status: 400 });
     }
 
-    // Direct Archive.org search using the category title as the query
-    // This preserves Archive.org's original relevance ranking as per user request
-    const searchResult = await searchBooks(category, 1, 600); // Fetch up to 600 results directly
+    // Use the custom query if provided, otherwise fallback to category title
+    const searchTerm = query || category;
+
+    // Direct Archive.org search preserving original relevance ranking
+    const searchResult = await searchBooks(searchTerm, 1, 600);
 
     const allBooks = searchResult.books;
 
@@ -25,13 +27,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    const candidatePool = allBooks;
-
     if (!supabase) throw new Error('Supabase not configured');
 
-    const candidateIds = candidatePool.map(b => b.identifier);
+    const candidateIds = allBooks.map(b => b.identifier);
 
-    // Check in larger batches if needed
+    // Fetch existing books and feedback to show status in UI
     const { data: existingBooks } = await supabase
       .from('seo_books')
       .select('archive_id')
@@ -46,21 +46,18 @@ export async function POST(request: Request) {
     const existingIds = new Set(existingBooks?.map(b => b.archive_id) || []);
     const feedbackMap = new Map(feedback?.map(f => [f.archive_id, f.status]) || []);
 
-    const candidateBooks = candidatePool.filter(book => {
-      const isExisting = existingIds.has(book.identifier);
-      const feedbackStatus = feedbackMap.get(book.identifier);
-      return !isExisting && feedbackStatus !== 'rejected' && feedbackStatus !== 'selected';
-    });
-
-    if (candidateBooks.length === 0) {
-        return NextResponse.json({ suggestions: [] });
-    }
-
-    // AI Ranking (Processes top 250 of the filtered candidates)
-    const aiSuggestions = await filterAndRankBooks(category, candidateBooks);
+    // Map all books with their current status
+    const suggestions = allBooks.map(book => ({
+      id: book.identifier,
+      title: book.title,
+      author: book.author || 'غير معروف',
+      relevance_score: 100,
+      isExisting: existingIds.has(book.identifier),
+      feedbackStatus: feedbackMap.get(book.identifier) || null
+    }));
 
     return NextResponse.json({
-      suggestions: aiSuggestions
+      suggestions
     });
 
   } catch (error: any) {
