@@ -10,9 +10,10 @@ export async function POST(request: Request) {
   }
 
   if (password === adminPassword) {
-    // In a real app, use a proper session/JWT.
-    // For this simple case, we'll set a cookie.
-    cookies().set('admin_session', 'authenticated', {
+    // Generate a consistent token used by middleware and checkAuth
+    const token = Buffer.from(`${adminPassword}:${adminPassword}`).toString('base64');
+
+    cookies().set('admin_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -27,7 +28,12 @@ export async function POST(request: Request) {
 
 export async function GET() {
   const session = cookies().get('admin_session');
-  if (session?.value === 'authenticated') {
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) return NextResponse.json({ authenticated: false }, { status: 401 });
+
+  const expectedToken = Buffer.from(`${adminPassword}:${adminPassword}`).toString('base64');
+
+  if (session?.value === expectedToken) {
     return NextResponse.json({ authenticated: true });
   }
   return NextResponse.json({ authenticated: false }, { status: 401 });

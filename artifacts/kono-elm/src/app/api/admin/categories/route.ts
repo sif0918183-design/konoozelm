@@ -1,13 +1,9 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { checkAuth } from '@/lib/admin-auth';
 import { getCategories, saveCategory } from '@/lib/seo-data';
 
-function checkAuth() {
-  const session = cookies().get('admin_session');
-  return session?.value === 'authenticated';
-}
-
 export async function GET() {
+  // Publicly available for the homepage categories list
   const categories = await getCategories();
   return NextResponse.json(categories);
 }
@@ -15,6 +11,10 @@ export async function GET() {
 export async function POST(request: Request) {
   if (!checkAuth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const category = await request.json();
-  await saveCategory(category);
-  return NextResponse.json({ success: true });
+  try {
+    await saveCategory(category);
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

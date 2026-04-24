@@ -1,8 +1,10 @@
 import { getSeoBooks, getCategories, getAuthors } from '@/lib/seo-data';
 
-const BASE_URL = 'https://kono-elm.vercel.app';
+export async function GET(request: Request) {
+  const { host } = new URL(request.url);
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  const BASE_URL = `${protocol}://${host}`;
 
-export async function GET() {
   const [books, categories, authors] = await Promise.all([
     getSeoBooks(),
     getCategories(),

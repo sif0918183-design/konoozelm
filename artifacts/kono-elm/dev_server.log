@@ -179,3 +179,107 @@ TypeError: __webpack_modules__[moduleId] is not a function
  ○ Compiling /_error ...
  ✓ Compiled /_error in 2.8s (814 modules)
  GET /admin/login 500 in 3954ms
+ ✓ Compiled in 7s (606 modules)
+ ✓ Compiled in 426ms (557 modules)
+ ✓ Compiled in 279ms (557 modules)
+ ✓ Compiled in 242ms (557 modules)
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 945ms (72 modules)
+ ○ Compiling /admin/login ...
+ ✓ Compiled /admin/login in 895ms (272 modules)
+TypeError: __webpack_modules__[moduleId] is not a function
+    at Object.__webpack_require__ [as require] (/app/artifacts/kono-elm/.next/server/webpack-runtime.js:33:42)
+    at require (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:19927)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108279
+    at eo (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108464)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:110693
+    at Object._fromJSON (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:111249)
+    at JSON.parse (<anonymous>)
+    at eu (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108958)
+    at en (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108026)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115168
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115185
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115218
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115235
+    at t (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115458)
+ ⨯ TypeError: __webpack_modules__[moduleId] is not a function
+    at Object.__webpack_require__ [as require] (/app/artifacts/kono-elm/.next/server/webpack-runtime.js:33:42)
+digest: "852643948"
+ ⨯ TypeError: __webpack_modules__[moduleId] is not a function
+    at Object.__webpack_require__ [as require] (/app/artifacts/kono-elm/.next/server/webpack-runtime.js:33:42)
+    at require (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:19927)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108279
+    at eo (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108464)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:110693
+    at Object._fromJSON (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:111249)
+    at JSON.parse (<anonymous>)
+    at eu (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108958)
+    at en (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108026)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115168
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115185
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115218
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115235
+    at t (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115458) {
+  page: '/admin/login'
+}
+ ⨯ Error: Cannot find module './66.js'
+Require stack:
+- /app/artifacts/kono-elm/.next/server/webpack-runtime.js
+- /app/artifacts/kono-elm/.next/server/app/admin/login/page.js
+- /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/require.js
+- /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/load-components.js
+- /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/utils.js
+- /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/dev/hot-middleware.js
+- /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/dev/hot-reloader-webpack.js
+- /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-server.js
+- /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1383:15)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at __webpack_require__.f.require (/app/artifacts/kono-elm/.next/server/webpack-runtime.js:198:28)
+    at /app/artifacts/kono-elm/.next/server/webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (/app/artifacts/kono-elm/.next/server/webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (/app/artifacts/kono-elm/.next/server/webpack-runtime.js:162:22)
+    at /app/artifacts/kono-elm/.next/server/pages/_document.js:1:335
+    at Object.<anonymous> (/app/artifacts/kono-elm/.next/server/pages/_document.js:1:375)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/require.js:109:84)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/load-components.js:72:65
+    at async Promise.all (index 0)
+    at async loadComponentsImpl (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/load-components.js:71:33)
+    at async DevServer.findPageComponentsImpl (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/next-server.js:709:36) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/app/artifacts/kono-elm/.next/server/webpack-runtime.js',
+    '/app/artifacts/kono-elm/.next/server/app/admin/login/page.js',
+    '/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/require.js',
+    '/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/load-components.js',
+    '/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/utils.js',
+    '/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/dev/hot-middleware.js',
+    '/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/dev/hot-reloader-webpack.js',
+    '/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js',
+    '/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-server.js',
+    '/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/start-server.js'
+  ]
+}
+ GET /admin/login 500 in 3150ms
+ ✓ Compiled in 525ms (557 modules)
+ ✓ Compiled in 291ms (557 modules)
