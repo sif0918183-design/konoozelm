@@ -186,13 +186,14 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
   return data;
 }
 
-export async function getBooksByCategory(categoryTitle: string): Promise<SeoBook[]> {
+export async function getBooksByCategory(categoryTitle: string, limit: number = 10): Promise<SeoBook[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('seo_books')
     .select('*')
     .eq('category', categoryTitle)
-    .limit(10);
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
   if (error) return [];
   return data.map(b => ({
@@ -202,13 +203,14 @@ export async function getBooksByCategory(categoryTitle: string): Promise<SeoBook
   }));
 }
 
-export async function getBooksByAuthor(author: string): Promise<SeoBook[]> {
+export async function getBooksByAuthor(author: string, limit: number = 10): Promise<SeoBook[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('seo_books')
     .select('*')
     .eq('author', author)
-    .limit(10);
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
   if (error) return [];
   return data.map(b => ({

@@ -1,0 +1,30 @@
+
+> kono-elm@1.0.0 dev /app/artifacts/kono-elm
+> next dev
+
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1782ms
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 832ms (72 modules)
+ ○ Compiling /admin/login ...
+request to https://fonts.gstatic.com/s/amiri/v30/J7aRnpd8CGxBHpUutLMS7JNK.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/amiri/v30/J7acnpd8CGxBHp2VkaY6zp5gGDAbnCA.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/amiri/v30/J7acnpd8CGxBHp2VkaYxzp5gGDAbnCA.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/amiri/v30/J7acnpd8CGxBHp2VkaY_zp5gGDAb.woff2 failed, reason:
+
+Retrying 1/3...
+ ✓ Compiled /admin/login in 6.2s (500 modules)
+ ✓ Compiled in 709ms (251 modules)
+ GET /admin/login 200 in 6987ms
+ GET /admin/login 200 in 226ms
+ ✓ Compiled in 1011ms (251 modules)
+ ✓ Compiled in 468ms (251 modules)
