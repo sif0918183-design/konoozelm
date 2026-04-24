@@ -80,6 +80,7 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCategory, setNewCategory] = useState({ title: '', slug: '', description: '' });
   const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [isGeneratingCategory, setIsGeneratingCategory] = useState(false);
 
   const [authors, setAuthors] = useState<Author[]>([]);
   const [newAuthor, setNewAuthor] = useState({ name: '', slug: '', bio: '' });
@@ -238,6 +239,28 @@ export default function AdminDashboard() {
       }
     } catch (e) {
       alert('خطأ في الاتصال');
+    }
+  };
+
+  const handleGenerateCategoryDescription = async () => {
+    if (!newCategory.title) return;
+    setIsGeneratingCategory(true);
+    try {
+      const res = await fetch('/api/admin/generate/category', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newCategory.title }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNewCategory(prev => ({ ...prev, description: data.description }));
+      } else {
+        alert('فشل توليد الوصف');
+      }
+    } catch (e) {
+      alert('خطأ في الاتصال');
+    } finally {
+      setIsGeneratingCategory(false);
     }
   };
 
@@ -527,7 +550,7 @@ export default function AdminDashboard() {
                       className="text-xs flex items-center gap-1 text-gold-600 hover:text-gold-700 font-bold bg-gold-50 px-2 py-1 rounded"
                     >
                       {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                      توليد ذكي (Groq)
+                      توليد ذكي (OpenAI)
                     </button>
                   </div>
                   <textarea
@@ -575,15 +598,25 @@ export default function AdminDashboard() {
                       value={newCategory.title}
                       onChange={e => setNewCategory({...newCategory, title: e.target.value})}
                     />
-                    <textarea
-                      placeholder="وصف التصنيف لـ SEO"
-                      className="w-full px-4 py-2 rounded-lg border border-gray-200"
-                      value={newCategory.description}
-                      onChange={e => setNewCategory({...newCategory, description: e.target.value})}
-                    />
+                    <div className="relative">
+                      <textarea
+                        placeholder="وصف التصنيف لـ SEO"
+                        className="w-full px-4 py-2 rounded-lg border border-gray-200 min-h-[100px]"
+                        value={newCategory.description}
+                        onChange={e => setNewCategory({...newCategory, description: e.target.value})}
+                      />
+                      <button
+                        onClick={handleGenerateCategoryDescription}
+                        disabled={isGeneratingCategory || !newCategory.title}
+                        className="absolute bottom-3 left-3 flex items-center gap-1 text-[10px] bg-gold-100 text-gold-700 px-2 py-1 rounded font-bold hover:bg-gold-200 transition-all disabled:opacity-50"
+                      >
+                        {isGeneratingCategory ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        توليد آلي (OpenAI)
+                      </button>
+                    </div>
                     <button
                       onClick={handleSaveCategory}
-                      className="w-full bg-primary-900 text-white py-2 rounded-lg font-bold"
+                      className="w-full bg-primary-900 text-white py-2 rounded-lg font-bold hover:bg-primary-800 transition-all"
                     >
                       حفظ التصنيف
                     </button>
@@ -674,9 +707,9 @@ export default function AdminDashboard() {
               <div>
                 <h2 className="text-xl font-bold flex items-center gap-2">
                   <Zap className="w-6 h-6 text-gold-400" />
-                  اقتراحات ذكية لتصنيف: {selectedCategoryForSuggestions.title}
+                  كتب مقترحة لتصنيف: {selectedCategoryForSuggestions.title}
                 </h2>
-                <p className="text-xs text-primary-100 mt-1">تم جلب وتصفية {suggestions.length} كتاباً بالذكاء الاصطناعي.</p>
+                <p className="text-xs text-primary-100 mt-1">تم جلب {suggestions.length} كتاباً من Archive.org.</p>
               </div>
               <button
                 onClick={() => setSelectedCategoryForSuggestions(null)}
