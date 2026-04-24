@@ -8,7 +8,8 @@ export async function GET() {
     const books = await getSeoBooks();
     return NextResponse.json(books || []);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Error in GET /api/admin/books:', error);
+    return NextResponse.json({ error: error.message || 'حدث خطأ أثناء جلب الكتب' }, { status: 500 });
   }
 }
 
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
     await saveSeoBook(book);
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Error in POST /api/admin/books:', error);
+    return NextResponse.json({ error: error.message || 'فشل حفظ الكتاب - تأكد من إعداد Supabase' }, { status: 500 });
   }
 }

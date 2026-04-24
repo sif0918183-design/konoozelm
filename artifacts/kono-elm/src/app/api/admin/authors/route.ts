@@ -7,7 +7,8 @@ export async function GET() {
     const authors = await getAuthors();
     return NextResponse.json(authors || []);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Error in GET /api/admin/authors:', error);
+    return NextResponse.json({ error: error.message || 'حدث خطأ أثناء جلب المؤلفين' }, { status: 500 });
   }
 }
 
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
     await saveAuthor(author);
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Error in POST /api/admin/authors:', error);
+    return NextResponse.json({ error: error.message || 'فشل حفظ المؤلف - تأكد من إعداد Supabase' }, { status: 500 });
   }
 }

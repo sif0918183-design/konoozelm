@@ -80,7 +80,7 @@ export default function AdminDashboard() {
     const res = await fetch('/api/admin/categories');
     if (res.ok) {
       const data = await res.json();
-      setCategories(data);
+      setCategories(Array.isArray(data) ? data : []);
     }
   };
 
@@ -88,15 +88,17 @@ export default function AdminDashboard() {
     const res = await fetch('/api/admin/authors');
     if (res.ok) {
       const data = await res.json();
-      setAuthors(data);
+      setAuthors(Array.isArray(data) ? data : []);
     }
   };
 
   const fetchExistingBooks = async () => {
     const res = await fetch('/api/admin/books');
     if (res.ok) {
-      const data: SeoBook[] = await res.json();
-      setExistingBookIds(new Set(data.map(b => b.archiveId)));
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setExistingBookIds(new Set(data.map((b: SeoBook) => b.archiveId)));
+      }
     }
   };
 
@@ -108,7 +110,7 @@ export default function AdminDashboard() {
       const data = await searchBooks(query);
       setResults(data.books);
     } catch (err) {
-      alert('خطأ في البحث');
+      alert('خطأ في البحث: ' + (err instanceof Error ? err.message : 'حدث خطأ غير معروف'));
     } finally {
       setIsLoading(false);
     }
@@ -153,9 +155,12 @@ export default function AdminDashboard() {
           description: data.description,
           seoTitle: data.seoTitle
         }));
+      } else {
+        const err = await res.json();
+        alert('فشل توليد المحتوى: ' + (err.error || 'خطأ غير معروف'));
       }
     } catch (err) {
-      alert('خطأ في توليد المحتوى');
+      alert('خطأ في الاتصال أثناء توليد المحتوى');
     } finally {
       setIsGenerating(false);
     }
@@ -175,42 +180,58 @@ export default function AdminDashboard() {
         fetchExistingBooks();
       } else {
         const err = await res.json();
-        alert('خطأ: ' + err.error);
+        alert('خطأ في الحفظ: ' + (err.error || 'تأكد من إنشاء الجداول في Supabase'));
       }
     } catch (err) {
-      alert('خطأ في الحفظ');
+      alert('خطأ في الاتصال أثناء الحفظ');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleSaveCategory = async () => {
+    if (!newCategory.title) return;
     const payload = { ...newCategory, slug: slugify(newCategory.title) };
-    const res = await fetch('/api/admin/categories', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      alert('تمت إضافة التصنيف');
-      setNewCategory({ title: '', slug: '', description: '' });
-      setShowCategoryForm(false);
-      fetchCategories();
+    try {
+      const res = await fetch('/api/admin/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        alert('تمت إضافة التصنيف');
+        setNewCategory({ title: '', slug: '', description: '' });
+        setShowCategoryForm(false);
+        fetchCategories();
+      } else {
+        const err = await res.json();
+        alert('خطأ: ' + (err.error || 'تأكد من إنشاء الجداول في Supabase'));
+      }
+    } catch (e) {
+      alert('خطأ في الاتصال');
     }
   };
 
   const handleSaveAuthor = async () => {
+    if (!newAuthor.name) return;
     const payload = { ...newAuthor, slug: slugify(newAuthor.name) };
-    const res = await fetch('/api/admin/authors', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      alert('تمت إضافة المؤلف');
-      setNewAuthor({ name: '', slug: '', bio: '' });
-      setShowAuthorForm(false);
-      fetchAuthors();
+    try {
+      const res = await fetch('/api/admin/authors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        alert('تمت إضافة المؤلف');
+        setNewAuthor({ name: '', slug: '', bio: '' });
+        setShowAuthorForm(false);
+        fetchAuthors();
+      } else {
+        const err = await res.json();
+        alert('خطأ: ' + (err.error || 'تأكد من إنشاء الجداول في Supabase'));
+      }
+    } catch (e) {
+      alert('خطأ في الاتصال');
     }
   };
 

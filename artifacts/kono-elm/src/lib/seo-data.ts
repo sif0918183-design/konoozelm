@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 
 export interface SeoBook {
   slug: string;
@@ -23,6 +23,9 @@ export interface Author {
   bio: string;
 }
 
+// Use admin client for writes to bypass RLS or handle service role needs
+const client = supabaseAdmin || supabase;
+
 export async function getSeoBooks(): Promise<SeoBook[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -30,7 +33,10 @@ export async function getSeoBooks(): Promise<SeoBook[]> {
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) return [];
+  if (error) {
+    console.error('Supabase error (seo_books):', error);
+    throw error;
+  }
   return data.map(b => ({
     ...b,
     archiveId: b.archive_id,
@@ -39,7 +45,7 @@ export async function getSeoBooks(): Promise<SeoBook[]> {
 }
 
 export async function saveSeoBook(book: SeoBook) {
-  if (!supabase) return;
+  if (!client) return;
 
   const payload = {
     slug: book.slug,
@@ -52,11 +58,14 @@ export async function saveSeoBook(book: SeoBook) {
     parts_count: book.parts_count || 1
   };
 
-  const { error } = await supabase
+  const { error } = await client
     .from('seo_books')
     .upsert(payload, { onConflict: 'archive_id' });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Supabase Save Error (Book):', error);
+    throw error;
+  }
 }
 
 export async function getCategories(): Promise<Category[]> {
@@ -66,17 +75,24 @@ export async function getCategories(): Promise<Category[]> {
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) return [];
+  if (error) {
+    console.error('Supabase error (seo_categories):', error);
+    // Don't throw for public GET, just return empty
+    return [];
+  }
   return data;
 }
 
 export async function saveCategory(category: Category) {
-  if (!supabase) return;
-  const { error } = await supabase
+  if (!client) return;
+  const { error } = await client
     .from('seo_categories')
     .upsert(category, { onConflict: 'slug' });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Supabase Save Error (Category):', error);
+    throw error;
+  }
 }
 
 export async function getAuthors(): Promise<Author[]> {
@@ -96,19 +112,22 @@ export async function getAuthorBySlug(slug: string): Promise<Author | undefined>
     .from('seo_authors')
     .select('*')
     .eq('slug', slug)
-    .single();
+    .maybeSingle();
 
   if (error) return undefined;
   return data;
 }
 
 export async function saveAuthor(author: Author) {
-  if (!supabase) return;
-  const { error } = await supabase
+  if (!client) return;
+  const { error } = await client
     .from('seo_authors')
     .upsert(author, { onConflict: 'slug' });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Supabase Save Error (Author):', error);
+    throw error;
+  }
 }
 
 export async function getBookByArchiveId(id: string): Promise<SeoBook | undefined> {
