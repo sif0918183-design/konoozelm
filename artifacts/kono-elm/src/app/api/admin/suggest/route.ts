@@ -17,7 +17,8 @@ export async function POST(request: Request) {
     }
 
     // 1. Fetch books from Archive.org
-    const searchResult = await searchBooks(category, 1, 50);
+    // Fetch a large sample (150) to ensure a broad variety of results for AI ranking.
+    const searchResult = await searchBooks(category, 1, 150);
     const rawBooks = searchResult.books;
 
     if (rawBooks.length === 0) {
