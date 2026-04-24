@@ -193,35 +193,38 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
 
 /**
  * Robust fetch for books in a category.
- * Performs dual-matching and has an in-memory fallback to ensure visibility.
+ * Performs multiple matching strategies and merges results for absolute reliability.
  */
 export async function getBooksByCategory(categorySlug: string, categoryTitle?: string, limit: number = 200): Promise<SeoBook[]> {
   if (!supabase) return [];
 
   try {
-    // Stage 1: Attempt optimized OR query
-    let query = supabase.from('seo_books').select('*');
+    // Stage 1: Try multiple fetch strategies in parallel for speed and coverage
+    const [bySlug, byTitle] = await Promise.all([
+        supabase.from('seo_books').select('*').eq('category_slug', categorySlug).limit(limit),
+        categoryTitle ? supabase.from('seo_books').select('*').eq('category', categoryTitle).limit(limit) : Promise.resolve({data: []})
+    ]);
 
-    if (categoryTitle) {
-        query = query.or(`category_slug.eq."${categorySlug}",category.eq."${categoryTitle}"`);
-    } else {
-        query = query.eq('category_slug', categorySlug);
+    // Merge results and deduplicate by archiveId
+    const merged = [...(bySlug.data || []), ...(byTitle.data || [])];
+    const uniqueMap = new Map();
+
+    for (const book of merged) {
+        uniqueMap.set(book.archive_id, book);
     }
 
-    const { data, error } = await query
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (!error && data && data.length > 0) {
-        return data.map(b => ({
-            ...b,
-            archiveId: b.archive_id,
-            seoTitle: b.seo_title
-        }));
+    if (uniqueMap.size > 0) {
+        return Array.from(uniqueMap.values())
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, limit)
+            .map(b => ({
+                ...b,
+                archiveId: b.archive_id,
+                seoTitle: b.seo_title
+            }));
     }
 
-    // Stage 2: Robust Fallback (Fetch all and filter)
-    // This is useful if the OR query syntax fails or RLS is partially restrictive
+    // Stage 2: Robust Fallback (Broad fetch and in-memory filter)
     const { data: allData, error: allErr } = await supabase
         .from('seo_books')
         .select('*')
@@ -233,8 +236,8 @@ export async function getBooksByCategory(categorySlug: string, categoryTitle?: s
     return allData
         .filter(b =>
             b.category_slug === categorySlug ||
-            b.category === categoryTitle ||
-            b.category?.includes(categoryTitle || '')
+            (categoryTitle && b.category === categoryTitle) ||
+            (categoryTitle && b.category?.includes(categoryTitle))
         )
         .slice(0, limit)
         .map(b => ({
@@ -244,7 +247,7 @@ export async function getBooksByCategory(categorySlug: string, categoryTitle?: s
         }));
 
   } catch (err) {
-    console.error('Radical Failure in getBooksByCategory:', err);
+    console.error('Critical failure in getBooksByCategory:', err);
     return [];
   }
 }
