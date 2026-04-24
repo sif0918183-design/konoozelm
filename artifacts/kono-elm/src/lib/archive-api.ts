@@ -37,9 +37,8 @@ export async function searchBooks(
   pageSize: number = 20
 ): Promise<SearchResult> {
   const trimmedQuery = query.trim();
-  const searchTerms = trimmedQuery.split(/\s+/).filter(Boolean);
 
-  if (searchTerms.length === 0) {
+  if (!trimmedQuery) {
     return { books: [], totalResults: 0, page, hasMore: false };
   }
 
@@ -49,22 +48,15 @@ export async function searchBooks(
     return String(field);
   };
 
-  const exactPhrase = `"${trimmedQuery}"`;
-  const orTerms = searchTerms.length > 1 ? `(${searchTerms.join(' OR ')})` : trimmedQuery;
-
-  const formattedQuery = [
-    `title:${exactPhrase}^100`,
-    `title:${orTerms}^10`,
-    `creator:${exactPhrase}^50`,
-    `creator:${orTerms}^5`,
-  ].join(' OR ');
-
+  // Use Archive.org's native relevance ranking by passing the query directly
+  // and restricting to PDF and Texts as required by the application.
   const params = new URLSearchParams({
-    q: `(${formattedQuery}) AND format:pdf AND mediatype:texts`,
+    q: `(${trimmedQuery}) AND format:pdf AND mediatype:texts`,
     fl: 'identifier,title,creator,date,publisher,description,downloadable',
     rows: pageSize.toString(),
     page: page.toString(),
     output: 'json',
+    // We don't specify sort to use Archive.org's default relevance ranking
   });
 
   const response = await fetch(`${ARCHIVE_API_BASE}?${params.toString()}`);
@@ -76,30 +68,7 @@ export async function searchBooks(
   const data = await response.json();
   const docs = data.response?.docs || [];
 
-  // RELAXED FILTER: Allow results that match terms in Title OR Creator
-  // This is crucial when searching for scholar names
-  const scoredDocs = docs
-    .map((doc: any) => {
-      const title = normalizeField(doc.title).toLowerCase();
-      const creator = normalizeField(doc.creator).toLowerCase();
-      const searchTermsLower = searchTerms.map(t => t.toLowerCase());
-
-      const titleMatches = searchTermsLower.filter(term => title.includes(term));
-      const creatorMatches = searchTermsLower.filter(term => creator.includes(term));
-
-      // Hard filter: must match at least one term in title OR creator
-      if (titleMatches.length === 0 && creatorMatches.length === 0) return null;
-
-      let score = (titleMatches.length * 100) + (creatorMatches.length * 50);
-      if (title.includes(trimmedQuery.toLowerCase())) score += 500;
-      if (creator.includes(trimmedQuery.toLowerCase())) score += 300;
-
-      return { doc, score };
-    })
-    .filter((item: any): item is { doc: any; score: number } => item !== null)
-    .sort((a: { score: number }, b: { score: number }) => b.score - a.score);
-
-  const books: Book[] = scoredDocs.map(({ doc }: { doc: any }) => ({
+  const books: Book[] = docs.map((doc: any) => ({
     identifier: doc.identifier,
     title: normalizeField(doc.title) || 'Untitled',
     author: normalizeField(doc.creator),
