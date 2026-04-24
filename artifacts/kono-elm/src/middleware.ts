@@ -7,7 +7,13 @@ export function middleware(request: NextRequest) {
   // Protect /admin routes
   if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
     const session = request.cookies.get('admin_session');
-    const adminPassword = process.env.ADMIN_PASSWORD || 'default-secret';
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminPassword) {
+       // If no password is set, deny all admin access for safety
+       return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+
     const expectedToken = Buffer.from(`${adminPassword}:${adminPassword}`).toString('base64');
 
     if (!session || session.value !== expectedToken) {

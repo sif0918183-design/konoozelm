@@ -76,7 +76,8 @@ export default function Home() {
         if (Array.isArray(data)) {
           setFeaturedCategories(data.slice(0, 6));
         }
-      });
+      })
+      .catch(() => {});
   }, []);
 
   return (

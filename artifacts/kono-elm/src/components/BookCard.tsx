@@ -69,11 +69,11 @@ export default function BookCard({ book }: BookCardProps) {
   };
 
   return (
-    <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100/50 flex flex-col h-full overflow-hidden">
-      {/* Detail Link (Internal SEO link) */}
+    <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100/50 flex flex-col h-full overflow-hidden relative">
+      {/* Detail Link (Internal SEO link) - Only for the card body, excluding buttons */}
       <a
         href={`/book/${slugify(book.title)}--${book.identifier}`}
-        className="absolute inset-0 z-[5] cursor-pointer"
+        className="absolute inset-0 z-0 cursor-pointer"
         aria-label="View Details"
       />
       {/* Cover Image */}
