@@ -6,6 +6,7 @@ export interface SeoBook {
   author: string;
   description: string;
   category: string;
+  category_slug?: string;
   archiveId: string;
   seoTitle?: string;
   parts_count?: number;
@@ -58,6 +59,7 @@ export async function saveSeoBook(book: SeoBook) {
     author: book.author,
     description: book.description,
     category: book.category,
+    category_slug: book.category_slug,
     archive_id: book.archiveId,
     seo_title: book.seoTitle,
     parts_count: book.parts_count || 1
@@ -182,33 +184,82 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
     .eq('slug', slug)
     .maybeSingle();
 
-  if (error) return undefined;
+  if (error) {
+    console.error('Supabase error (getCategoryBySlug):', error);
+    return undefined;
+  }
   return data;
 }
 
-export async function getBooksByCategory(categoryTitle: string): Promise<SeoBook[]> {
+/**
+ * Robust fetch for books in a category.
+ * Performs multiple matching strategies and merges results for absolute reliability.
+ */
+export async function getBooksByCategory(categorySlug: string, categoryTitle?: string, limit: number = 200): Promise<SeoBook[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('seo_books')
-    .select('*')
-    .eq('category', categoryTitle)
-    .limit(10);
 
-  if (error) return [];
-  return data.map(b => ({
-    ...b,
-    archiveId: b.archive_id,
-    seoTitle: b.seo_title
-  }));
+  try {
+    // Stage 1: Try multiple fetch strategies in parallel for speed and coverage
+    const [bySlug, byTitle] = await Promise.all([
+        supabase.from('seo_books').select('*').eq('category_slug', categorySlug).limit(limit),
+        categoryTitle ? supabase.from('seo_books').select('*').eq('category', categoryTitle).limit(limit) : Promise.resolve({data: []})
+    ]);
+
+    // Merge results and deduplicate by archiveId
+    const merged = [...(bySlug.data || []), ...(byTitle.data || [])];
+    const uniqueMap = new Map();
+
+    for (const book of merged) {
+        uniqueMap.set(book.archive_id, book);
+    }
+
+    if (uniqueMap.size > 0) {
+        return Array.from(uniqueMap.values())
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, limit)
+            .map(b => ({
+                ...b,
+                archiveId: b.archive_id,
+                seoTitle: b.seo_title
+            }));
+    }
+
+    // Stage 2: Robust Fallback (Broad fetch and in-memory filter)
+    const { data: allData, error: allErr } = await supabase
+        .from('seo_books')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+
+    if (allErr || !allData) return [];
+
+    return allData
+        .filter(b =>
+            b.category_slug === categorySlug ||
+            (categoryTitle && b.category === categoryTitle) ||
+            (categoryTitle && b.category?.includes(categoryTitle))
+        )
+        .slice(0, limit)
+        .map(b => ({
+            ...b,
+            archiveId: b.archive_id,
+            seoTitle: b.seo_title
+        }));
+
+  } catch (err) {
+    console.error('Critical failure in getBooksByCategory:', err);
+    return [];
+  }
 }
 
-export async function getBooksByAuthor(author: string): Promise<SeoBook[]> {
+export async function getBooksByAuthor(author: string, limit: number = 10): Promise<SeoBook[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('seo_books')
     .select('*')
     .eq('author', author)
-    .limit(10);
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
   if (error) return [];
   return data.map(b => ({

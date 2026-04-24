@@ -51,20 +51,22 @@ export default async function BookPage({ params }: Props) {
   const displayAuthor = seoBook?.author || archiveBook?.author || 'غير معروف';
   const authorSlug = slugify(displayAuthor);
   const displayCategory = seoBook?.category || 'عام';
-  const categorySlug = slugify(displayCategory);
+  const categorySlug = seoBook?.category_slug || slugify(displayCategory);
 
   // Mandatory content logic (Fallback)
   const displayDescription = seoBook?.description ||
     `يعتبر كتاب ${displayTitle} من الكتب القيمة والمهمة في بابه، حيث يقدم المؤلف ${displayAuthor} رؤية علمية ومنهجية متميزة. يهدف هذا الكتاب إلى تيسير الوصول للمعلومات الدقيقة لطلبة العلم والباحثين. يمكنك الآن تحميل نسخة PDF عالية الجودة أو القراءة مباشرة عبر متصفحك من خلال مكتبتنا الإلكترونية الشاملة.`;
 
   // Internal Links
-  const relatedBooks = await getBooksByCategory(displayCategory);
-  const authorBooks = await getBooksByAuthor(displayAuthor);
+  const [relatedBooks, authorBooks] = await Promise.all([
+    getBooksByCategory(categorySlug, displayCategory, 12),
+    getBooksByAuthor(displayAuthor, 12)
+  ]);
 
   const otherBooks = [...relatedBooks, ...authorBooks]
     .filter(b => b.archiveId !== archiveId)
     .filter((v, i, a) => a.findIndex(t => t.archiveId === v.archiveId) === i)
-    .slice(0, 6);
+    .slice(0, 12);
 
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">

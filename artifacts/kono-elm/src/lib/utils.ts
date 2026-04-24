@@ -7,7 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Ensures an Archive.org URL uses the direct download domain
- * Example: https://dn720703.ca.archive.org/0/items/ID/file.pdf -> https://archive.org/download/ID/file.pdf
  */
 export function optimizeArchiveUrl(url: string): string {
   if (!url.includes('archive.org')) return url;
@@ -16,8 +15,6 @@ export function optimizeArchiveUrl(url: string): string {
     const urlObj = new URL(url);
     const pathParts = urlObj.pathname.split('/').filter(Boolean);
 
-    // Check if it's an /items/ or /details/ URL
-    // Handle patterns like /0/items/ID/FILE or /items/ID/FILE
     const itemsIndex = pathParts.findIndex(p => p === 'items' || p === 'details' || p === 'download');
 
     if (itemsIndex !== -1 && pathParts.length > itemsIndex + 1) {
@@ -29,7 +26,6 @@ export function optimizeArchiveUrl(url: string): string {
       return `https://archive.org/download/${identifier}`;
     }
 
-    // Fallback: just ensure domain is archive.org if it's already a download link
     if (url.includes('/download/')) {
       urlObj.hostname = 'archive.org';
       return urlObj.toString();
@@ -60,7 +56,19 @@ export function formatBytes(bytes: number | string | undefined, decimals = 2) {
 }
 
 /**
- * Robust Arabic slug normalization
+ * Professional Category Slug Generator
+ * Conforming to: Title (Arabic) -> Title-With-Hyphens
+ */
+export function generateCategorySlug(title: string): string {
+  return title
+    .trim()
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-'); // Remove duplicate hyphens
+}
+
+/**
+ * Robust Arabic slug normalization for items (Books/Authors)
+ * Handles tashkeel and variant normalization
  */
 export function slugify(text: string): string {
   if (!text) return '';

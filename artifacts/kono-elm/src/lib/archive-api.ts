@@ -43,16 +43,12 @@ export async function searchBooks(
     return { books: [], totalResults: 0, page, hasMore: false };
   }
 
-  // Utility to safely normalize Archive.org metadata fields
   const normalizeField = (field: any): string => {
     if (!field) return '';
     if (Array.isArray(field)) return field.join(' ');
-    if (typeof field === 'object') return JSON.stringify(field);
     return String(field);
   };
 
-  // Simplified Search: Use server-side boosting for relevance without strict local filtering
-  // This ensures standard pagination works and results are plentiful but sorted well
   const exactPhrase = `"${trimmedQuery}"`;
   const orTerms = searchTerms.length > 1 ? `(${searchTerms.join(' OR ')})` : trimmedQuery;
 
@@ -78,32 +74,25 @@ export async function searchBooks(
   }
 
   const data = await response.json();
-
-  if (data.error) {
-    throw new Error(`Archive.org API error: ${data.error}`);
-  }
-  
   const docs = data.response?.docs || [];
 
-  // 1. Hard Filter: Each result must have at least one search term in the title
-  // 2. Ranking: Calculate score based on title match quality
+  // RELAXED FILTER: Allow results that match terms in Title OR Creator
+  // This is crucial when searching for scholar names
   const scoredDocs = docs
     .map((doc: any) => {
       const title = normalizeField(doc.title).toLowerCase();
+      const creator = normalizeField(doc.creator).toLowerCase();
       const searchTermsLower = searchTerms.map(t => t.toLowerCase());
 
-      const matchingTerms = searchTermsLower.filter(term => title.includes(term));
+      const titleMatches = searchTermsLower.filter(term => title.includes(term));
+      const creatorMatches = searchTermsLower.filter(term => creator.includes(term));
 
-      // Hard filter: must match at least one term in title
-      if (matchingTerms.length === 0) return null;
+      // Hard filter: must match at least one term in title OR creator
+      if (titleMatches.length === 0 && creatorMatches.length === 0) return null;
 
-      // Ranking Score:
-      // - Higher score for matching more terms
-      // - Bonus for matching exact phrase
-      let score = matchingTerms.length * 100;
-      if (title.includes(trimmedQuery.toLowerCase())) {
-        score += 500;
-      }
+      let score = (titleMatches.length * 100) + (creatorMatches.length * 50);
+      if (title.includes(trimmedQuery.toLowerCase())) score += 500;
+      if (creator.includes(trimmedQuery.toLowerCase())) score += 300;
 
       return { doc, score };
     })
@@ -121,7 +110,6 @@ export async function searchBooks(
     previewLink: `https://archive.org/details/${doc.identifier}`,
   }));
 
-  // For totalResults, we use the API's count, but acknowledge local filtering might reduce actual visible count
   const totalResults = data.response?.numFound || 0;
   const hasMore = page * pageSize < totalResults;
 
@@ -139,20 +127,16 @@ export async function searchBooks(
 export async function getBookFiles(identifier: string): Promise<BookFile[]> {
   try {
     const response = await fetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
-    
-    if (!response.ok) {
-      return [];
-    }
+    if (!response.ok) return [];
 
     const data = await response.json();
     const files = data.files || [];
 
-    // Filter for PDF files and map to BookFile interface
     return files
       .filter((file: any) =>
         file.name &&
         file.name.toLowerCase().endsWith('.pdf') &&
-        !file.name.toLowerCase().endsWith('_text.pdf') // Exclude OCR text PDFs if they exist
+        !file.name.toLowerCase().endsWith('_text.pdf')
       )
       .map((file: any) => ({
         name: file.title || file.name.replace('.pdf', '').replace(/_/g, ' '),
@@ -167,26 +151,12 @@ export async function getBookFiles(identifier: string): Promise<BookFile[]> {
 }
 
 /**
- * Get direct download link for PDF (Backward compatibility or simple use case)
- */
-export async function getPdfDownloadLink(identifier: string): Promise<string | null> {
-  const files = await getBookFiles(identifier);
-  if (files.length > 0) return files[0].url;
-
-  // Fallback: Try a direct guess if no files returned from API
-  return `https://archive.org/download/${identifier}/${identifier}.pdf`;
-}
-
-/**
  * Get book metadata with download links
  */
 export async function getBookDetails(identifier: string): Promise<Book | null> {
   try {
     const response = await fetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
-    
-    if (!response.ok) {
-      return null;
-    }
+    if (!response.ok) return null;
 
     const data = await response.json();
     
@@ -196,7 +166,6 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
     const publisher = data.metadata?.publisher;
     const description = data.metadata?.description;
 
-    // Find PDF links
     const files = data.files || [];
     const bookFiles: BookFile[] = files
       .filter((file: any) =>
