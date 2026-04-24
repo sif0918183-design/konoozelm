@@ -7,25 +7,29 @@ export async function filterAndRankBooks(category: string, books: any[]) {
     return books;
   }
 
-  // To handle larger lists efficiently, we provide only essential data to AI
+  // To handle large lists efficiently, we only send the top 250 candidates to AI for ranking
+  // This avoids context limit issues while providing a very broad selection.
+  const candidates = books.slice(0, 250);
+
   const prompt = `
 أنت خبير في المكتبات الإسلامية والكتب العربية.
 لديك قائمة بالكتب التي تم جلبها من Archive.org بناءً على التصنيف: "${category}".
 
 مهمتك هي:
-1. مراجعة كل كتاب وتقييم درجة ارتباطه (relevance_score) من 1 إلى 100 بالتصنيف المطلوب.
-2. تحسين العناوين لتكون احترافية وبليغة (مثال: "الأم" -> "كتاب الأم للإمام الشافعي").
+1. مراجعة كل كتاب وتقييم درجة ارتباطه (relevance_score) من 1 إلى 100 بالتصنيف المطلوب وأهميته العلمية.
+2. تحسين وتوحيد العناوين لتكون احترافية وبليغة (مثال: "الأم" -> "كتاب الأم للإمام الشافعي").
 3. تصحيح أسماء المؤلفين وإزالة أي زيادات غير ضرورية.
 4. دمج النسخ المتكررة لنفس الكتاب في نتيجة واحدة بأفضل عنوان.
-5. ترتيب القائمة تنازلياً حسب درجة الارتباط والأهمية العلمية.
+5. ترتيب القائمة تنازلياً حسب درجة الارتباط.
 
 هام جداً:
-- لا تستبعد أي كتاب إلا إذا كان خارج الموضوع تماماً أو تالفاً.
-- الهدف هو تقديم أطول قائمة ممكنة من الكتب ذات الصلة (أريد 50-100 نتيجة مرتبة إذا توفرت).
+- لا تستبعد أي كتاب إلا إذا كان خارج الموضوع تماماً أو تالفاً أو غير مقروء.
+- الهدف هو تقديم أطول قائمة ممكنة من الكتب ذات الصلة.
+- أريد 100-200 نتيجة مرتبة في الرد النهائي.
 - تأكد من أن الرد JSON صالح تماماً.
 
 قائمة الكتب (JSON):
-${JSON.stringify(books.map(b => ({ id: b.identifier, title: b.title, author: b.author })))}
+${JSON.stringify(candidates.map(b => ({ id: b.identifier, title: b.title, author: b.author })))}
 
 أريد النتيجة بتنسيق JSON كقائمة (Array) من الأشياء التالية تحت مفتاح "books":
 {
@@ -59,8 +63,8 @@ ${JSON.stringify(books.map(b => ({ id: b.identifier, title: b.title, author: b.a
     return result.books || result;
   } catch (error) {
     console.error('Error in AI filtering:', error);
-    // Return original books with a default score if AI fails, up to 100
-    return books.slice(0, 100).map(b => ({
+    // Fallback: return first 200 items with default scores
+    return candidates.slice(0, 200).map(b => ({
         id: b.identifier,
         title: b.title,
         author: b.author,

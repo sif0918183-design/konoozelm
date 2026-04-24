@@ -6,6 +6,7 @@ export interface SeoBook {
   author: string;
   description: string;
   category: string;
+  category_slug?: string; // Standardized link
   archiveId: string;
   seoTitle?: string;
   parts_count?: number;
@@ -58,6 +59,7 @@ export async function saveSeoBook(book: SeoBook) {
     author: book.author,
     description: book.description,
     category: book.category,
+    category_slug: book.category_slug,
     archive_id: book.archiveId,
     seo_title: book.seoTitle,
     parts_count: book.parts_count || 1
@@ -186,16 +188,22 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
   return data;
 }
 
-export async function getBooksByCategory(categoryTitle: string, limit: number = 10): Promise<SeoBook[]> {
+export async function getBooksByCategory(categorySlug: string, limit: number = 10): Promise<SeoBook[]> {
   if (!supabase) return [];
+
+  // Use category_slug for more reliable querying
   const { data, error } = await supabase
     .from('seo_books')
     .select('*')
-    .eq('category', categoryTitle)
+    .eq('category_slug', categorySlug)
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  if (error) return [];
+  if (error) {
+    console.error('Supabase error (getBooksByCategory):', error);
+    return [];
+  }
+
   return data.map(b => ({
     ...b,
     archiveId: b.archive_id,

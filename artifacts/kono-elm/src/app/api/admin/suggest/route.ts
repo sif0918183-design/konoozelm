@@ -4,15 +4,15 @@ import { searchBooks } from '@/lib/archive-api';
 import { filterAndRankBooks } from '@/lib/openai';
 import { supabase } from '@/lib/supabase';
 
-// Enhanced Category expansion mapping with broader terms
+// More comprehensive Category expansion mapping
 const CATEGORY_EXTENSIONS: Record<string, string[]> = {
-  'فقه شافعي': ['النووي', 'الرافعي', 'ابن حجر الهيتمي', 'الرملي', 'الجويني', 'الغزالي', 'المزني', 'الشافعية', 'فقه شافعي', 'كتاب الأم', 'المجموع', 'منهاج الطالبين'],
-  'فقه حنفي': ['ابن عابدين', 'السرخسي', 'الكاساني', 'القدوري', 'أبو حنيفة', 'محمد بن الحسن الشيباني', 'الطحاوي', 'فقه حنفي', 'رد المحتار', 'المبسوط', 'بدائع الصنائع'],
-  'فقه مالكي': ['ابن رشد', 'القرافي', 'خليل بن إسحاق', 'مالك بن أنس', 'الموطأ', 'ابن عاشر', 'سحنون', 'فقه مالكي', 'المدونة', 'مواهب الجليل'],
-  'فقه حنبلي': ['ابن قدامة', 'ابن تيمية', 'ابن القيم', 'الحجاوي', 'المرداوي', 'أحمد بن حنبل', 'البهوتي', 'فقه حنبلي', 'المغني', 'الإنصاف', 'زاد المستقنع'],
-  'الحديث': ['البخاري', 'مسلم', 'الترمذي', 'أبو داود', 'النسائي', 'ابن ماجه', 'شرح حديث', 'مصطلح الحديث', 'فتح الباري', 'عمدة القاري', 'نيل الأوطار'],
-  'التفسير': ['الطبري', 'ابن كثير', 'القرطبي', 'الزمخشري', 'تفسير القرآن', 'علوم القرآن', 'البيضاوي', 'الجلالين', 'فتح القدير'],
-  'العقيدة': ['أهل السنة', 'الأشعري', 'الماتريدي', 'الطحاوية', 'الواسطية', 'التوحيد', 'الإيمان', 'الملل والنحل'],
+  'فقه شافعي': ['النووي', 'الرافعي', 'ابن حجر الهيتمي', 'الرملي', 'الجويني', 'الغزالي', 'المزني', 'الشافعية', 'فقه شافعي', 'كتاب الأم', 'المجموع', 'منهاج الطالبين', 'مغني المحتاج', 'تحفة المحتاج'],
+  'فقه حنفي': ['ابن عابدين', 'السرخسي', 'الكاساني', 'القدوري', 'أبو حنيفة', 'محمد بن الحسن الشيباني', 'الطحاوي', 'فقه حنفي', 'رد المحتار', 'المبسوط', 'بدائع الصنائع', 'الهداية للمرغيناني', 'كنز الدقائق'],
+  'فقه مالكي': ['ابن رشد', 'القرافي', 'خليل بن إسحاق', 'مالك بن أنس', 'الموطأ', 'ابن عاشر', 'سحنون', 'فقه مالكي', 'المدونة', 'مواهب الجليل', 'شرح الزرقاني', 'بداية المجتهد'],
+  'فقه حنبلي': ['ابن قدامة', 'ابن تيمية', 'ابن القيم', 'الحجاوي', 'المرداوي', 'أحمد بن حنبل', 'البهوتي', 'فقه حنبلي', 'المغني', 'الإنصاف', 'زاد المستقنع', 'كشاف القناع', 'الفروع لابن مفلح'],
+  'الحديث': ['البخاري', 'مسلم', 'الترمذي', 'أبو داود', 'النسائي', 'ابن ماجه', 'شرح حديث', 'مصطلح الحديث', 'فتح الباري', 'عمدة القاري', 'نيل الأوطار', 'سنن الدارمي', 'مسند أحمد'],
+  'التفسير': ['الطبري', 'ابن كثير', 'القرطبي', 'الزمخشري', 'تفسير القرآن', 'علوم القرآن', 'البيضاوي', 'الجلالين', 'فتح القدير', 'روح المعاني', 'تفسير السعدي'],
+  'العقيدة': ['أهل السنة', 'الأشعري', 'الماتريدي', 'الطحاوية', 'الواسطية', 'التوحيد', 'الإيمان', 'الملل والنحل', 'مقالات الإسلاميين', 'العقيدة السفارينية'],
 };
 
 export async function POST(request: Request) {
@@ -28,15 +28,17 @@ export async function POST(request: Request) {
     }
 
     // 1. Query Expansion & Search
+    // We try to find match in our mapping or use a fallback
     const extensions = CATEGORY_EXTENSIONS[category] ||
-                      Object.entries(CATEGORY_EXTENSIONS).find(([key]) => category.includes(key))?.[1] ||
+                      Object.entries(CATEGORY_EXTENSIONS).find(([key]) => category.includes(key) || key.includes(category))?.[1] ||
                       [];
 
     // Perform broader searches by combining category with key authors and major book titles
-    const searchQueries = [category, ...extensions.slice(0, 8)];
+    const searchQueries = [category, ...extensions.slice(0, 10)];
 
-    // Perform multiple searches in parallel (Archive API is relatively fast)
-    const searchPromises = searchQueries.map(q => searchBooks(q, 1, 50));
+    // Perform multiple searches in parallel
+    // We fetch more results per query (50 -> 75)
+    const searchPromises = searchQueries.map(q => searchBooks(q, 1, 75));
     const searchResults = await Promise.all(searchPromises);
 
     // Deduplicate books by identifier
@@ -56,8 +58,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    // Increase candidate pool to 500 for better variety
-    const candidatePool = allBooks.slice(0, 500);
+    // Increase candidate pool to 1000 for maximum variety
+    const candidatePool = allBooks.slice(0, 1000);
 
     // 2. Get existing books and feedback to avoid duplicates
     if (!supabase) {
@@ -66,16 +68,17 @@ export async function POST(request: Request) {
 
     const candidateIds = candidatePool.map(b => b.identifier);
 
+    // Batched check to avoid URI length issues or query limits
     const { data: existingBooks } = await supabase
       .from('seo_books')
       .select('archive_id')
-      .in('archive_id', candidateIds);
+      .in('archive_id', candidateIds.slice(0, 500)); // Supabase 'in' has limits, but 500 is safe
 
     const { data: feedback } = await supabase
       .from('smart_book_feedback')
       .select('archive_id, status')
       .eq('category_slug', categorySlug)
-      .in('archive_id', candidateIds);
+      .in('archive_id', candidateIds.slice(0, 500));
 
     const existingIds = new Set(existingBooks?.map(b => b.archive_id) || []);
     const feedbackMap = new Map(feedback?.map(f => [f.archive_id, f.status]) || []);

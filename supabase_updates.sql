@@ -22,10 +22,19 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='seo_books' AND column_name='parts_count') THEN
         ALTER TABLE public.seo_books ADD COLUMN parts_count INTEGER DEFAULT 1;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='seo_books' AND column_name='category_slug') THEN
+        ALTER TABLE public.seo_books ADD COLUMN category_slug TEXT;
+    END IF;
 END $$;
 
+-- Update category_slug for existing books if possible (based on category name)
+-- This is a best-effort migration
+UPDATE public.seo_books b
+SET category_slug = c.slug
+FROM public.seo_categories c
+WHERE b.category = c.title AND b.category_slug IS NULL;
+
 -- Ensure seo_books has a unique constraint on archive_id if it doesn't already
--- (The app code uses upsert on archive_id, so it likely already has it or needs it)
 DO $$
 BEGIN
     IF NOT EXISTS (

@@ -25,8 +25,8 @@ export default async function CategoryPage({ params }: Props) {
 
   if (!category) notFound();
 
-  // FIX: getBooksByCategory expects the Title, not the slug
-  const books = await getBooksByCategory(category.title, 100);
+  // Standardized Query by Slug
+  const books = await getBooksByCategory(category.slug, 100);
 
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">
