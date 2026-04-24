@@ -193,36 +193,60 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
 
 /**
  * Robust fetch for books in a category.
- * Checks both category_slug and category title to ensure legacy and new data are returned.
+ * Performs dual-matching and has an in-memory fallback to ensure visibility.
  */
-export async function getBooksByCategory(categorySlug: string, categoryTitle?: string, limit: number = 100): Promise<SeoBook[]> {
+export async function getBooksByCategory(categorySlug: string, categoryTitle?: string, limit: number = 200): Promise<SeoBook[]> {
   if (!supabase) return [];
 
-  // Use OR condition to catch books linked via slug OR title
-  let query = supabase
-    .from('seo_books')
-    .select('*');
+  try {
+    // Stage 1: Attempt optimized OR query
+    let query = supabase.from('seo_books').select('*');
 
-  if (categoryTitle) {
-      query = query.or(`category_slug.eq."${categorySlug}",category.eq."${categoryTitle}"`);
-  } else {
-      query = query.eq('category_slug', categorySlug);
-  }
+    if (categoryTitle) {
+        query = query.or(`category_slug.eq."${categorySlug}",category.eq."${categoryTitle}"`);
+    } else {
+        query = query.eq('category_slug', categorySlug);
+    }
 
-  const { data, error } = await query
-    .order('created_at', { ascending: false })
-    .limit(limit);
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
-  if (error) {
-    console.error('Supabase error (getBooksByCategory):', error);
+    if (!error && data && data.length > 0) {
+        return data.map(b => ({
+            ...b,
+            archiveId: b.archive_id,
+            seoTitle: b.seo_title
+        }));
+    }
+
+    // Stage 2: Robust Fallback (Fetch all and filter)
+    // This is useful if the OR query syntax fails or RLS is partially restrictive
+    const { data: allData, error: allErr } = await supabase
+        .from('seo_books')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+
+    if (allErr || !allData) return [];
+
+    return allData
+        .filter(b =>
+            b.category_slug === categorySlug ||
+            b.category === categoryTitle ||
+            b.category?.includes(categoryTitle || '')
+        )
+        .slice(0, limit)
+        .map(b => ({
+            ...b,
+            archiveId: b.archive_id,
+            seoTitle: b.seo_title
+        }));
+
+  } catch (err) {
+    console.error('Radical Failure in getBooksByCategory:', err);
     return [];
   }
-
-  return data.map(b => ({
-    ...b,
-    archiveId: b.archive_id,
-    seoTitle: b.seo_title
-  }));
 }
 
 export async function getBooksByAuthor(author: string, limit: number = 10): Promise<SeoBook[]> {

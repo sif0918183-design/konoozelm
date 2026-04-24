@@ -14,27 +14,27 @@ BEGIN
     END IF;
 END $$;
 
--- 2. Forced Data Normalization
--- Fix Categories first
-UPDATE public.seo_categories SET slug = REPLACE(title, ' ', '-') WHERE slug IN ('hanafi', 'shafii', 'maliki', 'hanbali');
+-- 2. Standardize Categories Slugs (Arabic format)
+UPDATE public.seo_categories SET slug = REPLACE(title, ' ', '-') WHERE slug IS NOT NULL;
 
--- Sync Books to the new standardized Arabic slugs
--- If slug matches title with spaces replaced by hyphens
+-- 3. Force Sync Books to Category Slugs
+-- Logic: If category_slug is missing or inconsistent, match based on Title
 UPDATE public.seo_books b
 SET category_slug = c.slug
 FROM public.seo_categories c
-WHERE (b.category = c.title OR REPLACE(b.category_slug, ' ', '-') = c.slug);
+WHERE (b.category = c.title OR REPLACE(b.category, ' ', '-') = c.slug);
 
--- Final cleanup for common misspellings/legacy slugs
+-- 4. Cleanup Legacy English Slugs
 UPDATE public.seo_books SET category_slug = 'كتب-الفقه-الحنفي' WHERE category_slug = 'hanafi';
 UPDATE public.seo_books SET category_slug = 'كتب-الفقه-الشافعي' WHERE category_slug = 'shafii';
+UPDATE public.seo_books SET category_slug = 'كتب-الفقه-المالكي' WHERE category_slug = 'maliki';
+UPDATE public.seo_books SET category_slug = 'كتب-الفقه-الحنبلي' WHERE category_slug = 'hanbali';
 
--- 3. Integrity Constraints
-ALTER TABLE public.seo_categories DROP CONSTRAINT IF EXISTS seo_categories_slug_unique;
-ALTER TABLE public.seo_categories ADD CONSTRAINT seo_categories_slug_unique UNIQUE (slug);
+-- 5. Establish Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_seo_books_category_slug ON public.seo_books(category_slug);
+CREATE INDEX IF NOT EXISTS idx_seo_books_category_title ON public.seo_books(category);
 
--- 4. CRITICAL: Security Policies (Ensure Frontend can see the data)
--- Disable RLS or add broad SELECT policies
+-- 6. Final Public Visibility (Radical Policy)
 ALTER TABLE public.seo_books ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.seo_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.seo_authors ENABLE ROW LEVEL SECURITY;
@@ -47,24 +47,3 @@ CREATE POLICY "Public Select Categories" ON public.seo_categories FOR SELECT TO 
 
 DROP POLICY IF EXISTS "Public Select Authors" ON public.seo_authors;
 CREATE POLICY "Public Select Authors" ON public.seo_authors FOR SELECT TO public USING (true);
-
--- 5. Helper table for AI Feedback
-CREATE TABLE IF NOT EXISTS public.smart_book_feedback (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    archive_id TEXT NOT NULL,
-    category_slug TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('selected', 'rejected')),
-    metadata JSONB DEFAULT '{}'::jsonb,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    UNIQUE(archive_id, category_slug)
-);
-
-ALTER TABLE public.smart_book_feedback ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Service Role Feedback" ON public.smart_book_feedback;
-CREATE POLICY "Service Role Feedback" ON public.smart_book_feedback FOR ALL TO service_role USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "Public Read Feedback" ON public.smart_book_feedback;
-CREATE POLICY "Public Read Feedback" ON public.smart_book_feedback FOR SELECT TO public USING (true);
-
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_seo_books_category_slug ON public.seo_books(category_slug);
-CREATE INDEX IF NOT EXISTS idx_smart_book_feedback_archive_id ON public.smart_book_feedback(archive_id);
