@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     for (let i = 0; i < searchQueries.length; i += batchSize) {
         const batch = searchQueries.slice(i, i + batchSize);
-        const searchPromises = batch.map(q => searchBooks(q, 1, 75));
+        const searchPromises = batch.map(q => searchBooks(q, 1, 150)); // Increased from 75 to 150 for broader results
         const results = await Promise.all(searchPromises);
         allSearchResults.push(...results);
     }
@@ -59,8 +59,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    // Process up to 1000 items from Archive
-    const candidatePool = allBooks.slice(0, 1000);
+    // Process up to 3000 items from Archive (increased to ensure breadth)
+    const candidatePool = allBooks.slice(0, 3000);
 
     if (!supabase) throw new Error('Supabase not configured');
 
@@ -70,13 +70,13 @@ export async function POST(request: Request) {
     const { data: existingBooks } = await supabase
       .from('seo_books')
       .select('archive_id')
-      .in('archive_id', candidateIds.slice(0, 1000));
+      .in('archive_id', candidateIds.slice(0, 3000));
 
     const { data: feedback } = await supabase
       .from('smart_book_feedback')
       .select('archive_id, status')
       .eq('category_slug', categorySlug)
-      .in('archive_id', candidateIds.slice(0, 1000));
+      .in('archive_id', candidateIds.slice(0, 3000));
 
     const existingIds = new Set(existingBooks?.map(b => b.archive_id) || []);
     const feedbackMap = new Map(feedback?.map(f => [f.archive_id, f.status]) || []);
