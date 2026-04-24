@@ -9,7 +9,8 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const category = await getCategoryBySlug(params.categorySlug);
+  const decodedSlug = decodeURIComponent(params.categorySlug);
+  const category = await getCategoryBySlug(decodedSlug);
   if (!category) return { title: 'Category Not Found' };
 
   return {
@@ -19,10 +20,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CategoryPage({ params }: Props) {
-  const category = await getCategoryBySlug(params.categorySlug);
+  const decodedSlug = decodeURIComponent(params.categorySlug);
+  const category = await getCategoryBySlug(decodedSlug);
+
   if (!category) notFound();
 
-  const books = await getBooksByCategory(category.slug);
+  // FIX: getBooksByCategory expects the Title, not the slug
+  const books = await getBooksByCategory(category.title);
 
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">
@@ -48,8 +52,8 @@ export default async function CategoryPage({ params }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {books.map((book) => (
             <Link
-              key={book.slug}
-              href={`/book/${book.slug}`}
+              key={book.archiveId}
+              href={`/book/${book.slug}--${book.archiveId}`}
               className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-gray-100 hover:border-gold-200 flex flex-col h-full"
             >
               <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gold-50 transition-colors">

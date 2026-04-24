@@ -9,7 +9,8 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const author = await getAuthorBySlug(params.slug);
+  const decodedSlug = decodeURIComponent(params.slug);
+  const author = await getAuthorBySlug(decodedSlug);
   if (!author) return { title: 'المؤلف غير موجود' };
 
   return {
@@ -19,7 +20,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function AuthorPage({ params }: Props) {
-  const author = await getAuthorBySlug(params.slug);
+  const decodedSlug = decodeURIComponent(params.slug);
+  const author = await getAuthorBySlug(decodedSlug);
+
   if (!author) notFound();
 
   const books = await getBooksByAuthor(author.name);
