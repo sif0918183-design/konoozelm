@@ -4,15 +4,15 @@ import { searchBooks } from '@/lib/archive-api';
 import { filterAndRankBooks } from '@/lib/openai';
 import { supabase } from '@/lib/supabase';
 
-// Category expansion mapping
+// Enhanced Category expansion mapping with broader terms
 const CATEGORY_EXTENSIONS: Record<string, string[]> = {
-  'الشافعي': ['النووي', 'الرافعي', 'ابن حجر الهيتمي', 'الرملي', 'الجويني', 'الغزالي', 'المزني', 'الشافعية', 'فقه شافعي'],
-  'الحنفي': ['ابن عابدين', 'السرخسي', 'الكاساني', 'القدوري', 'أبو حنيفة', 'محمد بن الحسن الشيباني', 'الطحاوي', 'فقه حنفي'],
-  'المالكي': ['ابن رشد', 'القرافي', 'خليل بن إسحاق', 'مالك بن أنس', 'الموطأ', 'ابن عاشر', 'سحنون', 'فقه مالكي'],
-  'الحنبلي': ['ابن قدامة', 'ابن تيمية', 'ابن القيم', 'الحجاوي', 'المرداوي', 'أحمد بن حنبل', 'البهوتي', 'فقه حنبلي'],
-  'الحديث': ['البخاري', 'مسلم', 'الترمذي', 'أبو داود', 'النسائي', 'ابن ماجه', 'شرح حديث', 'مصطلح الحديث'],
-  'التفسير': ['الطبري', 'ابن كثير', 'القرطبي', 'الزمخشري', 'تفسير القرآن', 'علوم القرآن'],
-  'العقيدة': ['أهل السنة', 'الأشعري', 'الماتريدي', 'الطحاوية', 'الواسطية', 'التوحيد'],
+  'فقه شافعي': ['النووي', 'الرافعي', 'ابن حجر الهيتمي', 'الرملي', 'الجويني', 'الغزالي', 'المزني', 'الشافعية', 'فقه شافعي', 'كتاب الأم', 'المجموع', 'منهاج الطالبين'],
+  'فقه حنفي': ['ابن عابدين', 'السرخسي', 'الكاساني', 'القدوري', 'أبو حنيفة', 'محمد بن الحسن الشيباني', 'الطحاوي', 'فقه حنفي', 'رد المحتار', 'المبسوط', 'بدائع الصنائع'],
+  'فقه مالكي': ['ابن رشد', 'القرافي', 'خليل بن إسحاق', 'مالك بن أنس', 'الموطأ', 'ابن عاشر', 'سحنون', 'فقه مالكي', 'المدونة', 'مواهب الجليل'],
+  'فقه حنبلي': ['ابن قدامة', 'ابن تيمية', 'ابن القيم', 'الحجاوي', 'المرداوي', 'أحمد بن حنبل', 'البهوتي', 'فقه حنبلي', 'المغني', 'الإنصاف', 'زاد المستقنع'],
+  'الحديث': ['البخاري', 'مسلم', 'الترمذي', 'أبو داود', 'النسائي', 'ابن ماجه', 'شرح حديث', 'مصطلح الحديث', 'فتح الباري', 'عمدة القاري', 'نيل الأوطار'],
+  'التفسير': ['الطبري', 'ابن كثير', 'القرطبي', 'الزمخشري', 'تفسير القرآن', 'علوم القرآن', 'البيضاوي', 'الجلالين', 'فتح القدير'],
+  'العقيدة': ['أهل السنة', 'الأشعري', 'الماتريدي', 'الطحاوية', 'الواسطية', 'التوحيد', 'الإيمان', 'الملل والنحل'],
 };
 
 export async function POST(request: Request) {
@@ -28,14 +28,14 @@ export async function POST(request: Request) {
     }
 
     // 1. Query Expansion & Search
-    // We combine the main category with extensions
     const extensions = CATEGORY_EXTENSIONS[category] ||
                       Object.entries(CATEGORY_EXTENSIONS).find(([key]) => category.includes(key))?.[1] ||
                       [];
 
-    const searchQueries = [category, ...extensions.slice(0, 5)]; // Limit to first 5 extensions to keep it manageable
+    // Perform broader searches by combining category with key authors and major book titles
+    const searchQueries = [category, ...extensions.slice(0, 8)];
 
-    // Perform multiple searches in parallel
+    // Perform multiple searches in parallel (Archive API is relatively fast)
     const searchPromises = searchQueries.map(q => searchBooks(q, 1, 50));
     const searchResults = await Promise.all(searchPromises);
 
@@ -56,8 +56,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    // Limit to top 300 candidates for AI to handle reasonably
-    const candidatePool = allBooks.slice(0, 300);
+    // Increase candidate pool to 500 for better variety
+    const candidatePool = allBooks.slice(0, 500);
 
     // 2. Get existing books and feedback to avoid duplicates
     if (!supabase) {
@@ -92,7 +92,6 @@ export async function POST(request: Request) {
     }
 
     // 3. AI Ranking
-    // We process the candidate books through AI to get a ranked list
     const aiSuggestions = await filterAndRankBooks(category, candidateBooks);
 
     return NextResponse.json({

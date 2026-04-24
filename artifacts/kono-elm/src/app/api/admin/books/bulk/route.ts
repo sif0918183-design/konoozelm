@@ -11,6 +11,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const startTime = Date.now();
+  // Vercel execution limit is usually 10s on hobby, up to 60s+ on pro.
+  // We'll use a conservative approach.
+  const MAX_RUNTIME = 50000; // 50 seconds
+
   try {
     const { books, category, categorySlug } = await request.json();
 
@@ -20,16 +25,20 @@ export async function POST(request: Request) {
 
     const results = [];
 
-    // Process books in parallel but with a limit if needed.
-    // Promise.all is faster but watch out for timeouts if many books.
-    // The UI suggests about 10 books.
-    const promises = books.map(async (book) => {
+    // Switch to sequential processing to avoid overwhelming APIs and better manage timeouts
+    for (const book of books) {
+      // Check if we are running out of time
+      if (Date.now() - startTime > MAX_RUNTIME) {
+        results.push({ id: book.id, status: 'error', message: 'Timeout' });
+        continue;
+      }
+
       try {
         // 1. Fetch parts count from Archive.org
         const files = await getBookFiles(book.id);
         const partsCount = files.length || 1;
 
-        // 2. Generate AI SEO Content (using our combined logic)
+        // 2. Generate AI SEO Content
         // Pass book.title as pre-normalized if it came from AI suggest
         const seoContent = await generateEnhancedSeoContent(book.title, book.author, category, book.title);
 
@@ -41,7 +50,7 @@ export async function POST(request: Request) {
           description: seoContent.description,
           category: category,
           archiveId: book.id,
-          seo_title: seoContent.seoTitle, // matching schema field name
+          seoTitle: seoContent.seoTitle, // FIXED: Corrected from seo_title to seoTitle
           parts_count: partsCount
         };
 
@@ -59,14 +68,12 @@ export async function POST(request: Request) {
                 }, { onConflict: 'archive_id,category_slug' });
         }
 
-        return { id: book.id, status: 'success' };
+        results.push({ id: book.id, status: 'success' });
       } catch (err: any) {
         console.error(`Failed to process book ${book.id}:`, err);
-        return { id: book.id, status: 'error', message: err.message };
+        results.push({ id: book.id, status: 'error', message: err.message });
       }
-    });
-
-    results.push(...(await Promise.all(promises)));
+    }
 
     return NextResponse.json({ results });
 

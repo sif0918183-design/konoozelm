@@ -315,12 +315,21 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        alert('تمت إضافة الكتب بنجاح');
+        const data = await res.json();
+        const failures = data.results?.filter((r: any) => r.status === 'error') || [];
+
+        if (failures.length > 0) {
+            alert(`تمت الإضافة مع وجود أخطاء في ${failures.length} كتب. راجع السجلات.`);
+            console.error('Bulk addition failures:', failures);
+        } else {
+            alert('تمت إضافة جميع الكتب بنجاح');
+        }
+
         setSelectedCategoryForSuggestions(null);
         fetchExistingBooks();
       } else {
         const err = await res.json();
-        alert('فشل الإضافة الجماعية: ' + (err.error || 'خطأ غير معروف'));
+        alert('فشل الإضافة الجماعية (خطأ خادم): ' + (err.error || 'خطأ غير معروف'));
       }
     } catch (err) {
       alert('خطأ في الاتصال أثناء الإضافة الجماعية');
