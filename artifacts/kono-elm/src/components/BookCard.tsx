@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Download, Loader2, Layers } from 'lucide-react';
+import { slugify } from '@/lib/utils';
 import { type Book, type BookFile, getBookFiles } from '@/lib/archive-api';
 import { cn } from '@/lib/utils';
 import BookPartsDialog from './BookPartsDialog';
@@ -68,7 +69,13 @@ export default function BookCard({ book }: BookCardProps) {
   };
 
   return (
-    <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100/50 flex flex-col h-full overflow-hidden">
+    <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100/50 flex flex-col h-full overflow-hidden relative">
+      {/* Detail Link (Internal SEO link) - Only for the card body, excluding buttons */}
+      <a
+        href={`/book/${slugify(book.title)}--${book.identifier}`}
+        className="absolute inset-0 z-0 cursor-pointer"
+        aria-label="View Details"
+      />
       {/* Cover Image */}
       <div className="relative h-48 bg-gray-100 overflow-hidden">
         {!imageError ? (
@@ -125,7 +132,7 @@ export default function BookCard({ book }: BookCardProps) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 mt-auto">
+        <div className="flex gap-3 mt-auto relative z-10">
           <button
             onClick={handleRead}
             disabled={isLoadingFiles}

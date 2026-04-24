@@ -2,10 +2,30 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Service role key for admin operations (must be set in Vercel environment variables)
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
+// Public client for searching and reading
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
+
+/**
+ * Admin client with service role for DDL/Bypass RLS.
+ * This should ONLY be used in server-side routes (API routes or Server Actions).
+ */
+export const supabaseAdmin = supabaseUrl && supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null;
+
+if (process.env.NODE_ENV === 'production' && !supabaseServiceKey && typeof window === 'undefined') {
+  console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY is missing! Admin operations will fail.');
+}
 
 // Log search to Supabase
 export async function logSearch(

@@ -58,3 +58,26 @@ export function formatBytes(bytes: number | string | undefined, decimals = 2) {
 
   return parseFloat((b / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
+
+/**
+ * Robust Arabic slug normalization
+ */
+export function slugify(text: string): string {
+  if (!text) return '';
+
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/[^\u0600-\u06FFa-z0-9\s-]/g, '') // Keep Arabic chars, letters, numbers, spaces, hyphens
+    .replace(/[\u064B-\u065F]/g, '') // Remove Arabic tashkeel
+    // Normalize Arabic letters
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/[ة]/g, 'ه')
+    .replace(/[ى]/g, 'ي')
+    .replace(/[ؤ]/g, 'و')
+    .replace(/[ئ]/g, 'ي')
+    .trim()
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Remove duplicate hyphens
+    .replace(/^-+|-+$/g, ''); // Trim hyphens
+}
