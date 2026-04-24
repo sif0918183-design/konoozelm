@@ -4,7 +4,7 @@ import { searchBooks } from '@/lib/archive-api';
 import { filterAndRankBooks } from '@/lib/openai';
 import { supabase } from '@/lib/supabase';
 
-// More comprehensive Category expansion mapping
+// High-fidelity Category expansion mapping
 const CATEGORY_EXTENSIONS: Record<string, string[]> = {
   'فقه شافعي': ['النووي', 'الرافعي', 'ابن حجر الهيتمي', 'الرملي', 'الجويني', 'الغزالي', 'المزني', 'الشافعية', 'فقه شافعي', 'كتاب الأم', 'المجموع', 'منهاج الطالبين', 'مغني المحتاج', 'تحفة المحتاج'],
   'فقه حنفي': ['ابن عابدين', 'السرخسي', 'الكاساني', 'القدوري', 'أبو حنيفة', 'محمد بن الحسن الشيباني', 'الطحاوي', 'فقه حنفي', 'رد المحتار', 'المبسوط', 'بدائع الصنائع', 'الهداية للمرغيناني', 'كنز الدقائق'],
@@ -23,25 +23,21 @@ export async function POST(request: Request) {
   try {
     const { category, categorySlug } = await request.json();
 
-    if (!category) {
-      return NextResponse.json({ error: 'Category is required' }, { status: 400 });
+    if (!category || !categorySlug) {
+      return NextResponse.json({ error: 'Category and slug are required' }, { status: 400 });
     }
 
     // 1. Query Expansion & Search
-    // We try to find match in our mapping or use a fallback
     const extensions = CATEGORY_EXTENSIONS[category] ||
                       Object.entries(CATEGORY_EXTENSIONS).find(([key]) => category.includes(key) || key.includes(category))?.[1] ||
                       [];
 
-    // Perform broader searches by combining category with key authors and major book titles
     const searchQueries = [category, ...extensions.slice(0, 10)];
 
     // Perform multiple searches in parallel
-    // We fetch more results per query (50 -> 75)
     const searchPromises = searchQueries.map(q => searchBooks(q, 1, 75));
     const searchResults = await Promise.all(searchPromises);
 
-    // Deduplicate books by identifier
     const seenIds = new Set<string>();
     const allBooks = [];
 
@@ -58,21 +54,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    // Increase candidate pool to 1000 for maximum variety
     const candidatePool = allBooks.slice(0, 1000);
 
     // 2. Get existing books and feedback to avoid duplicates
-    if (!supabase) {
-        throw new Error('Supabase not configured');
-    }
+    if (!supabase) throw new Error('Supabase not configured');
 
     const candidateIds = candidatePool.map(b => b.identifier);
 
-    // Batched check to avoid URI length issues or query limits
+    // Process feedback based on standardized categorySlug
     const { data: existingBooks } = await supabase
       .from('seo_books')
       .select('archive_id')
-      .in('archive_id', candidateIds.slice(0, 500)); // Supabase 'in' has limits, but 500 is safe
+      .in('archive_id', candidateIds.slice(0, 500));
 
     const { data: feedback } = await supabase
       .from('smart_book_feedback')
@@ -83,7 +76,6 @@ export async function POST(request: Request) {
     const existingIds = new Set(existingBooks?.map(b => b.archive_id) || []);
     const feedbackMap = new Map(feedback?.map(f => [f.archive_id, f.status]) || []);
 
-    // Filter out already added or rejected books
     const candidateBooks = candidatePool.filter(book => {
       const isExisting = existingIds.has(book.identifier);
       const feedbackStatus = feedbackMap.get(book.identifier);

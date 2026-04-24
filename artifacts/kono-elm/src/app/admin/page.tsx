@@ -23,7 +23,7 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { searchBooks, type Book, getBookFiles } from '@/lib/archive-api';
-import { slugify } from '@/lib/utils';
+import { slugify, generateCategorySlug } from '@/lib/utils';
 
 interface SeoBook {
   slug: string;
@@ -31,6 +31,7 @@ interface SeoBook {
   author: string;
   description: string;
   category: string;
+  category_slug?: string;
   archiveId: string;
   seoTitle?: string;
   parts_count?: number;
@@ -70,6 +71,7 @@ export default function AdminDashboard() {
     author: '',
     description: '',
     category: '',
+    category_slug: '',
     archiveId: '',
     seoTitle: '',
     parts_count: 1
@@ -150,13 +152,15 @@ export default function AdminDashboard() {
     } catch (e) {}
 
     const cleanSlug = slugify(book.title);
+    const defaultCategory = categories[0] || { title: 'عام', slug: 'عام' };
 
     setFormData({
       slug: cleanSlug,
       title: book.title,
       author: book.author || '',
       description: '',
-      category: categories[0]?.title || 'عام',
+      category: defaultCategory.title,
+      category_slug: defaultCategory.slug,
       archiveId: book.identifier,
       seoTitle: `تحميل كتاب ${book.title} PDF وقراءته أونلاين - موسوعة كنوز العلم`,
       parts_count: partsCount
@@ -215,7 +219,8 @@ export default function AdminDashboard() {
 
   const handleSaveCategory = async () => {
     if (!newCategory.title) return;
-    const payload = { ...newCategory, slug: slugify(newCategory.title) };
+    // FIXED: Use standardized slug generator for categories
+    const payload = { ...newCategory, slug: generateCategorySlug(newCategory.title) };
     try {
       const res = await fetch('/api/admin/categories', {
         method: 'POST',
@@ -310,7 +315,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           books: selectedBooks,
           category: selectedCategoryForSuggestions.title,
-          categorySlug: selectedCategoryForSuggestions.slug
+          categorySlug: selectedCategoryForSuggestions.slug // Ensure correct slug is passed
         }),
       });
 
@@ -472,12 +477,15 @@ export default function AdminDashboard() {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">التصنيف</label>
                     <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      value={formData.category_slug}
+                      onChange={(e) => {
+                          const cat = categories.find(c => c.slug === e.target.value);
+                          setFormData({...formData, category_slug: e.target.value, category: cat?.title || 'عام'});
+                      }}
                       className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-500 outline-none bg-white"
                     >
                       {categories.map(c => (
-                        <option key={c.slug} value={c.title}>{c.title}</option>
+                        <option key={c.slug} value={c.slug}>{c.title}</option>
                       ))}
                       <option value="عام">عام</option>
                     </select>
@@ -585,7 +593,10 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 gap-2">
                   {categories.map(c => (
                     <div key={c.slug} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-gold-300 transition-all">
-                      <span className="font-bold text-gray-700">{c.title}</span>
+                      <div className="flex flex-col">
+                          <span className="font-bold text-gray-700">{c.title}</span>
+                          <span className="text-[10px] text-gray-400 font-mono" dir="ltr">{c.slug}</span>
+                      </div>
                       <button
                         onClick={() => handleSuggestBooks(c)}
                         className="flex items-center gap-1 text-xs bg-gold-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-gold-700 transition-all shadow-sm"
