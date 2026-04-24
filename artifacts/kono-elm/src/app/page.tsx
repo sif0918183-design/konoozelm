@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Search, BookOpen, Download, Loader2, AlertCircle } from 'lucide-react';
 import { searchBooks, type Book } from '@/lib/archive-api';
 import { logSearch } from '@/lib/supabase';
@@ -67,6 +67,18 @@ export default function Home() {
     }
   };
 
+  const [featuredCategories, setFeaturedCategories] = useState<{title: string, slug: string}[]>([]);
+
+  useEffect(() => {
+    fetch('/api/admin/categories')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setFeaturedCategories(data.slice(0, 6));
+        }
+      });
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal">
       {/* Header */}
@@ -119,8 +131,26 @@ export default function Home() {
 
         {/* Recent Books (Always visible if exists) */}
         {!hasSearched && !isLoading && (
-          <div className="mb-8">
+          <div className="mb-12">
             <RecentBooks />
+          </div>
+        )}
+
+        {/* Featured Categories */}
+        {!hasSearched && !isLoading && featuredCategories.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-xl font-bold text-primary-900 mb-6 border-r-4 border-gold-500 pr-4">أقسام المكتبة</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {featuredCategories.map((cat) => (
+                <a
+                  key={cat.slug}
+                  href={`/${cat.slug}`}
+                  className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gold-300 transition-all text-center group"
+                >
+                  <p className="text-sm font-bold text-gray-700 group-hover:text-primary-900">{cat.title}</p>
+                </a>
+              ))}
+            </div>
           </div>
         )}
 

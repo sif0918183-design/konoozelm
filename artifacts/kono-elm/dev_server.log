@@ -1,0 +1,181 @@
+
+> kono-elm@1.0.0 dev /app/artifacts/kono-elm
+> next dev
+
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1745ms
+ ○ Compiling /admin/login ...
+ ✓ Compiled /admin/login in 5.9s (498 modules)
+ ✓ Compiled in 697ms (250 modules)
+ GET /admin/login 200 in 6592ms
+ ○ Compiling /api/admin/auth ...
+ ✓ Compiled /api/admin/auth in 5.4s (265 modules)
+ POST /api/admin/auth 200 in 5510ms
+ ✓ Compiled /admin in 453ms (527 modules)
+ ✓ Compiled /api/admin/categories in 136ms (284 modules)
+ GET /api/admin/categories 200 in 172ms
+ GET /api/admin/categories 200 in 11ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1660ms (748 modules)
+ GET / 200 in 1907ms
+ GET /api/admin/categories 200 in 34ms
+ GET /api/admin/categories 200 in 11ms
+ ✓ Compiled in 5.2s (356 modules)
+ ✓ Compiled in 765ms (370 modules)
+ ✓ Compiled in 422ms (370 modules)
+ ⨯ ./src/app/globals.css.webpack[javascript/auto]!=!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./src/app/globals.css
+Error: ENOENT: no such file or directory, stat '/app/artifacts/kono-elm/src/app/author//[slug/]/page.tsx'
+Import trace for requested module:
+./src/app/globals.css.webpack[javascript/auto]!=!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./src/app/globals.css
+./src/app/globals.css
+NormalizeError: Requested and resolved page mismatch: /author//[slug/]/page /author/[slug/]/page
+    at normalizePagePath (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/shared/lib/page-path/normalize-page-path.js:20:19)
+    at AppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:31:73)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:77
+    at Array.reduce (<anonymous>)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:33)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:44:22)
+    at DevAppPageRouteMatcherProvider.transform (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/dev/dev-app-page-route-matcher-provider.js:39:60)
+    at DevAppPageRouteMatcherProvider.matchers (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/helpers/cached-route-matcher-provider.js:23:37)
+    at async Promise.all (index 0)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/default-route-matcher-manager.js:39:39)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/dev-route-matcher-manager.js:112:9)
+    at async Object.propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/render-server.js:75:13)
+    at async propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:134:5)
+    at async Watchpack.<anonymous> (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:627:17)
+ ⨯ unhandledRejection: NormalizeError: Requested and resolved page mismatch: /author//[slug/]/page /author/[slug/]/page
+    at normalizePagePath (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/shared/lib/page-path/normalize-page-path.js:20:19)
+    at AppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:31:73)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:77
+    at Array.reduce (<anonymous>)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:33)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:44:22)
+    at DevAppPageRouteMatcherProvider.transform (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/dev/dev-app-page-route-matcher-provider.js:39:60)
+    at DevAppPageRouteMatcherProvider.matchers (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/helpers/cached-route-matcher-provider.js:23:37)
+    at async Promise.all (index 0)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/default-route-matcher-manager.js:39:39)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/dev-route-matcher-manager.js:112:9)
+    at async Object.propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/render-server.js:75:13)
+    at async propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:134:5)
+    at async Watchpack.<anonymous> (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:627:17)
+ ⨯ unhandledRejection: NormalizeError: Requested and resolved page mismatch: /author//[slug/]/page /author/[slug/]/page
+    at normalizePagePath (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/shared/lib/page-path/normalize-page-path.js:20:19)
+    at AppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:31:73)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:77
+    at Array.reduce (<anonymous>)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:33)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:44:22)
+    at DevAppPageRouteMatcherProvider.transform (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/dev/dev-app-page-route-matcher-provider.js:39:60)
+    at DevAppPageRouteMatcherProvider.matchers (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/helpers/cached-route-matcher-provider.js:23:37)
+    at async Promise.all (index 0)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/default-route-matcher-manager.js:39:39)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/dev-route-matcher-manager.js:112:9)
+    at async Object.propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/render-server.js:75:13)
+    at async propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:134:5)
+    at async Watchpack.<anonymous> (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:627:17)
+ ⨯ ./src/app/globals.css.webpack[javascript/auto]!=!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./src/app/globals.css
+Error: ENOENT: no such file or directory, stat '/app/artifacts/kono-elm/src/app/author//[slug/]/page.tsx'
+Import trace for requested module:
+./src/app/globals.css.webpack[javascript/auto]!=!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./src/app/globals.css
+./src/app/globals.css
+NormalizeError: Requested and resolved page mismatch: /author/[slug]//[slug/]/page /author/[slug]/[slug/]/page
+    at normalizePagePath (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/shared/lib/page-path/normalize-page-path.js:20:19)
+    at AppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:31:73)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:77
+    at Array.reduce (<anonymous>)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:33)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:44:22)
+    at DevAppPageRouteMatcherProvider.transform (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/dev/dev-app-page-route-matcher-provider.js:39:60)
+    at DevAppPageRouteMatcherProvider.matchers (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/helpers/cached-route-matcher-provider.js:23:37)
+    at async Promise.all (index 0)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/default-route-matcher-manager.js:39:39)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/dev-route-matcher-manager.js:112:9)
+    at async Object.propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/render-server.js:75:13)
+    at async propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:134:5)
+    at async Watchpack.<anonymous> (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:627:17)
+ ⨯ unhandledRejection: NormalizeError: Requested and resolved page mismatch: /author/[slug]//[slug/]/page /author/[slug]/[slug/]/page
+    at normalizePagePath (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/shared/lib/page-path/normalize-page-path.js:20:19)
+    at AppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:31:73)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:77
+    at Array.reduce (<anonymous>)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:33)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:44:22)
+    at DevAppPageRouteMatcherProvider.transform (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/dev/dev-app-page-route-matcher-provider.js:39:60)
+    at DevAppPageRouteMatcherProvider.matchers (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/helpers/cached-route-matcher-provider.js:23:37)
+    at async Promise.all (index 0)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/default-route-matcher-manager.js:39:39)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/dev-route-matcher-manager.js:112:9)
+    at async Object.propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/render-server.js:75:13)
+    at async propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:134:5)
+    at async Watchpack.<anonymous> (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:627:17)
+ ⨯ unhandledRejection: NormalizeError: Requested and resolved page mismatch: /author/[slug]//[slug/]/page /author/[slug]/[slug/]/page
+    at normalizePagePath (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/shared/lib/page-path/normalize-page-path.js:20:19)
+    at AppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:31:73)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:77
+    at Array.reduce (<anonymous>)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/normalizers.js:19:33)
+    at DevAppBundlePathNormalizer.normalize (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/normalizers/built/app/app-bundle-path-normalizer.js:44:22)
+    at DevAppPageRouteMatcherProvider.transform (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/dev/dev-app-page-route-matcher-provider.js:39:60)
+    at DevAppPageRouteMatcherProvider.matchers (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-providers/helpers/cached-route-matcher-provider.js:23:37)
+    at async Promise.all (index 0)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/default-route-matcher-manager.js:39:39)
+    at async DevRouteMatcherManager.reload (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/future/route-matcher-managers/dev-route-matcher-manager.js:112:9)
+    at async Object.propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/render-server.js:75:13)
+    at async propagateServerField (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:134:5)
+    at async Watchpack.<anonymous> (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js:627:17)
+ ⨯ ./src/app/globals.css.webpack[javascript/auto]!=!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./src/app/globals.css
+Error: ENOENT: no such file or directory, stat '/app/artifacts/kono-elm/src/app/author/[slug]//[slug/]/page.tsx'
+Import trace for requested module:
+./src/app/globals.css.webpack[javascript/auto]!=!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./src/app/globals.css
+./src/app/globals.css
+ ✓ Compiled in 1136ms (372 modules)
+ ✓ Compiled in 241ms (372 modules)
+ ✓ Compiled in 338ms (372 modules)
+ ✓ Compiled in 326ms (358 modules)
+ ✓ Compiled in 222ms (372 modules)
+ ✓ Compiled in 450ms (358 modules)
+ ✓ Compiled in 545ms (372 modules)
+ ✓ Compiled in 436ms (372 modules)
+ ○ Compiling /admin/login ...
+ ✓ Compiled /admin/login in 741ms (230 modules)
+ ⨯ TypeError: __webpack_modules__[moduleId] is not a function
+    at Object.__webpack_require__ [as require] (/app/artifacts/kono-elm/.next/server/webpack-runtime.js:33:42)
+digest: "2523555212"
+TypeError: __webpack_modules__[moduleId] is not a function
+    at Object.__webpack_require__ [as require] (/app/artifacts/kono-elm/.next/server/webpack-runtime.js:33:42)
+    at require (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:19927)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108279
+    at eo (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108464)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:110693
+    at Object._fromJSON (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:111249)
+    at JSON.parse (<anonymous>)
+    at eu (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108958)
+    at en (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108026)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115168
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115185
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115218
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115235
+    at t (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115458)
+ ⨯ TypeError: __webpack_modules__[moduleId] is not a function
+    at Object.__webpack_require__ [as require] (/app/artifacts/kono-elm/.next/server/webpack-runtime.js:33:42)
+    at require (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:19927)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108279
+    at eo (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108464)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:110693
+    at Object._fromJSON (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:111249)
+    at JSON.parse (<anonymous>)
+    at eu (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108958)
+    at en (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:108026)
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115168
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115185
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115218
+    at /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115235
+    at t (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:115458) {
+  page: '/admin/login'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 2.8s (814 modules)
+ GET /admin/login 500 in 3954ms
