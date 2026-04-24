@@ -23,8 +23,10 @@ export interface Author {
   bio: string;
 }
 
-// Use admin client for writes to bypass RLS or handle service role needs
-const client = supabaseAdmin || supabase;
+/**
+ * Use supabaseAdmin (Service Role) for all WRITE operations.
+ * Use regular supabase (Anon Key) for READ operations.
+ */
 
 export async function getSeoBooks(): Promise<SeoBook[]> {
   if (!supabase) return [];
@@ -34,7 +36,7 @@ export async function getSeoBooks(): Promise<SeoBook[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Supabase error (seo_books):', error);
+    console.error('Supabase error (getSeoBooks):', error);
     throw error;
   }
   return data.map(b => ({
@@ -45,7 +47,10 @@ export async function getSeoBooks(): Promise<SeoBook[]> {
 }
 
 export async function saveSeoBook(book: SeoBook) {
-  if (!client) return;
+  if (!supabaseAdmin) {
+    console.error('❌ Cannot save book: SUPABASE_SERVICE_ROLE_KEY is missing');
+    throw new Error('Service Role Key missing - checks Vercel Env Vars');
+  }
 
   const payload = {
     slug: book.slug,
@@ -58,7 +63,7 @@ export async function saveSeoBook(book: SeoBook) {
     parts_count: book.parts_count || 1
   };
 
-  const { error } = await client
+  const { error } = await supabaseAdmin
     .from('seo_books')
     .upsert(payload, { onConflict: 'archive_id' });
 
@@ -76,16 +81,19 @@ export async function getCategories(): Promise<Category[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Supabase error (seo_categories):', error);
-    // Don't throw for public GET, just return empty
+    console.error('Supabase error (getCategories):', error);
     return [];
   }
   return data;
 }
 
 export async function saveCategory(category: Category) {
-  if (!client) return;
-  const { error } = await client
+  if (!supabaseAdmin) {
+    console.error('❌ Cannot save category: SUPABASE_SERVICE_ROLE_KEY is missing');
+    throw new Error('Service Role Key missing - checks Vercel Env Vars');
+  }
+
+  const { error } = await supabaseAdmin
     .from('seo_categories')
     .upsert(category, { onConflict: 'slug' });
 
@@ -119,8 +127,12 @@ export async function getAuthorBySlug(slug: string): Promise<Author | undefined>
 }
 
 export async function saveAuthor(author: Author) {
-  if (!client) return;
-  const { error } = await client
+  if (!supabaseAdmin) {
+    console.error('❌ Cannot save author: SUPABASE_SERVICE_ROLE_KEY is missing');
+    throw new Error('Service Role Key missing - checks Vercel Env Vars');
+  }
+
+  const { error } = await supabaseAdmin
     .from('seo_authors')
     .upsert(author, { onConflict: 'slug' });
 

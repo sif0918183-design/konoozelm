@@ -59,15 +59,22 @@ ALTER TABLE seo_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seo_books ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seo_authors ENABLE ROW LEVEL SECURITY;
 
--- Policies: Public Read
+-- 1. Policies for Categories
 CREATE POLICY "Allow public read for seo_categories" ON seo_categories FOR SELECT USING (true);
-CREATE POLICY "Allow public read for seo_books" ON seo_books FOR SELECT USING (true);
-CREATE POLICY "Allow public read for seo_authors" ON seo_authors FOR SELECT USING (true);
+CREATE POLICY "Allow service_role full access for seo_categories" ON seo_categories FOR ALL TO service_role USING (true) WITH CHECK (true);
 
--- Policies: Service Role / Admin Write
-CREATE POLICY "Allow service role full access for categories" ON seo_categories FOR ALL USING (auth.role() = 'service_role');
-CREATE POLICY "Allow service role full access for books" ON seo_books FOR ALL USING (auth.role() = 'service_role');
-CREATE POLICY "Allow service role full access for authors" ON seo_authors FOR ALL USING (auth.role() = 'service_role');
+-- 2. Policies for Books
+CREATE POLICY "Allow public read for seo_books" ON seo_books FOR SELECT USING (true);
+CREATE POLICY "Allow service_role full access for seo_books" ON seo_books FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- 3. Policies for Authors
+CREATE POLICY "Allow public read for seo_authors" ON seo_authors FOR SELECT USING (true);
+CREATE POLICY "Allow service_role full access for seo_authors" ON seo_authors FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- TROUBLESHOOTING: If you still get RLS errors, you can UNCOMMENT these to allow all writes (NOT RECOMMENDED FOR PRODUCTION)
+-- CREATE POLICY "TEMP_ALLOW_INSERT_CAT" ON seo_categories FOR INSERT WITH CHECK (true);
+-- CREATE POLICY "TEMP_ALLOW_INSERT_BOOK" ON seo_books FOR INSERT WITH CHECK (true);
+-- CREATE POLICY "TEMP_ALLOW_INSERT_AUTHOR" ON seo_authors FOR INSERT WITH CHECK (true);
 
 -- Search stats function
 CREATE OR REPLACE FUNCTION get_search_stats(days INTEGER DEFAULT 7)
