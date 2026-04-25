@@ -16,6 +16,7 @@ interface BookCardProps {
 
 export default function BookCard({ book }: BookCardProps) {
   const router = useRouter();
+  const [seoSlug, setSeoSlug] = useState<string | null>(null);
   const [files, setFiles] = useState<BookFile[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -25,6 +26,18 @@ export default function BookCard({ book }: BookCardProps) {
   const [selectedFile, setSelectedFile] = useState<BookFile | null>(null);
 
   useEffect(() => {
+    const fetchSeoData = async () => {
+      try {
+        const res = await fetch(`/api/admin/books?archiveId=${book.identifier}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.slug) {
+            setSeoSlug(data.slug);
+          }
+        }
+      } catch (e) {}
+    };
+
     const fetchFiles = async () => {
       setIsLoadingFiles(true);
       try {
@@ -37,6 +50,7 @@ export default function BookCard({ book }: BookCardProps) {
       }
     };
 
+    fetchSeoData();
     fetchFiles();
   }, [book.identifier]);
 
@@ -72,7 +86,7 @@ export default function BookCard({ book }: BookCardProps) {
     <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100/50 flex flex-col h-full overflow-hidden relative">
       {/* Detail Link (Internal SEO link) - Only for the card body, excluding buttons */}
       <a
-        href={`/book/${slugify(book.title)}--${book.identifier}`}
+        href={seoSlug ? `/book/${seoSlug}` : `/book/${slugify(book.title)}--${book.identifier}`}
         className="absolute inset-0 z-0 cursor-pointer"
         aria-label="View Details"
       />

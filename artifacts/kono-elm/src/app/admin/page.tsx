@@ -20,7 +20,9 @@ import {
   Zap,
   Trash2,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { searchBooks, type Book, getBookFiles } from '@/lib/archive-api';
 import { slugify, generateCategorySlug } from '@/lib/utils';
@@ -41,6 +43,7 @@ interface Category {
   slug: string;
   title: string;
   description: string;
+  display_order?: number;
 }
 
 interface Author {
@@ -221,10 +224,10 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSaveCategory = async () => {
-    if (!newCategory.title) return;
-    // FIXED: Use standardized slug generator for categories
-    const payload = { ...newCategory, slug: generateCategorySlug(newCategory.title) };
+  const handleSaveCategory = async (categoryData?: any) => {
+    const payload = categoryData || { ...newCategory, slug: generateCategorySlug(newCategory.title) };
+    if (!payload.title) return;
+
     try {
       const res = await fetch('/api/admin/categories', {
         method: 'POST',
@@ -232,9 +235,11 @@ export default function AdminDashboard() {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        alert('تمت إضافة التصنيف');
-        setNewCategory({ title: '', slug: '', description: '' });
-        setShowCategoryForm(false);
+        if (!categoryData) {
+          alert('تمت إضافة التصنيف');
+          setNewCategory({ title: '', slug: '', description: '' });
+          setShowCategoryForm(false);
+        }
         fetchCategories();
       } else {
         const err = await res.json();
@@ -243,6 +248,23 @@ export default function AdminDashboard() {
     } catch (e) {
       alert('خطأ في الاتصال');
     }
+  };
+
+  const updateCategoryOrder = async (category: Category, direction: 'up' | 'down') => {
+    const currentIndex = categories.findIndex(c => c.slug === category.slug);
+    if (direction === 'up' && currentIndex === 0) return;
+    if (direction === 'down' && currentIndex === categories.length - 1) return;
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const targetCategory = categories[targetIndex];
+
+    const currentOrder = category.display_order || 0;
+    const targetOrder = targetCategory.display_order || 0;
+
+    // Swap orders
+    await handleSaveCategory({ ...category, display_order: targetIndex });
+    await handleSaveCategory({ ...targetCategory, display_order: currentIndex });
+    fetchCategories();
   };
 
   const handleGenerateCategoryDescription = async () => {
@@ -635,11 +657,29 @@ export default function AdminDashboard() {
                 )}
 
                 <div className="grid grid-cols-1 gap-2">
-                  {categories.map(c => (
+                  {categories.map((c, idx) => (
                     <div key={c.slug} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-gold-300 transition-all">
-                      <div className="flex flex-col">
-                          <span className="font-bold text-gray-700">{c.title}</span>
-                          <span className="text-[10px] text-gray-400 font-mono" dir="ltr">{c.slug}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-1">
+                          <button
+                            onClick={() => updateCategoryOrder(c, 'up')}
+                            disabled={idx === 0}
+                            className="p-0.5 hover:bg-gold-100 rounded disabled:opacity-30"
+                          >
+                            <ChevronUp className="w-4 h-4 text-gold-600" />
+                          </button>
+                          <button
+                            onClick={() => updateCategoryOrder(c, 'down')}
+                            disabled={idx === categories.length - 1}
+                            className="p-0.5 hover:bg-gold-100 rounded disabled:opacity-30"
+                          >
+                            <ChevronDown className="w-4 h-4 text-gold-600" />
+                          </button>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-gray-700">{c.title}</span>
+                            <span className="text-[10px] text-gray-400 font-mono" dir="ltr">{c.slug}</span>
+                        </div>
                       </div>
                       <button
                         onClick={() => handleSuggestBooks(c)}

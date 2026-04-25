@@ -1,4 +1,5 @@
-import { generateBookDescription as generateWithOpenAI, normalizeTitle } from './openai';
+import { normalizeTitle } from './openai';
+import { generateBookDescription as generateWithGroq } from './groq';
 
 export interface SeoContent {
   seoTitle: string;
@@ -20,8 +21,8 @@ export async function generateEnhancedSeoContent(
   // Step 1: Use pre-normalized title if provided, otherwise normalize using OpenAI
   const normalizedTitle = preNormalizedTitle || await normalizeTitle(originalTitle, originalAuthor);
 
-  // Step 2: Generate SEO description and Title using OpenAI (for higher quality and natural tone)
-  const aiContent = await generateWithOpenAI(normalizedTitle, originalAuthor);
+  // Step 2: Generate SEO description and Title using Groq (as per user request)
+  const aiContent = await generateWithGroq(normalizedTitle, originalAuthor);
 
   return {
     title: normalizedTitle,
