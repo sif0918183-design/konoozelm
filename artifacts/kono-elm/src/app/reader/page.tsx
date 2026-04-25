@@ -183,7 +183,8 @@ function ReaderContent() {
     };
 
     renderPage();
-  }, [pdf, pageNum, scale, pdfUrl, bookTitle, numPages, rendering]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pdf, pageNum, scale, pdfUrl, bookTitle, numPages]);
 
   const toggleNightMode = () => {
     const newMode = !isNightMode;
@@ -315,7 +316,7 @@ function ReaderContent() {
       {/* Reader Body */}
       <main className="pt-20 pb-8 flex justify-center">
         <div className={cn(
-          "shadow-2xl transition-all duration-300",
+          "shadow-2xl",
           isNightMode && "brightness-75 contrast-125"
         )}>
           <canvas

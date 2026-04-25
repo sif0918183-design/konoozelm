@@ -6,6 +6,7 @@ import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySl
 import { getBookDetails } from '@/lib/archive-api';
 import BookCard from '@/components/BookCard';
 import { slugify } from '@/lib/utils';
+import { generateBookDescription } from '@/lib/groq';
 
 interface Props {
   params: { slug: string };
@@ -20,8 +21,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
 
-  const title = seoBook?.seoTitle || `تحميل كتاب ${archiveDetails?.title || 'كتاب'} PDF وقراءته أونلاين - موسوعة كنوز العلم`;
-  const description = seoBook?.description || archiveDetails?.description || `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${archiveDetails?.author || 'غير معروف'} بصيغة PDF مجاناً.`;
+  let title = seoBook?.seoTitle;
+  let description = seoBook?.description;
+
+  // If not in database, try to generate using Groq for better SEO metadata
+  if (!description && archiveDetails) {
+    try {
+      const generated = await generateBookDescription(archiveDetails.title, archiveDetails.author || 'غير معروف');
+      title = title || generated.seoTitle;
+      description = generated.description;
+    } catch (e) {
+      title = title || `تحميل كتاب ${archiveDetails.title} PDF وقراءته أونلاين - موسوعة كنوز العلم`;
+      description = archiveDetails.description || `قراءة وتحميل كتاب ${archiveDetails.title} للمؤلف ${archiveDetails.author || 'غير معروف'} بصيغة PDF مجاناً.`;
+    }
+  }
+
+  title = title || `تحميل كتاب ${archiveDetails?.title || 'كتاب'} PDF وقراءته أونلاين - موسوعة كنوز العلم`;
+  description = description || `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${archiveDetails?.author || 'غير معروف'} بصيغة PDF مجاناً.`;
 
   return {
     title,
@@ -54,8 +70,18 @@ export default async function BookPage({ params }: Props) {
   const categorySlug = seoBook?.category_slug || slugify(displayCategory);
 
   // Mandatory content logic (Fallback)
-  const displayDescription = seoBook?.description ||
-    `يعتبر كتاب ${displayTitle} من الكتب القيمة والمهمة في بابه، حيث يقدم المؤلف ${displayAuthor} رؤية علمية ومنهجية متميزة. يهدف هذا الكتاب إلى تيسير الوصول للمعلومات الدقيقة لطلبة العلم والباحثين. يمكنك الآن تحميل نسخة PDF عالية الجودة أو القراءة مباشرة عبر متصفحك من خلال مكتبتنا الإلكترونية الشاملة.`;
+  let displayDescription = seoBook?.description;
+  let dynamicSeoTitle = seoBook?.seoTitle;
+
+  if (!displayDescription && archiveBook) {
+    try {
+      const generated = await generateBookDescription(displayTitle, displayAuthor);
+      displayDescription = generated.description;
+      dynamicSeoTitle = generated.seoTitle;
+    } catch (e) {
+      displayDescription = `يعتبر كتاب ${displayTitle} من الكتب القيمة والمهمة في بابه، حيث يقدم المؤلف ${displayAuthor} رؤية علمية ومنهجية متميزة. يهدف هذا الكتاب إلى تيسير الوصول للمعلومات الدقيقة لطلبة العلم والباحثين. يمكنك الآن تحميل نسخة PDF عالية الجودة أو القراءة مباشرة عبر متصفحك من خلال مكتبتنا الإلكترونية الشاملة.`;
+    }
+  }
 
   // Internal Links
   const [relatedBooks, authorBooks] = await Promise.all([
@@ -130,7 +156,7 @@ export default async function BookPage({ params }: Props) {
             <div className="md:col-span-2 space-y-8">
               <div>
                 <h1 className="text-3xl md:text-4xl font-amiri font-bold text-primary-900 mb-4 leading-tight">
-                  {displayTitle}
+                  {dynamicSeoTitle || displayTitle}
                 </h1>
                 <div className="mb-8 max-w-sm">
                   {archiveBook && (

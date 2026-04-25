@@ -1,4 +1,4 @@
-import { generateBookDescription as generateWithOpenAI, normalizeTitle } from './openai';
+import { normalizeTitle, generateBookDescription as generateWithOpenAI } from './openai';
 
 export interface SeoContent {
   seoTitle: string;
@@ -20,7 +20,7 @@ export async function generateEnhancedSeoContent(
   // Step 1: Use pre-normalized title if provided, otherwise normalize using OpenAI
   const normalizedTitle = preNormalizedTitle || await normalizeTitle(originalTitle, originalAuthor);
 
-  // Step 2: Generate SEO description and Title using OpenAI (for higher quality and natural tone)
+  // Step 2: Generate SEO description and Title using OpenAI (for Admin operations)
   const aiContent = await generateWithOpenAI(normalizedTitle, originalAuthor);
 
   return {

@@ -16,6 +16,7 @@ export interface Category {
   slug: string;
   title: string;
   description: string;
+  display_order?: number;
 }
 
 export interface Author {
@@ -80,6 +81,7 @@ export async function getCategories(): Promise<Category[]> {
   const { data, error } = await supabase
     .from('seo_categories')
     .select('*')
+    .order('display_order', { ascending: true })
     .order('created_at', { ascending: false });
 
   if (error) {
