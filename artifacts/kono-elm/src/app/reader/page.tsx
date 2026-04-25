@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { addToRecentBooks } from '@/lib/recent-books';
 import { optimizeArchiveUrl } from '@/lib/archive-utils';
+import { getCachedPDF } from '@/lib/pdf-cache';
 
 // CDN for PDF.js
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
@@ -74,13 +75,23 @@ function ReaderContent() {
         const pdfjsLib = (window as any).pdfjsLib;
         pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
 
-        // Optimize URL and use the proxy to avoid CORS issues if it's from archive.org
-        const optimizedUrl = optimizeArchiveUrl(url);
-        const proxyUrl = optimizedUrl.includes('archive.org')
-          ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
-          : optimizedUrl;
+        // Try to get from cache first
+        const cachedResponse = await getCachedPDF(url);
+        let pdfSource: any;
 
-        const loadingTask = pdfjsLib.getDocument(proxyUrl);
+        if (cachedResponse) {
+          const blob = await cachedResponse.blob();
+          const arrayBuffer = await blob.arrayBuffer();
+          pdfSource = { data: arrayBuffer };
+        } else {
+          // Optimize URL and use the proxy to avoid CORS issues if it's from archive.org
+          const optimizedUrl = optimizeArchiveUrl(url);
+          pdfSource = optimizedUrl.includes('archive.org')
+            ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
+            : optimizedUrl;
+        }
+
+        const loadingTask = pdfjsLib.getDocument(pdfSource);
         const pdfDoc = await loadingTask.promise;
         setPdf(pdfDoc);
         setNumPages(pdfDoc.numPages);

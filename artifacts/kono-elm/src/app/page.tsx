@@ -18,6 +18,32 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
 
+  // Restore search state from sessionStorage
+  useEffect(() => {
+    const savedState = sessionStorage.getItem('searchState');
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        setQuery(parsed.query || '');
+        setBooks(parsed.books || []);
+        setHasSearched(parsed.hasSearched || false);
+        setTotalResults(parsed.totalResults || 0);
+        setPage(parsed.page || 1);
+        setHasMore(parsed.hasMore || false);
+      } catch (e) {
+        console.error('Error restoring search state:', e);
+      }
+    }
+  }, []);
+
+  // Save search state to sessionStorage
+  useEffect(() => {
+    if (hasSearched) {
+      const state = { query, books, hasSearched, totalResults, page, hasMore };
+      sessionStorage.setItem('searchState', JSON.stringify(state));
+    }
+  }, [query, books, hasSearched, totalResults, page, hasMore]);
+
   const handleSearch = useCallback(async (searchQuery: string, pageNum: number = 1) => {
     if (!searchQuery.trim()) return;
 

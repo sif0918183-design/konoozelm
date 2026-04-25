@@ -13,7 +13,7 @@ export interface RecentBook {
 }
 
 const STORAGE_KEY = 'recentBooks';
-const MAX_RECENT = 5;
+const MAX_RECENT = 10;
 
 export function getRecentBooks(): RecentBook[] {
   if (typeof window === 'undefined') return [];
