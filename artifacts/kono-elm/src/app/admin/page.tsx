@@ -39,6 +39,7 @@ interface SeoBook {
   archiveId: string;
   seoTitle?: string;
   parts_count?: number;
+  lang?: string;
 }
 
 interface Category {
@@ -46,12 +47,14 @@ interface Category {
   title: string;
   description: string;
   display_order?: number;
+  lang?: string;
 }
 
 interface Author {
   slug: string;
   name: string;
   bio: string;
+  lang?: string;
 }
 
 interface Suggestion {
