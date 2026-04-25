@@ -7,6 +7,8 @@ const ASSETS_TO_CACHE = [
   '/reader',
   '/favicon.ico',
   '/favicon.png',
+  '/manifest.json',
+  '/icon.svg',
   PDFJS_CDN,
   PDFJS_WORKER_CDN
 ];
