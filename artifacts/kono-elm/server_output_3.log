@@ -1,0 +1,10 @@
+
+> kono-elm@1.0.0 start
+> next start
+
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 850ms
+⚠️ SUPABASE_SERVICE_ROLE_KEY is missing! Admin operations will fail.
