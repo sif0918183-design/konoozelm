@@ -156,7 +156,7 @@ export default async function BookPage({ params }: Props) {
             <div className="md:col-span-2 space-y-8">
               <div>
                 <h1 className="text-3xl md:text-4xl font-amiri font-bold text-primary-900 mb-4 leading-tight">
-                  {displayTitle}
+                  {dynamicSeoTitle || displayTitle}
                 </h1>
                 <div className="mb-8 max-w-sm">
                   {archiveBook && (
