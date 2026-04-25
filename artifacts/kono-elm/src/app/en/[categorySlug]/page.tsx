@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, ChevronRight, Book as BookIcon, Globe } from 'lucide-react';
+import { BookOpen, ChevronLeft, Book as BookIcon, Globe } from 'lucide-react';
 import { getCategoryBySlug, getBooksByCategory } from '@/lib/seo-data';
 import SearchStateCleaner from '@/components/SearchStateCleaner';
 import { translations } from '@/lib/translations';
@@ -13,14 +13,14 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const slug = decodeURIComponent(params.categorySlug);
-  const category = await getCategoryBySlug(slug);
-  if (!category) return { title: 'التصنيف غير موجود' };
+  const category = await getCategoryBySlug(slug, 'en');
+  if (!category) return { title: 'Category not found' };
 
   return {
-    title: `${category.title} - تحميل وقراءة كتب PDF`,
+    title: `${category.title} - Download & Read PDF Books`,
     description: category.description.substring(0, 160),
     alternates: {
-      canonical: `https://kono-elm.vercel.app/${params.categorySlug}`,
+      canonical: `https://kono-elm.vercel.app/en/${params.categorySlug}`,
       languages: {
         'ar': `https://kono-elm.vercel.app/${params.categorySlug}`,
         'en': `https://kono-elm.vercel.app/en/${params.categorySlug}`,
@@ -29,8 +29,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function CategoryPage({ params }: Props) {
-  const lang = 'ar';
+export default async function EnglishCategoryPage({ params }: Props) {
+  const lang = 'en';
   const t = translations[lang];
   const slug = decodeURIComponent(params.categorySlug);
   const category = await getCategoryBySlug(slug, lang);
@@ -40,14 +40,14 @@ export default async function CategoryPage({ params }: Props) {
   const books = await getBooksByCategory(category.slug, category.title, 200, lang);
 
   return (
-    <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">
+    <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="ltr">
       <SearchStateCleaner />
       <LanguageSwitcher />
 
       {/* Breadcrumbs */}
       <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 text-sm text-gray-500">
-        <Link href="/" className="hover:text-primary-900 transition-colors">{t.home}</Link>
-        <ChevronRight className="w-4 h-4" />
+        <Link href="/en" className="hover:text-primary-900 transition-colors">{t.home}</Link>
+        <ChevronLeft className="w-4 h-4" />
         <span className="text-gray-900 font-medium">{category.title}</span>
       </nav>
 
@@ -67,7 +67,7 @@ export default async function CategoryPage({ params }: Props) {
           {books.map((book) => (
             <Link
               key={book.archiveId}
-              href={`/book/${book.slug}--${book.archiveId}`}
+              href={`/en/book/${book.slug}--${book.archiveId}`}
               className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-gray-100 hover:border-gold-200 flex flex-col h-full"
             >
               <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gold-50 transition-colors">
@@ -79,7 +79,7 @@ export default async function CategoryPage({ params }: Props) {
               <p className="text-sm text-gray-500 mb-4">{book.author}</p>
               <div className="mt-auto flex items-center text-xs font-bold text-gold-600 group-hover:text-gold-700">
                 {t.read_more}
-                <ChevronRight className="w-4 h-4 mr-1 group-hover:translate-x-[-4px] transition-transform" />
+                <ChevronLeft className="w-4 h-4 ml-1 group-hover:translate-x-[4px] transition-transform" />
               </div>
             </Link>
           ))}

@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { books, categorySlug } = await request.json();
+    const { books, categorySlug, lang = 'ar' } = await request.json();
 
     if (!books || !Array.isArray(books)) {
       return NextResponse.json({ error: 'Books array is required' }, { status: 400 });
@@ -25,8 +25,9 @@ export async function POST(request: Request) {
                 archive_id: book.id,
                 category_slug: categorySlug,
                 status: 'rejected',
+                lang: lang,
                 metadata: { original_title: book.title }
-            }, { onConflict: 'archive_id,category_slug' });
+            }, { onConflict: 'archive_id,category_slug,lang' });
     }
 
     return NextResponse.json({ success: true });

@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { category, categorySlug, query } = await request.json();
+    const { category, categorySlug, query, lang = 'ar' } = await request.json();
 
     if (!category || !categorySlug) {
       return NextResponse.json({ error: 'Category and slug are required' }, { status: 400 });
@@ -35,12 +35,14 @@ export async function POST(request: Request) {
     const { data: existingBooks } = await supabase
       .from('seo_books')
       .select('archive_id')
+      .eq('lang', lang)
       .in('archive_id', candidateIds.slice(0, 600));
 
     const { data: feedback } = await supabase
       .from('smart_book_feedback')
       .select('archive_id, status')
       .eq('category_slug', categorySlug)
+      .eq('lang', lang)
       .in('archive_id', candidateIds.slice(0, 600));
 
     const existingIds = new Set(existingBooks?.map(b => b.archive_id) || []);

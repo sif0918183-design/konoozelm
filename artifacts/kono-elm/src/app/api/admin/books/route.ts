@@ -16,8 +16,9 @@ export async function GET(request: Request) {
   }
 
   if (!checkAuth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const lang = searchParams.get('lang') || 'ar';
   try {
-    const books = await getSeoBooks();
+    const books = await getSeoBooks(lang);
     return NextResponse.json(books || []);
   } catch (error: any) {
     console.error('Error in GET /api/admin/books:', error);

@@ -1,9 +1,8 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { User, Book as BookIcon, ChevronRight, Globe } from 'lucide-react';
+import { User, Book as BookIcon, Globe, ChevronLeft } from 'lucide-react';
 import { getAuthorBySlug, getBooksByAuthor } from '@/lib/seo-data';
-import SearchStateCleaner from '@/components/SearchStateCleaner';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
@@ -12,15 +11,15 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const decodedSlug = decodeURIComponent(params.slug);
-  const author = await getAuthorBySlug(decodedSlug);
-  if (!author) return { title: 'المؤلف غير موجود' };
+  const slug = decodeURIComponent(params.slug);
+  const author = await getAuthorBySlug(slug);
+  if (!author) return { title: 'Author not found' };
 
   return {
-    title: `كتب ومؤلفات ${author.name} - تحميل وقراءة PDF`,
-    description: author.bio?.substring(0, 160) || `جميع كتب ومؤلفات ${author.name} متاحة للتحميل والقراءة مجاناً.`,
+    title: `${author.name} - Books and Biography - Kono Elm Encyclopedia`,
+    description: author.bio?.substring(0, 160) || `Books and biography of ${author.name}`,
     alternates: {
-      canonical: `https://kono-elm.vercel.app/author/${params.slug}`,
+      canonical: `https://kono-elm.vercel.app/en/author/${params.slug}`,
       languages: {
         'ar': `https://kono-elm.vercel.app/author/${params.slug}`,
         'en': `https://kono-elm.vercel.app/en/author/${params.slug}`,
@@ -29,53 +28,51 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function AuthorPage({ params }: Props) {
-  const lang = 'ar';
+export default async function EnglishAuthorPage({ params }: Props) {
+  const lang = 'en';
   const t = translations[lang];
-  const decodedSlug = decodeURIComponent(params.slug);
-  const author = await getAuthorBySlug(decodedSlug, lang);
+  const slug = decodeURIComponent(params.slug);
+  const author = await getAuthorBySlug(slug);
 
   if (!author) notFound();
 
-  const books = await getBooksByAuthor(author.name);
+  const books = await getBooksByAuthor(author.name, 100);
 
   return (
-    <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">
-      <SearchStateCleaner />
+    <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="ltr">
       <LanguageSwitcher />
 
+      {/* Breadcrumbs */}
       <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 text-sm text-gray-500">
-        <Link href="/" className="hover:text-primary-900 transition-colors">{t.home}</Link>
-        <ChevronRight className="w-4 h-4" />
+        <Link href="/en" className="hover:text-primary-900 transition-colors">{t.home}</Link>
+        <ChevronLeft className="w-4 h-4" />
         <span className="text-gray-900 font-medium">{author.name}</span>
       </nav>
 
       <header className="bg-primary-900 text-white py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 rounded-full mb-6">
-            <User className="w-10 h-10 text-gold-200" />
+          <div className="w-20 h-20 bg-gold-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <User className="w-10 h-10 text-primary-900" />
           </div>
           <h1 className="text-4xl md:text-5xl font-amiri font-bold mb-6 text-gold-200">
             {author.name}
           </h1>
-          {author.bio && (
-            <p className="text-lg text-primary-100/90 leading-relaxed max-w-2xl mx-auto">
-              {author.bio}
-            </p>
-          )}
+          <p className="text-lg text-primary-100/90 leading-relaxed max-w-2xl mx-auto">
+            {author.bio || (lang === 'en' ? `Biography of ${author.name}` : `سيرة ${author.name}`)}
+          </p>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-12 -mt-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8 border-r-4 border-gold-500 pr-4">
-          {lang === 'ar' ? `مؤلفات ${author.name}` : `Works by ${author.name}`}
+      <main className="max-w-7xl mx-auto px-4 py-12">
+        <h2 className="text-2xl font-bold text-primary-900 mb-8 border-l-4 border-gold-500 pl-4">
+          {lang === 'en' ? `Books by ${author.name}` : `كتب ${author.name}`}
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {books.map((book) => (
             <Link
               key={book.archiveId}
-              href={`/book/${book.slug}--${book.archiveId}`}
+              href={`/en/book/${book.slug}--${book.archiveId}`}
               className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-gray-100 hover:border-gold-200 flex flex-col h-full"
             >
               <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gold-50 transition-colors">
@@ -86,7 +83,7 @@ export default async function AuthorPage({ params }: Props) {
               </h3>
               <div className="mt-auto flex items-center text-xs font-bold text-gold-600 group-hover:text-gold-700">
                 {t.read_more}
-                <ChevronRight className="w-4 h-4 mr-1 group-hover:translate-x-[-4px] transition-transform" />
+                <ChevronLeft className="w-4 h-4 ml-1 group-hover:translate-x-[4px] transition-transform" />
               </div>
             </Link>
           ))}
@@ -94,8 +91,8 @@ export default async function AuthorPage({ params }: Props) {
 
         {books.length === 0 && (
           <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
-            <User className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-            <p className="text-gray-500">{lang === 'ar' ? 'لا توجد كتب مضافة لهذا المؤلف حالياً' : 'No books found for this author yet.'}</p>
+            <BookIcon className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+            <p className="text-gray-500 font-bold mb-2">{lang === 'en' ? 'No books found for this author yet.' : 'لم يتم العثور على كتب لهذا المؤلف حالياً.'}</p>
           </div>
         )}
       </main>
