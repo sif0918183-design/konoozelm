@@ -83,7 +83,7 @@ export default async function EnglishBookPage({ params }: Props) {
       <LanguageSwitcher />
 
       {/* Breadcrumbs */}
-      <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 text-sm text-gray-500">
+      <nav className="max-w-7xl mx-auto px-4 py-4 mt-12 md:mt-0 flex items-center gap-2 text-sm text-gray-500">
         <Link href="/en" className="hover:text-primary-900 transition-colors">{t.home}</Link>
         <ChevronLeft className="w-4 h-4" />
         <Link href={`/en/${categorySlug}`} className="hover:text-primary-900 transition-colors">{displayCategory}</Link>

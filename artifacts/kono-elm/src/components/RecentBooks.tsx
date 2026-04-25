@@ -65,7 +65,7 @@ export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
   const handleRemove = (e: React.MouseEvent, url: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (confirm('هل تريد إزالة هذا الكتاب من القائمة؟')) {
+    if (confirm(t.confirm_remove_recent)) {
       removeFromRecent(url);
       setRecentBooks(getRecentBooks());
     }

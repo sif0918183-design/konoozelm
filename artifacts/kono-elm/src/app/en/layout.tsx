@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Tajawal, Amiri } from 'next/font/google';
 import '../globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import LanguageRedirector from '@/components/LanguageRedirector';
+import DocumentLanguageSetter from '@/components/DocumentLanguageSetter';
 
 const tajawal = Tajawal({
   subsets: ['arabic', 'latin'],
@@ -37,8 +39,10 @@ export default function EnglishLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" dir="ltr" className={`${tajawal.variable} ${amiri.variable}`}>
-      <body className="min-h-screen bg-gradient-to-b from-[#fafaf5] to-[#f0f5eb] font-tajawal">
+    <html className={`${tajawal.variable} ${amiri.variable}`}>
+      <body className="min-h-screen bg-gradient-to-b from-[#fafaf5] to-[#f0f5eb] font-tajawal overflow-x-hidden">
+        <LanguageRedirector />
+        <DocumentLanguageSetter />
         {children}
         <PWAInstallPrompt />
         <script

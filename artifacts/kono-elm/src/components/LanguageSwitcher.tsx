@@ -10,9 +10,14 @@ export default function LanguageSwitcher({ light = false }: { light?: boolean })
   const pathname = usePathname();
   const isEnglish = pathname?.startsWith('/en');
 
+  // If we are on a specific item page (category/book/author),
+  // redirecting to the same path in the other language will 404 because slugs are unique per language.
+  // We check if the path is complex and redirect to the home page of that language instead.
+  const isSubPage = pathname !== '/' && pathname !== '/en';
+
   const togglePath = isEnglish
-    ? (pathname.replace(/^\/en/, '') || '/')
-    : `/en${pathname === '/' ? '' : pathname}`;
+    ? (isSubPage ? '/' : (pathname.replace(/^\/en/, '') || '/'))
+    : (isSubPage ? '/en' : `/en${pathname === '/' ? '' : pathname}`);
 
   const handleLanguageSwitch = () => {
     const nextLang = isEnglish ? 'ar' : 'en';

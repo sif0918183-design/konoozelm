@@ -44,7 +44,7 @@ export default async function AuthorPage({ params }: Props) {
       <SearchStateCleaner />
       <LanguageSwitcher />
 
-      <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 text-sm text-gray-500">
+      <nav className="max-w-7xl mx-auto px-4 py-4 mt-12 md:mt-0 flex items-center gap-2 text-sm text-gray-500">
         <Link href="/" className="hover:text-primary-900 transition-colors">{t.home}</Link>
         <ChevronRight className="w-4 h-4" />
         <span className="text-gray-900 font-medium">{author.name}</span>

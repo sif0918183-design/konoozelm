@@ -62,7 +62,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       setDialogMode('read');
       setShowPartsDialog(true);
     } else if (files.length === 1) {
-      const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}`;
+      const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
       router.push(readerUrl);
     } else {
       // Fallback if no specific files found yet

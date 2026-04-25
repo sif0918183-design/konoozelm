@@ -40,6 +40,13 @@ export interface TranslationKeys {
   view_full_history: string;
   ready_for_offline: string;
   page_of: string; // e.g. "Page {current} of {total}"
+  select_part_read: string;
+  select_part_download: string;
+  close: string;
+  loading_book: string;
+  preparing_download: string;
+  dont_close_page: string;
+  book_label: string;
 
   // Admin Keys
   admin_title: string;
@@ -98,6 +105,26 @@ export interface TranslationKeys {
   admin_bulk_partial_error: string;
   admin_bulk_error: string;
   admin_conn_error: string;
+  error_no_pdf: string;
+  error_pdf_lib: string;
+  error_pdf_404: string;
+  error_pdf_general: string;
+  confirm_remove_recent: string;
+  edu_notice: string;
+  edu_title: string;
+  edu_quote: string;
+  edu_desc: string;
+  did_you_know: string;
+  did_you_know_desc: string;
+  cancel_and_return: string;
+  back: string;
+  night_mode: string;
+  download_pdf: string;
+  sorry_error: string;
+  security_restriction_msg: string;
+  preparing_book: string;
+  preparation_progress: string;
+  of_label: string;
 }
 
 export const translations: Record<Language, TranslationKeys> = {
@@ -141,6 +168,13 @@ export const translations: Record<Language, TranslationKeys> = {
     view_full_history: 'عرض السجل الكامل',
     ready_for_offline: 'جاهز للقراءة بدون إنترنت',
     page_of: 'الصفحة {current} من {total}',
+    select_part_read: 'اختر الجزء للقراءة',
+    select_part_download: 'اختر الجزء للتحميل',
+    close: 'إغلاق',
+    loading_book: 'جاري تحميل الكتاب...',
+    preparing_download: 'اكتمل التحضير، سيبدأ التحميل الآن...',
+    dont_close_page: 'يرجى عدم إغلاق هذه الصفحة حتى يكتمل الشريط',
+    book_label: 'الكتاب',
     admin_title: 'لوحة تحكم موسوعة كنوز العلم',
     admin_main_site: 'الموقع الرئيسي',
     admin_search_archive: 'البحث في المكتبة العالمية (Archive)',
@@ -196,7 +230,27 @@ export const translations: Record<Language, TranslationKeys> = {
     admin_bulk_success: 'تمت إضافة جميع الكتب بنجاح',
     admin_bulk_partial_error: 'تمت الإضافة مع وجود أخطاء في {count} كتب. راجع السجلات.',
     admin_bulk_error: 'فشل الإضافة الجماعية (خطأ خادم)',
-    admin_conn_error: 'خطأ في الاتصال'
+    admin_conn_error: 'خطأ في الاتصال',
+    error_no_pdf: 'رابط الكتاب غير موجود',
+    error_pdf_lib: 'حدث خطأ أثناء تحميل مكتبة القراءة',
+    error_pdf_404: 'الملف غير موجود (404)',
+    error_pdf_general: 'حدث خطأ أثناء تحميل الكتاب. قد يكون الرابط غير صالح أو محمي.',
+    confirm_remove_recent: 'هل تريد إزالة هذا الكتاب من القائمة؟',
+    edu_notice: 'تنويه تربوي وقيمة معرفية',
+    edu_title: 'العلم صيدٌ والكتابةُ قيدُه',
+    edu_quote: 'قيّد صيودك بالحبال الواثقة.. إن من الحماقة أن تصيد غزالة وتتركها بين الخلائق طالقة.',
+    edu_desc: 'ندعوك لاستثمار هذا الوقت في تأمل فضل العلم، ونشجعك على تدوين فوائد هذا الكتاب ونشرها لتعم المنفعة.',
+    did_you_know: 'هل تعلم؟',
+    did_you_know_desc: 'موسوعة كنوز العلم تخدم آلاف الباحثين شهرياً، مساهمتك في نشر رابط الموقع تدعم استمرار هذا العطاء العلمي.',
+    cancel_and_return: 'إلغاء العملية والعودة',
+    back: 'رجوع',
+    night_mode: 'الوضع الليلي',
+    download_pdf: 'تحميل PDF',
+    sorry_error: 'عذراً، حدث خطأ أثناء تحميل الكتاب',
+    security_restriction_msg: 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.',
+    preparing_book: 'جارٍ تحضير الكتاب للتحميل',
+    preparation_progress: 'نسبة التحضير',
+    of_label: 'من'
   },
   en: {
     title: 'Kono Elm Encyclopedia',
@@ -238,6 +292,13 @@ export const translations: Record<Language, TranslationKeys> = {
     view_full_history: 'View Full History',
     ready_for_offline: 'Ready for offline reading',
     page_of: 'Page {current} of {total}',
+    select_part_read: 'Select part to read',
+    select_part_download: 'Select part to download',
+    close: 'Close',
+    loading_book: 'Loading book...',
+    preparing_download: 'Preparation complete, downloading now...',
+    dont_close_page: 'Please do not close this page until the bar is complete',
+    book_label: 'Book',
     admin_title: 'Kono Elm Control Panel',
     admin_main_site: 'Main Site',
     admin_search_archive: 'Search Global Library (Archive)',
@@ -293,6 +354,26 @@ export const translations: Record<Language, TranslationKeys> = {
     admin_bulk_success: 'All books added successfully',
     admin_bulk_partial_error: 'Added with errors in {count} books. Check logs.',
     admin_bulk_error: 'Bulk addition failed (server error)',
-    admin_conn_error: 'Connection error'
+    admin_conn_error: 'Connection error',
+    error_no_pdf: 'Book link not found',
+    error_pdf_lib: 'An error occurred while loading the reading library',
+    error_pdf_404: 'File not found (404)',
+    error_pdf_general: 'An error occurred while loading the book. The link may be invalid or protected.',
+    confirm_remove_recent: 'Do you want to remove this book from the list?',
+    edu_notice: 'Educational Notice & Knowledge Value',
+    edu_title: 'Knowledge is Prey and Writing is its Tether',
+    edu_quote: '"Tether your prey with strong ropes.. for it is foolish to hunt a gazelle and leave it untethered among the creatures."',
+    edu_desc: 'We invite you to use this time to reflect on the virtue of knowledge, and we encourage you to record the benefits of this book and share them for common good.',
+    did_you_know: 'Did you know?',
+    did_you_know_desc: 'Kono Elm Encyclopedia serves thousands of researchers monthly; your contribution in sharing the site link supports the continuation of this scientific gift.',
+    cancel_and_return: 'Cancel Process',
+    back: 'Back',
+    night_mode: 'Night Mode',
+    download_pdf: 'Download PDF',
+    sorry_error: 'Sorry, an error occurred',
+    security_restriction_msg: 'This might be due to security restrictions (CORS) or an invalid link.',
+    preparing_book: 'Preparing book for download',
+    preparation_progress: 'Preparation Progress',
+    of_label: 'of'
   }
 };

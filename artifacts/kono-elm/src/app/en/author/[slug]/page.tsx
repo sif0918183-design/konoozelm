@@ -12,7 +12,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const slug = decodeURIComponent(params.slug);
-  const author = await getAuthorBySlug(slug);
+  const author = await getAuthorBySlug(slug, 'en');
   if (!author) return { title: 'Author not found' };
 
   return {
@@ -32,18 +32,18 @@ export default async function EnglishAuthorPage({ params }: Props) {
   const lang = 'en';
   const t = translations[lang];
   const slug = decodeURIComponent(params.slug);
-  const author = await getAuthorBySlug(slug);
+  const author = await getAuthorBySlug(slug, 'en');
 
   if (!author) notFound();
 
-  const books = await getBooksByAuthor(author.name, 100);
+  const books = await getBooksByAuthor(author.name, 100, 'en');
 
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="ltr">
       <LanguageSwitcher />
 
       {/* Breadcrumbs */}
-      <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 text-sm text-gray-500">
+      <nav className="max-w-7xl mx-auto px-4 py-4 mt-12 md:mt-0 flex items-center gap-2 text-sm text-gray-500">
         <Link href="/en" className="hover:text-primary-900 transition-colors">{t.home}</Link>
         <ChevronLeft className="w-4 h-4" />
         <span className="text-gray-900 font-medium">{author.name}</span>

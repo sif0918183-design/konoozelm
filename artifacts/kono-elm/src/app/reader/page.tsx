@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { translations } from '@/lib/translations';
 import {
   ChevronLeft,
   ChevronRight,
@@ -26,8 +27,16 @@ const PDFJS_WORKER_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174
 function ReaderContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Use 'lang' query param or check pathname (if it was ever moved under /en/reader)
+  const langParam = searchParams.get('lang');
+  const isEnglish = langParam === 'en' || pathname?.startsWith('/en');
+  const lang = isEnglish ? 'en' : 'ar';
+  const t = translations[lang];
+
   const pdfUrl = searchParams.get('pdf');
-  const bookTitle = searchParams.get('title') || 'جاري التحميل...';
+  const bookTitle = searchParams.get('title') || t.loading;
 
   const [pdf, setPdf] = useState<any>(null);
   const [pageNum, setPageNum] = useState(1);
@@ -44,7 +53,7 @@ function ReaderContent() {
   // Initialize PDF.js and Load Document
   useEffect(() => {
     if (!pdfUrl) {
-      setError('رابط الكتاب غير موجود');
+      setError(t.error_no_pdf);
       setIsLoading(false);
       return;
     }
@@ -65,7 +74,7 @@ function ReaderContent() {
         }
       } catch (err) {
         console.error('Error loading PDF.js:', err);
-        setError('حدث خطأ أثناء تحميل مكتبة القراءة');
+        setError(t.error_pdf_lib);
         setIsLoading(false);
       }
     };
@@ -118,7 +127,7 @@ function ReaderContent() {
         setIsLoading(false);
       } catch (err: any) {
         console.error('Error initializing PDF:', err);
-        setError(err.message?.includes('404') ? 'الملف غير موجود (404)' : 'حدث خطأ أثناء تحميل الكتاب. قد يكون الرابط غير صالح أو محمي.');
+        setError(err.message?.includes('404') ? t.error_pdf_404 : t.error_pdf_general);
         setIsLoading(false);
       }
     };
@@ -128,7 +137,7 @@ function ReaderContent() {
     // Load Night Mode preference
     const savedNightMode = localStorage.getItem('nightMode') === 'true';
     setIsNightMode(savedNightMode);
-  }, [pdfUrl, bookTitle]);
+  }, [pdfUrl, bookTitle, t.error_no_pdf, t.error_pdf_lib, t.error_pdf_404, t.error_pdf_general]);
 
   // Render Page
   useEffect(() => {
@@ -202,27 +211,27 @@ function ReaderContent() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50" dir={isEnglish ? 'ltr' : 'rtl'}>
         <Loader2 className="w-12 h-12 text-primary-900 animate-spin mb-4" />
-        <p className="text-primary-900 font-bold text-lg animate-pulse">جاري تحميل الكتاب...</p>
+        <p className="text-primary-900 font-bold text-lg animate-pulse">{t.loading_book}</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50 p-4 text-center">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50 p-4 text-center" dir={isEnglish ? 'ltr' : 'rtl'}>
         <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md border border-red-100">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">عذراً، حدث خطأ أثناء تحميل الكتاب</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">{isEnglish ? 'Sorry, an error occurred' : 'عذراً، حدث خطأ أثناء تحميل الكتاب'}</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => router.back()}
             className="w-full bg-primary-900 text-white font-bold py-3 rounded-xl hover:bg-primary-800 transition-colors"
           >
-            العودة للمكتبة
+            {t.back_to_home}
           </button>
-          <p className="mt-4 text-xs text-gray-400">قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.</p>
+          <p className="mt-4 text-xs text-gray-400">{isEnglish ? 'This might be due to security restrictions (CORS) or an invalid link.' : 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.'}</p>
         </div>
       </div>
     );
@@ -242,9 +251,9 @@ function ReaderContent() {
           <button
             onClick={() => router.back()}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-            title="رجوع"
+            title={t.back}
           >
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className={`w-5 h-5 ${isEnglish ? 'rotate-180' : ''}`} />
           </button>
           <h1 className="font-bold text-sm md:text-base truncate max-w-[150px] md:max-w-md" title={bookTitle}>
             {bookTitle}
@@ -274,11 +283,11 @@ function ReaderContent() {
           {/* Navigation */}
           <div className="flex items-center gap-1 md:gap-2 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
             <button
-              onClick={() => changePage(-1)}
-              disabled={pageNum <= 1}
+              onClick={() => changePage(isEnglish ? 1 : -1)}
+              disabled={isEnglish ? pageNum >= numPages : pageNum <= 1}
               className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md disabled:opacity-30"
             >
-              <ChevronRight className="w-5 h-5" />
+              {isEnglish ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
             </button>
             <div className="flex items-center gap-1 px-2 text-xs md:text-sm font-bold">
               <span>{pageNum}</span>
@@ -286,18 +295,18 @@ function ReaderContent() {
               <span>{numPages}</span>
             </div>
             <button
-              onClick={() => changePage(1)}
-              disabled={pageNum >= numPages}
+              onClick={() => changePage(isEnglish ? -1 : 1)}
+              disabled={isEnglish ? pageNum <= 1 : pageNum >= numPages}
               className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md disabled:opacity-30"
             >
-              <ChevronLeft className="w-5 h-5" />
+              {isEnglish ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
             </button>
           </div>
 
           <button
             onClick={toggleNightMode}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-            title="الوضع الليلي"
+            title={t.night_mode}
           >
             {isNightMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
           </button>
@@ -306,7 +315,7 @@ function ReaderContent() {
             href={pdfUrl!}
             download
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-            title="تحميل PDF"
+            title={t.download_pdf}
           >
             <Download className="w-5 h-5" />
           </a>
@@ -329,18 +338,18 @@ function ReaderContent() {
       {/* Floating Navigation Controls (Mobile) */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 md:hidden">
         <button
-          onClick={() => changePage(-1)}
-          disabled={pageNum <= 1}
+          onClick={() => changePage(isEnglish ? 1 : -1)}
+          disabled={isEnglish ? pageNum >= numPages : pageNum <= 1}
           className="bg-primary-900 text-white p-3 rounded-full shadow-lg disabled:opacity-50"
         >
-          <ChevronRight className="w-6 h-6" />
+          {isEnglish ? <ChevronLeft className="w-6 h-6" /> : <ChevronRight className="w-6 h-6" />}
         </button>
         <button
-          onClick={() => changePage(1)}
-          disabled={pageNum >= numPages}
+          onClick={() => changePage(isEnglish ? -1 : 1)}
+          disabled={isEnglish ? pageNum <= 1 : pageNum >= numPages}
           className="bg-primary-900 text-white p-3 rounded-full shadow-lg disabled:opacity-50"
         >
-          <ChevronLeft className="w-6 h-6" />
+          {isEnglish ? <ChevronRight className="w-6 h-6" /> : <ChevronLeft className="w-6 h-6" />}
         </button>
       </div>
     </div>
@@ -352,7 +361,7 @@ export default function ReaderPage() {
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50">
         <Loader2 className="w-12 h-12 text-primary-900 animate-spin mb-4" />
-        <p className="text-primary-900 font-bold text-lg animate-pulse">جاري التحميل...</p>
+        <p className="text-primary-900 font-bold text-lg animate-pulse">Loading...</p>
       </div>
     }>
       <ReaderContent />

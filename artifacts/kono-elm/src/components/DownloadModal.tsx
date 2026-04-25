@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Download, Info } from 'lucide-react';
 import { cn, optimizeArchiveUrl, formatBytes } from '@/lib/utils';
+import { translations } from '@/lib/translations';
+import { usePathname } from 'next/navigation';
 
 interface DownloadModalProps {
   isOpen: boolean;
@@ -21,6 +23,11 @@ export default function DownloadModal({
   bookTitle,
   fileSize,
 }: DownloadModalProps) {
+  const pathname = usePathname();
+  const isEnglish = pathname?.startsWith('/en');
+  const lang = isEnglish ? 'en' : 'ar';
+  const t = translations[lang];
+
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -78,7 +85,7 @@ export default function DownloadModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#fcfcf8]/90 backdrop-blur-md animate-in fade-in duration-500">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#fcfcf8]/90 backdrop-blur-md animate-in fade-in duration-500" dir={isEnglish ? 'ltr' : 'rtl'}>
       <div className="bg-white rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(21,71,52,0.15)] w-full max-w-5xl min-h-[70vh] overflow-hidden border border-gold-100 flex flex-col md:flex-row animate-in slide-in-from-bottom-8 duration-700">
 
         {/* Left side: Advertising/Awareness Area */}
@@ -90,27 +97,27 @@ export default function DownloadModal({
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/20 border border-gold-500/30 text-gold-200 text-xs font-bold mb-6">
               <Info className="w-4 h-4" />
-              تنويه تربوي وقيمة معرفية
+              {t.edu_notice}
             </div>
 
             <h2 className="text-3xl md:text-4xl font-black mb-6 text-gold-100 leading-tight">
-              العلم صيدٌ <br/> والكتابةُ قيدُه
+              {t.edu_title}
             </h2>
 
             <div className="space-y-6 text-primary-50/90 leading-relaxed text-lg italic">
               <p>
-                &quot;قيّد صيودك بالحبال الواثقة.. إن من الحماقة أن تصيد غزالة وتتركها بين الخلائق طالقة.&quot;
+                {t.edu_quote}
               </p>
-              <p className="text-base not-italic text-primary-200 border-r-4 border-gold-500 pr-4">
-                ندعوك لاستثمار هذا الوقت في تأمل فضل العلم، ونشجعك على تدوين فوائد هذا الكتاب ونشرها لتعم المنفعة.
+              <p className={`text-base not-italic text-primary-200 ${isEnglish ? 'border-l-4' : 'border-r-4'} border-gold-500 ${isEnglish ? 'pl-4' : 'pr-4'}`}>
+                {t.edu_desc}
               </p>
             </div>
 
             {/* Placeholder for actual advertisement or extra message */}
             <div className="mt-12 p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <p className="text-sm font-medium text-gold-200 mb-2">هل تعلم؟</p>
+              <p className="text-sm font-medium text-gold-200 mb-2">{t.did_you_know}</p>
               <p className="text-sm text-white/70">
-                موسوعة كنوز العلم تخدم آلاف الباحثين شهرياً، مساهمتك في نشر رابط الموقع تدعم استمرار هذا العطاء العلمي.
+                {t.did_you_know_desc}
               </p>
             </div>
           </div>
@@ -120,7 +127,7 @@ export default function DownloadModal({
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col items-center justify-center bg-white relative">
           <button
             onClick={onClose}
-            className="absolute top-6 left-6 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600"
+            className={`absolute top-6 ${isEnglish ? 'right-6' : 'left-6'} p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600`}
           >
             <X className="w-6 h-6" />
           </button>
@@ -140,7 +147,7 @@ export default function DownloadModal({
             </div>
 
             <h3 className="text-2xl font-bold text-primary-900 mb-3 text-center">
-              جارٍ تحضير الكتاب للتحميل
+              {t.preparing_book}
             </h3>
             <p className="text-gray-500 text-center mb-10 font-medium leading-relaxed">
               {bookTitle}
@@ -150,10 +157,10 @@ export default function DownloadModal({
             <div className="w-full space-y-4 mb-10">
               <div className="flex justify-between items-end mb-2">
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold text-primary-700">نسبة التحضير</span>
+                  <span className="text-sm font-bold text-primary-700">{t.preparation_progress}</span>
                   {fileSize && (
-                    <span className="text-[10px] text-gray-400 font-medium" dir="rtl">
-                      {formatBytes((Number(fileSize) * progress) / 100)} من {formatBytes(fileSize)}
+                    <span className="text-[10px] text-gray-400 font-medium" dir={isEnglish ? 'ltr' : 'rtl'}>
+                      {formatBytes((Number(fileSize) * progress) / 100)} {t.of_label} {formatBytes(fileSize)}
                     </span>
                   )}
                 </div>
@@ -170,7 +177,7 @@ export default function DownloadModal({
               </div>
 
               <p className="text-xs text-center text-gray-400 font-medium">
-                {isComplete ? 'اكتمل التحضير، سيبدأ التحميل الآن...' : 'يرجى عدم إغلاق هذه الصفحة حتى يكتمل الشريط'}
+                {isComplete ? t.preparing_download : t.dont_close_page}
               </p>
             </div>
 
@@ -178,7 +185,7 @@ export default function DownloadModal({
               onClick={onClose}
               className="w-full py-4 rounded-2xl border-2 border-gray-100 text-gray-500 font-bold hover:bg-gray-50 hover:text-red-600 hover:border-red-100 transition-all duration-300"
             >
-              إلغاء العملية والعودة
+              {t.cancel_and_return}
             </button>
           </div>
         </div>
