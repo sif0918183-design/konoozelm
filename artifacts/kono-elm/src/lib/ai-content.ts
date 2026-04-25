@@ -1,5 +1,4 @@
-import { generateBookDescription as generateWithGroq } from './groq';
-import { normalizeTitle } from './openai';
+import { generateBookDescription as generateWithOpenAI, normalizeTitle } from './openai';
 
 export interface SeoContent {
   seoTitle: string;
@@ -9,9 +8,8 @@ export interface SeoContent {
 }
 
 /**
- * Generates high-quality SEO content by combining OpenAI and Groq.
- * 1. OpenAI is used for title normalization and deep understanding.
- * 2. Groq is used for fast generation of the description and SEO title.
+ * Generates high-quality SEO content using OpenAI GPT-4o.
+ * OpenAI is used for title normalization and human-like description generation.
  */
 export async function generateEnhancedSeoContent(
   originalTitle: string,
@@ -22,14 +20,13 @@ export async function generateEnhancedSeoContent(
   // Step 1: Use pre-normalized title if provided, otherwise normalize using OpenAI
   const normalizedTitle = preNormalizedTitle || await normalizeTitle(originalTitle, originalAuthor);
 
-  // Step 2: Generate SEO description and Title using Groq (for speed)
-  // We pass the normalized title to Groq for better results
-  const groqContent = await generateWithGroq(normalizedTitle, originalAuthor);
+  // Step 2: Generate SEO description and Title using OpenAI (for higher quality and natural tone)
+  const aiContent = await generateWithOpenAI(normalizedTitle, originalAuthor);
 
   return {
     title: normalizedTitle,
     author: originalAuthor,
-    seoTitle: groqContent.seoTitle,
-    description: groqContent.description
+    seoTitle: aiContent.seoTitle,
+    description: aiContent.description
   };
 }
