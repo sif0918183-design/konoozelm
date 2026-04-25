@@ -132,9 +132,9 @@ export default function EnglishHome() {
           <div className="absolute bottom-0 right-0 w-96 h-96 border-4 border-white/20 rounded-full translate-x-1/3 translate-y-1/3" />
         </div>
 
-        <LanguageSwitcher />
+        <LanguageSwitcher light />
 
-        <div className="max-w-4xl mx-auto text-center relative z-10">
+        <div className="max-w-4xl mx-auto text-center relative z-10 mt-12 md:mt-0">
           <h1 className="text-4xl md:text-6xl font-amiri font-bold mb-4 tracking-tight text-gold-200 drop-shadow-sm">
             {t.title}
           </h1>
