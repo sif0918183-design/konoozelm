@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { User, Book as BookIcon, ChevronRight } from 'lucide-react';
 import { getAuthorBySlug, getBooksByAuthor } from '@/lib/seo-data';
+import SearchStateCleaner from '@/components/SearchStateCleaner';
 
 interface Props {
   params: { slug: string };
@@ -29,6 +30,7 @@ export default async function AuthorPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">
+      <SearchStateCleaner />
       <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 text-sm text-gray-500">
         <Link href="/" className="hover:text-primary-900 transition-colors">الرئيسية</Link>
         <ChevronRight className="w-4 h-4" />

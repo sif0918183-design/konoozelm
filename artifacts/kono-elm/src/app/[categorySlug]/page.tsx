@@ -1,8 +1,9 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, Tag, ChevronRight, Book as BookIcon } from 'lucide-react';
+import { BookOpen, ChevronRight, Book as BookIcon } from 'lucide-react';
 import { getCategoryBySlug, getBooksByCategory } from '@/lib/seo-data';
+import SearchStateCleaner from '@/components/SearchStateCleaner';
 
 interface Props {
   params: { categorySlug: string };
@@ -25,11 +26,11 @@ export default async function CategoryPage({ params }: Props) {
 
   if (!category) notFound();
 
-  // Primary Query by Slug AND Title for maximum discovery
   const books = await getBooksByCategory(category.slug, category.title, 200);
 
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">
+      <SearchStateCleaner />
       {/* Breadcrumbs */}
       <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 text-sm text-gray-500">
         <Link href="/" className="hover:text-primary-900 transition-colors">الرئيسية</Link>
@@ -75,11 +76,6 @@ export default async function CategoryPage({ params }: Props) {
           <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
             <BookOpen className="w-16 h-16 text-gray-200 mx-auto mb-4" />
             <p className="text-gray-500 font-bold mb-2">لا توجد كتب في هذا التصنيف حالياً</p>
-            <div className="text-[10px] text-gray-300 mt-4 font-mono">
-                Diagnostic Info:<br/>
-                Title: {category.title}<br/>
-                Slug: {category.slug}
-            </div>
           </div>
         )}
       </main>
