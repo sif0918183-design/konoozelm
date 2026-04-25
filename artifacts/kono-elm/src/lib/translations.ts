@@ -1,6 +1,106 @@
 export type Language = 'ar' | 'en';
 
-export const translations = {
+export interface TranslationKeys {
+  title: string;
+  subtitle: string;
+  search_placeholder: string;
+  search_button: string;
+  loading: string;
+  no_results: string;
+  try_another_word: string;
+  results_found: string;
+  back_to_home: string;
+  featured_categories: string;
+  read_more: string;
+  offline_notice: string;
+  footer_text: string;
+  rights_reserved: string;
+  load_more: string;
+  continue_reading: string;
+  recent_books: string;
+  show_more: string;
+  show_less: string;
+  download: string;
+  read_now: string;
+  category: string;
+  author: string;
+  parts: string;
+  no_books_in_category: string;
+  home: string;
+  language_switcher: string;
+  error_search: string;
+  search_start_title: string;
+  search_start_desc: string;
+  publisher: string;
+  multi_part: string;
+  available_offline: string;
+  unpin: string;
+  pin: string;
+  remove: string;
+  view_full_history: string;
+  ready_for_offline: string;
+  page_of: string; // e.g. "Page {current} of {total}"
+
+  // Admin Keys
+  admin_title: string;
+  admin_main_site: string;
+  admin_search_archive: string;
+  admin_categories_suggestions: string;
+  admin_add_category: string;
+  admin_cancel: string;
+  admin_save_category: string;
+  admin_generate_ai: string;
+  admin_smart_suggestions: string;
+  admin_authors_management: string;
+  admin_add_author: string;
+  admin_save_author: string;
+  admin_seo_preparation: string;
+  admin_seo_meta_title: string;
+  admin_slug: string;
+  admin_category: string;
+  admin_author: string;
+  admin_parts_count: string;
+  admin_seo_description: string;
+  admin_save_and_publish: string;
+  admin_update_data: string;
+  admin_smart_system_ready: string;
+  admin_smart_system_desc: string;
+  admin_suggested_books: string;
+  admin_found_books: string;
+  admin_search_more: string;
+  admin_analyzing: string;
+  admin_no_suggestions: string;
+  admin_reject_selected: string;
+  admin_selected_count: string;
+  admin_add_selected: string;
+  admin_processing: string;
+  admin_ai_magic_working: string;
+  admin_ai_magic_desc: string;
+  admin_added_already: string;
+  admin_rejected: string;
+  admin_new: string;
+  admin_tab_arabic: string;
+  admin_tab_english: string;
+  admin_language: string;
+  admin_select_lang: string;
+  admin_desc_limit_hint: string;
+  admin_cat_placeholder: string;
+  admin_cat_desc_placeholder: string;
+  admin_author_name_placeholder: string;
+  admin_author_bio_placeholder: string;
+  admin_success_save_book: string;
+  admin_error_save_book: string;
+  admin_success_save_cat: string;
+  admin_error_save_cat: string;
+  admin_success_save_author: string;
+  admin_error_save_author: string;
+  admin_bulk_success: string;
+  admin_bulk_partial_error: string;
+  admin_bulk_error: string;
+  admin_conn_error: string;
+}
+
+export const translations: Record<Language, TranslationKeys> = {
   ar: {
     title: 'مُوسُوعَةُ كُنُوزِ العِلْمِ',
     subtitle: 'المكتبة الإلكترونية الشاملة للكتب والرسائل والمخطوطات الإسلامية',
@@ -17,18 +117,30 @@ export const translations = {
     footer_text: 'مشروع غير ربحي يهدف لتيسير الوصول للكتب الإسلامية القيمة والمخطوطات النادرة من أرشيف المكتبات العالمية.',
     rights_reserved: 'جميع الحقوق محفوظة © {year} - تعتمد على مكتبة Archive.org',
     load_more: 'تحميل المزيد',
-    continue_reading: 'أكمل القراءة',
+    continue_reading: 'تابع القراءة',
     recent_books: 'الكتب الأخيرة',
     show_more: 'عرض المزيد',
     show_less: 'عرض أقل',
     download: 'تحميل',
-    read_now: 'اقرأ الآن',
+    read_now: 'قراءة',
     category: 'التصنيف',
     author: 'المؤلف',
     parts: 'الأجزاء',
     no_books_in_category: 'لا توجد كتب في هذا التصنيف حالياً',
     home: 'الرئيسية',
     language_switcher: 'English',
+    error_search: 'حدث خطأ في البحث',
+    search_start_title: 'ابحث في مكتبتنا الإسلامية',
+    search_start_desc: 'اكتب اسم الكتاب أو المؤلف للبدء',
+    publisher: 'الناشر',
+    multi_part: 'متعدد الأجزاء ({count})',
+    available_offline: 'متوفر بدون اتصال',
+    unpin: 'إلغاء التثبيت',
+    pin: 'تثبيت',
+    remove: 'إزالة',
+    view_full_history: 'عرض السجل الكامل',
+    ready_for_offline: 'جاهز للقراءة بدون إنترنت',
+    page_of: 'الصفحة {current} من {total}',
     admin_title: 'لوحة تحكم موسوعة كنوز العلم',
     admin_main_site: 'الموقع الرئيسي',
     admin_search_archive: 'البحث في المكتبة العالمية (Archive)',
@@ -69,7 +181,22 @@ export const translations = {
     admin_tab_arabic: 'المحتوى العربي',
     admin_tab_english: 'English Content',
     admin_language: 'اللغة',
-    admin_select_lang: 'اختر اللغة'
+    admin_select_lang: 'اختر اللغة',
+    admin_desc_limit_hint: 'يفضل أن يكون الوصف بين 150 إلى 300 كلمة لضمان أفضل أرشفة.',
+    admin_cat_placeholder: 'اسم التصنيف (مثال: كتب الحديث)',
+    admin_cat_desc_placeholder: 'وصف التصنيف لـ SEO',
+    admin_author_name_placeholder: 'اسم المؤلف الكامل',
+    admin_author_bio_placeholder: 'نبذة مختصرة عن المؤلف لصفحة SEO',
+    admin_success_save_book: 'تم حفظ الكتاب بنجاح',
+    admin_error_save_book: 'خطأ في الحفظ: تأكد من إعداد الجداول في Supabase',
+    admin_success_save_cat: 'تمت إضافة التصنيف',
+    admin_error_save_cat: 'خطأ في حفظ التصنيف',
+    admin_success_save_author: 'تمت إضافة المؤلف',
+    admin_error_save_author: 'خطأ في حفظ المؤلف',
+    admin_bulk_success: 'تمت إضافة جميع الكتب بنجاح',
+    admin_bulk_partial_error: 'تمت الإضافة مع وجود أخطاء في {count} كتب. راجع السجلات.',
+    admin_bulk_error: 'فشل الإضافة الجماعية (خطأ خادم)',
+    admin_conn_error: 'خطأ في الاتصال'
   },
   en: {
     title: 'Kono Elm Encyclopedia',
@@ -92,13 +219,25 @@ export const translations = {
     show_more: 'Show More',
     show_less: 'Show Less',
     download: 'Download',
-    read_now: 'Read Now',
+    read_now: 'Read',
     category: 'Category',
     author: 'Author',
     parts: 'Parts',
     no_books_in_category: 'No books in this category currently',
     home: 'Home',
     language_switcher: 'العربية',
+    error_search: 'An error occurred during search',
+    search_start_title: 'Search our Islamic Library',
+    search_start_desc: 'Type book or author name to start',
+    publisher: 'Publisher',
+    multi_part: 'Multi-part ({count})',
+    available_offline: 'Available offline',
+    unpin: 'Unpin',
+    pin: 'Pin',
+    remove: 'Remove',
+    view_full_history: 'View Full History',
+    ready_for_offline: 'Ready for offline reading',
+    page_of: 'Page {current} of {total}',
     admin_title: 'Kono Elm Control Panel',
     admin_main_site: 'Main Site',
     admin_search_archive: 'Search Global Library (Archive)',
@@ -139,6 +278,21 @@ export const translations = {
     admin_tab_arabic: 'المحتوى العربي',
     admin_tab_english: 'English Content',
     admin_language: 'Language',
-    admin_select_lang: 'Select Language'
+    admin_select_lang: 'Select Language',
+    admin_desc_limit_hint: 'Prefer description between 150-300 words for best indexing.',
+    admin_cat_placeholder: 'Category Name (e.g. Hadith Books)',
+    admin_cat_desc_placeholder: 'Category Description for SEO',
+    admin_author_name_placeholder: 'Full Author Name',
+    admin_author_bio_placeholder: 'Short Bio for SEO',
+    admin_success_save_book: 'Book saved successfully',
+    admin_error_save_book: 'Save error: check Supabase configuration',
+    admin_success_save_cat: 'Category added',
+    admin_error_save_cat: 'Error saving category',
+    admin_success_save_author: 'Author added',
+    admin_error_save_author: 'Error saving author',
+    admin_bulk_success: 'All books added successfully',
+    admin_bulk_partial_error: 'Added with errors in {count} books. Check logs.',
+    admin_bulk_error: 'Bulk addition failed (server error)',
+    admin_conn_error: 'Connection error'
   }
 };

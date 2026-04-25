@@ -82,7 +82,7 @@ export default function EnglishHome() {
         await logSearch(searchQuery, results.totalResults, searchDurationMs);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.error_search || 'Search error');
+      setError(err instanceof Error ? err.message : t.error_search);
     } finally {
       setIsLoading(false);
     }
@@ -276,8 +276,8 @@ export default function EnglishHome() {
             <div className="bg-primary-50 inline-flex p-4 rounded-full mb-4">
               <Search className="w-12 h-12 text-primary-400" />
             </div>
-            <p className="text-gray-500 text-lg">{lang === 'en' ? 'Search our Islamic Library' : 'ابحث في مكتبتنا الإسلامية'}</p>
-            <p className="text-gray-400 mt-2">{lang === 'en' ? 'Type book or author name to start' : 'اكتب اسم الكتاب أو المؤلف للبدء'}</p>
+            <p className="text-gray-500 text-lg">{t.search_start_title}</p>
+            <p className="text-gray-400 mt-2">{t.search_start_desc}</p>
           </div>
         )}
       </main>

@@ -150,7 +150,7 @@ export default function AdminDashboard() {
       const data = await searchBooks(query);
       setResults(data.books);
     } catch (err) {
-      alert('خطأ في البحث: ' + (err instanceof Error ? err.message : 'حدث خطأ غير معروف'));
+      alert(t.error_search + ': ' + (err instanceof Error ? err.message : ''));
     } finally {
       setIsLoading(false);
     }
@@ -202,10 +202,10 @@ export default function AdminDashboard() {
         }));
       } else {
         const err = await res.json();
-        alert('فشل توليد المحتوى: ' + (err.error || 'خطأ غير معروف'));
+        alert(t.admin_bulk_error + ': ' + (err.error || ''));
       }
     } catch (err) {
-      alert('خطأ في الاتصال أثناء توليد المحتوى');
+      alert(t.admin_conn_error);
     } finally {
       setIsGenerating(false);
     }
@@ -220,15 +220,15 @@ export default function AdminDashboard() {
         body: JSON.stringify({ ...formData, lang }),
       });
       if (res.ok) {
-        alert('تم حفظ الكتاب بنجاح');
+        alert(t.admin_success_save_book);
         setSelectedBook(null);
         fetchExistingBooks();
       } else {
         const err = await res.json();
-        alert('خطأ في الحفظ: ' + (err.error || 'تأكد من إنشاء الجداول في Supabase'));
+        alert(t.admin_error_save_book + ': ' + (err.error || ''));
       }
     } catch (err) {
-      alert('خطأ في الاتصال أثناء الحفظ');
+      alert(t.admin_conn_error);
     } finally {
       setIsSaving(false);
     }
@@ -250,17 +250,17 @@ export default function AdminDashboard() {
       });
       if (res.ok) {
         if (!categoryData) {
-          alert('تمت إضافة التصنيف');
+          alert(t.admin_success_save_cat);
           setNewCategory({ title: '', slug: '', description: '' });
           setShowCategoryForm(false);
         }
         fetchCategories();
       } else {
         const err = await res.json();
-        alert('خطأ: ' + (err.error || 'تأكد من إنشاء الجداول في Supabase'));
+        alert(t.admin_error_save_cat + ': ' + (err.error || ''));
       }
     } catch (e) {
-      alert('خطأ في الاتصال');
+      alert(t.admin_conn_error);
     }
   };
 
@@ -317,16 +317,16 @@ export default function AdminDashboard() {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        alert('تمت إضافة المؤلف');
+        alert(t.admin_success_save_author);
         setNewAuthor({ name: '', slug: '', bio: '' });
         setShowAuthorForm(false);
         fetchAuthors();
       } else {
         const err = await res.json();
-        alert('خطأ: ' + (err.error || 'تأكد من إنشاء الجداول في Supabase'));
+        alert(t.admin_error_save_author + ': ' + (err.error || ''));
       }
     } catch (e) {
-      alert('خطأ في الاتصال');
+      alert(t.admin_conn_error);
     }
   };
 
@@ -360,10 +360,10 @@ export default function AdminDashboard() {
         setSuggestions(data.suggestions || []);
       } else {
         const err = await res.json();
-        alert('فشل جلب الاقتراحات: ' + (err.error || 'خطأ غير معروف'));
+        alert(t.admin_bulk_error + ': ' + (err.error || ''));
       }
     } catch (err) {
-      alert('خطأ في الاتصال أثناء جلب الاقتراحات');
+      alert(t.admin_conn_error);
     } finally {
       setIsSuggesting(false);
     }
@@ -400,20 +400,20 @@ export default function AdminDashboard() {
         const failures = data.results?.filter((r: any) => r.status === 'error') || [];
 
         if (failures.length > 0) {
-            alert(`تمت الإضافة مع وجود أخطاء في ${failures.length} كتب. راجع السجلات.`);
+            alert(t.admin_bulk_partial_error.replace('{count}', failures.length.toString()));
             console.error('Bulk addition failures:', failures);
         } else {
-            alert('تمت إضافة جميع الكتب بنجاح');
+            alert(t.admin_bulk_success);
         }
 
         setSelectedCategoryForSuggestions(null);
         fetchExistingBooks();
       } else {
         const err = await res.json();
-        alert('فشل الإضافة الجماعية (خطأ خادم): ' + (err.error || 'خطأ غير معروف'));
+        alert(t.admin_bulk_error + ': ' + (err.error || ''));
       }
     } catch (err) {
-      alert('خطأ في الاتصال أثناء الإضافة الجماعية');
+      alert(t.admin_conn_error);
     } finally {
       setIsBulkAdding(false);
     }
@@ -630,7 +630,7 @@ export default function AdminDashboard() {
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                     className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm leading-relaxed"
                   />
-                  <p className="text-[10px] text-gray-400 mt-1 italic">{lang === 'ar' ? 'يفضل أن يكون الوصف بين 150 إلى 300 كلمة لضمان أفضل أرشفة.' : 'Prefer description between 150-300 words for best indexing.'}</p>
+                  <p className="text-[10px] text-gray-400 mt-1 italic">{t.admin_desc_limit_hint}</p>
                 </div>
 
                 <button
@@ -664,14 +664,14 @@ export default function AdminDashboard() {
                 {showCategoryForm && (
                   <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gold-100">
                     <input
-                      placeholder={lang === 'ar' ? 'اسم التصنيف (مثال: كتب الحديث)' : 'Category Name (e.g. Hadith Books)'}
+                      placeholder={t.admin_cat_placeholder}
                       className="w-full px-4 py-2 rounded-lg border border-gray-200"
                       value={newCategory.title}
                       onChange={e => setNewCategory({...newCategory, title: e.target.value})}
                     />
                     <div className="relative">
                       <textarea
-                        placeholder={lang === 'ar' ? 'وصف التصنيف لـ SEO' : 'Category Description for SEO'}
+                        placeholder={t.admin_cat_desc_placeholder}
                         className="w-full px-4 py-2 rounded-lg border border-gray-200 min-h-[100px]"
                         value={newCategory.description}
                         onChange={e => setNewCategory({...newCategory, description: e.target.value})}
@@ -749,13 +749,13 @@ export default function AdminDashboard() {
                 {showAuthorForm && (
                   <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gold-100">
                     <input
-                      placeholder={lang === 'ar' ? 'اسم المؤلف الكامل' : 'Full Author Name'}
+                      placeholder={t.admin_author_name_placeholder}
                       className="w-full px-4 py-2 rounded-lg border border-gray-200"
                       value={newAuthor.name}
                       onChange={e => setNewAuthor({...newAuthor, name: e.target.value})}
                     />
                     <textarea
-                      placeholder={lang === 'ar' ? 'نبذة مختصرة عن المؤلف لصفحة SEO' : 'Short Bio for SEO'}
+                      placeholder={t.admin_author_bio_placeholder}
                       className="w-full px-4 py-2 rounded-lg border border-gray-200"
                       value={newAuthor.bio}
                       onChange={e => setNewAuthor({...newAuthor, bio: e.target.value})}
@@ -892,7 +892,9 @@ export default function AdminDashboard() {
                     >
                         {lang === 'en' ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                     </button>
-                    <span className="text-sm font-bold text-gray-600">{lang === 'ar' ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}</span>
+                    <span className="text-sm font-bold text-gray-600">
+                        {t.page_of.replace('{current}', currentPage.toString()).replace('{total}', totalPages.toString())}
+                    </span>
                     <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
