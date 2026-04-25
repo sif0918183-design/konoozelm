@@ -107,12 +107,6 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 15;
 
-  useEffect(() => {
-    fetchCategories();
-    fetchAuthors();
-    fetchExistingBooks();
-  }, [lang, fetchCategories, fetchAuthors, fetchExistingBooks]);
-
   const fetchCategories = useCallback(async () => {
     const res = await fetch(`/api/admin/categories?lang=${lang}`);
     if (res.ok) {
@@ -138,6 +132,12 @@ export default function AdminDashboard() {
       }
     }
   }, [lang]);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchAuthors();
+    fetchExistingBooks();
+  }, [lang, fetchCategories, fetchAuthors, fetchExistingBooks]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
