@@ -24,3 +24,6 @@ ALTER TABLE public.seo_categories DISABLE ROW LEVEL SECURITY;
 
 -- 5. Establish Performance Index
 CREATE INDEX IF NOT EXISTS idx_seo_books_category_slug_final ON public.seo_books(category_slug);
+
+-- 6. Add is_english_verified column for intelligent filtering
+ALTER TABLE public.seo_books ADD COLUMN IF NOT EXISTS is_english_verified BOOLEAN DEFAULT FALSE;

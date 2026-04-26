@@ -46,7 +46,8 @@ export async function POST(request: Request) {
           archiveId: book.id,
           seoTitle: seoContent.seoTitle,
           parts_count: partsCount,
-          lang: lang
+          lang: lang,
+          is_english_verified: book.is_english_verified || false
         };
 
         await saveSeoBook(bookPayload as any);
