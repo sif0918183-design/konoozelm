@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { BookOpen, Download, User, Tag, ChevronRight, Book as BookIcon, Sparkles, Globe } from 'lucide-react';
 import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug } from '@/lib/seo-data';
 import { getBookDetails } from '@/lib/archive-api';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import BookCard from '@/components/BookCard';
 import { slugify } from '@/lib/utils';
 import { translations } from '@/lib/translations';

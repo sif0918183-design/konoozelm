@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { checkAuth } from '@/lib/admin-auth';
 import { getAuthors, saveAuthor } from '@/lib/seo-data';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const lang = searchParams.get('lang') || 'ar';

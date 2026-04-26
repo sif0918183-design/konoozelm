@@ -1,6 +1,9 @@
 import { Metadata } from 'next';
 import EnglishHomePage from '@/components/home/EnglishHomePage';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: 'Kono Elm Encyclopedia - Comprehensive Islamic Library',
   alternates: {

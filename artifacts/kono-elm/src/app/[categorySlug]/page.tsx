@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { BookOpen, ChevronRight, Book as BookIcon, Globe } from 'lucide-react';
 import { getCategoryBySlug, getBooksByCategory } from '@/lib/seo-data';
 import SearchStateCleaner from '@/components/SearchStateCleaner';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 

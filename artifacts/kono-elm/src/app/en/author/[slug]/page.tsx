@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { User, Book as BookIcon, Globe, ChevronLeft } from 'lucide-react';
 import { getAuthorBySlug, getBooksByAuthor } from '@/lib/seo-data';
 import { translations } from '@/lib/translations';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 interface Props {
