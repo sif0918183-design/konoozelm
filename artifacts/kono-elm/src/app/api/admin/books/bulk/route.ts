@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const MAX_RUNTIME = 50000; // 50 seconds
 
   try {
-    const { books, category, categorySlug } = await request.json();
+    const { books, category, categorySlug, lang = 'ar' } = await request.json();
 
     if (!books || !Array.isArray(books) || !categorySlug || !category) {
       return NextResponse.json({ error: 'Books, category title, and category slug are required' }, { status: 400 });
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
         const files = await getBookFiles(book.id);
         const partsCount = files.length || 1;
 
-        const seoContent = await generateEnhancedSeoContent(book.title, book.author, category, book.title);
+        const seoContent = await generateEnhancedSeoContent(book.title, book.author, category, book.title, lang);
 
         const bookPayload = {
           slug: `${slugify(seoContent.title)}--${book.id}`,
@@ -44,7 +44,8 @@ export async function POST(request: Request) {
           category_slug: categorySlug, // FIXED: Ensure consistency
           archiveId: book.id,
           seoTitle: seoContent.seoTitle,
-          parts_count: partsCount
+          parts_count: partsCount,
+          lang: lang
         };
 
         await saveSeoBook(bookPayload as any);
@@ -56,8 +57,9 @@ export async function POST(request: Request) {
                     archive_id: book.id,
                     category_slug: categorySlug,
                     status: 'selected',
+                    lang: lang,
                     metadata: { original_title: book.title }
-                }, { onConflict: 'archive_id,category_slug' });
+                }, { onConflict: 'archive_id,category_slug,lang' });
         }
 
         results.push({ id: book.id, status: 'success' });

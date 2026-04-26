@@ -12,12 +12,32 @@ export async function filterAndRankBooks(category: string, books: any[]) {
   }));
 }
 
-export async function generateBookDescription(title: string, author: string) {
+export async function generateBookDescription(title: string, author: string, lang: string = 'ar') {
   if (!OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not defined');
   }
 
-  const prompt = `
+  const isEnglish = lang === 'en';
+
+  const prompt = isEnglish ? `
+You are a professional SEO and library expert. Write a compelling, natural, and comprehensive SEO description for a book titled "${title}" by author "${author}".
+
+Requirements:
+1. Style: The style must be very natural and human-like (critical for Google indexing), eloquent and suitable for scholarly content.
+2. Content:
+   - An introduction about the book's importance and value.
+   - A brief and focused overview of the book's topic and main sections.
+   - Naturally integrated keywords (e.g., Download PDF, Read Online, Islamic books, etc.).
+3. Length: Between 200 to 400 words to ensure SEO performance.
+4. No AI mention: Start the description directly and do not mention being an AI assistant.
+5. Enhanced Title: Suggest a catchy SEO title that includes "Download & Read PDF" and sounds authoritative.
+
+I want the result strictly in JSON format:
+{
+  "seoTitle": "SEO Title here",
+  "description": "Full description here"
+}
+` : `
 أنت خبير SEO ومكتبات إسلامية محترف. قم بكتابة وصف جذاب، طبيعي، وشامل لمحركات البحث (SEO) لكتاب بعنوان "${title}" للمؤلف "${author}".
 
 المتطلبات:
@@ -64,12 +84,28 @@ export async function generateBookDescription(title: string, author: string) {
   }
 }
 
-export async function generateCategoryDescription(categoryTitle: string) {
+export async function generateCategoryDescription(categoryTitle: string, lang: string = 'ar') {
   if (!OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not defined');
   }
 
-  const prompt = `
+  const isEnglish = lang === 'en';
+
+  const prompt = isEnglish ? `
+You are an SEO expert specialized in digital libraries. Write a compelling category description (Meta Description/Category Description) for a library section named "${categoryTitle}".
+
+Requirements:
+1. Write a natural and engaging description that encourages readers and researchers to browse the section.
+2. Explain the importance of this field of knowledge and the key books a reader might find here.
+3. Integrate natural keywords (e.g., Download books, PDF library, major works in ${categoryTitle}).
+4. Length: About 150-250 words.
+5. Ensure the style is human-like and eloquent.
+
+I want the result strictly in JSON format:
+{
+  "description": "Description here"
+}
+` : `
 أنت خبير SEO متخصص في المواقع الإسلامية. قم بكتابة وصف تعريفي (Meta Description/Category Description) لقسم في مكتبة إلكترونية يسمى "${categoryTitle}".
 
 المتطلبات:
@@ -112,10 +148,22 @@ export async function generateCategoryDescription(categoryTitle: string) {
   }
 }
 
-export async function normalizeTitle(title: string, author?: string) {
+export async function normalizeTitle(title: string, author?: string, lang: string = 'ar') {
   if (!OPENAI_API_KEY) return title;
 
-  const prompt = `
+  const isEnglish = lang === 'en';
+
+  const prompt = isEnglish ? `
+Standardize and improve the following book title to be suitable for SEO and a professional library.
+Original Title: "${title}"
+Author: "${author || 'Unknown'}"
+
+Requirements:
+1. Remove any unnecessary additions (e.g., "pdf", "download", "clear copy").
+2. Add "Book" at the beginning if appropriate.
+3. Write the title completely and correctly.
+4. Return the result as JSON: {"normalizedTitle": "..."}
+` : `
 قم بتوحيد وتحسين عنوان الكتاب التالي ليكون مناسباً لـ SEO ومكتبة احترافية.
 العنوان الأصلي: "${title}"
 المؤلف: "${author || 'غير معروف'}"

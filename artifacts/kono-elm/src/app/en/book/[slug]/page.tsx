@@ -1,17 +1,16 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, Download, User, Tag, ChevronRight, Book as BookIcon, Sparkles, Globe } from 'lucide-react';
-import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug } from '@/lib/seo-data';
+import { BookOpen, User, Tag, ChevronLeft, Book as BookIcon, Sparkles, Globe } from 'lucide-react';
+import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor } from '@/lib/seo-data';
 import { getBookDetails } from '@/lib/archive-api';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 import BookCard from '@/components/BookCard';
-import { slugify } from '@/lib/utils';
+import { generateEnglishSlug } from '@/lib/utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { generateBookDescription } from '@/lib/groq';
 
 interface Props {
   params: { slug: string };
@@ -21,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const parts = params.slug.split('--');
   const archiveId = parts[parts.length - 1];
 
-  const seoBook = await getBookByArchiveId(archiveId, 'ar');
+  const seoBook = await getBookByArchiveId(archiveId, 'en');
   const archiveDetails = await getBookDetails(archiveId);
 
   if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
@@ -29,26 +28,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   let title = seoBook?.seoTitle;
   let description = seoBook?.description;
 
-  // If not in database, try to generate using Groq for better SEO metadata
-  if (!description && archiveDetails) {
-    try {
-      const generated = await generateBookDescription(archiveDetails.title, archiveDetails.author || 'غير معروف');
-      title = title || generated.seoTitle;
-      description = generated.description;
-    } catch (e) {
-      title = title || `تحميل كتاب ${archiveDetails.title} PDF وقراءته أونلاين - موسوعة كنوز العلم`;
-      description = archiveDetails.description || `قراءة وتحميل كتاب ${archiveDetails.title} للمؤلف ${archiveDetails.author || 'غير معروف'} بصيغة PDF مجاناً.`;
-    }
-  }
-
-  title = title || `تحميل كتاب ${archiveDetails?.title || 'كتاب'} PDF وقراءته أونلاين - موسوعة كنوز العلم`;
-  description = description || `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${archiveDetails?.author || 'غير معروف'} بصيغة PDF مجاناً.`;
+  title = title || `Download ${archiveDetails?.title || 'Book'} PDF - Read Online - Kono Elm Encyclopedia`;
+  description = description || `Read and download ${archiveDetails?.title} by ${archiveDetails?.author || 'Unknown'} in PDF format for free.`;
 
   return {
     title,
     description: description.substring(0, 160),
     alternates: {
-      canonical: `https://kono-elm.vercel.app/book/${params.slug}`,
+      canonical: `https://kono-elm.vercel.app/en/book/${params.slug}`,
       languages: {
         'ar': `https://kono-elm.vercel.app/book/${params.slug}`,
         'en': `https://kono-elm.vercel.app/en/book/${params.slug}`,
@@ -63,8 +50,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function BookPage({ params }: Props) {
-  const lang = 'ar';
+export default async function EnglishBookPage({ params }: Props) {
+  const lang = 'en';
   const t = translations[lang];
   const parts = params.slug.split('--');
   const archiveId = parts[parts.length - 1];
@@ -75,29 +62,18 @@ export default async function BookPage({ params }: Props) {
   if (!archiveBook && !seoBook) notFound();
 
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
-  const displayAuthor = seoBook?.author || archiveBook?.author || 'غير معروف';
-  const authorSlug = slugify(displayAuthor);
-  const displayCategory = seoBook?.category || 'عام';
-  const categorySlug = seoBook?.category_slug || slugify(displayCategory);
+  const displayAuthor = seoBook?.author || archiveBook?.author || 'Unknown';
+  const authorSlug = generateEnglishSlug(displayAuthor);
+  const displayCategory = seoBook?.category || 'General';
+  const categorySlug = seoBook?.category_slug || generateEnglishSlug(displayCategory);
 
-  // Mandatory content logic (Fallback)
-  let displayDescription = seoBook?.description;
+  let displayDescription = seoBook?.description || `The book ${displayTitle} is one of the valuable and important works in its field. Author ${displayAuthor} provides a distinguished scientific and methodological vision. This book aims to facilitate access to accurate information for students of knowledge and researchers. You can now download a high-quality PDF version or read directly through your browser through our comprehensive electronic library.`;
   let dynamicSeoTitle = seoBook?.seoTitle;
-
-  if (!displayDescription && archiveBook) {
-    try {
-      const generated = await generateBookDescription(displayTitle, displayAuthor);
-      displayDescription = generated.description;
-      dynamicSeoTitle = generated.seoTitle;
-    } catch (e) {
-      displayDescription = `يعتبر كتاب ${displayTitle} من الكتب القيمة والمهمة في بابه، حيث يقدم المؤلف ${displayAuthor} رؤية علمية ومنهجية متميزة. يهدف هذا الكتاب إلى تيسير الوصول للمعلومات الدقيقة لطلبة العلم والباحثين. يمكنك الآن تحميل نسخة PDF عالية الجودة أو القراءة مباشرة عبر متصفحك من خلال مكتبتنا الإلكترونية الشاملة.`;
-    }
-  }
 
   // Internal Links
   const [relatedBooks, authorBooks] = await Promise.all([
-    getBooksByCategory(categorySlug, displayCategory, 12),
-    getBooksByAuthor(displayAuthor, 12)
+    getBooksByCategory(categorySlug, displayCategory, 12, lang),
+    getBooksByAuthor(displayAuthor, 12) // Note: Authors might need lang too if we have separate bios
   ]);
 
   const otherBooks = [...relatedBooks, ...authorBooks]
@@ -106,15 +82,15 @@ export default async function BookPage({ params }: Props) {
     .slice(0, 12);
 
   return (
-    <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">
+    <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="ltr">
       <LanguageSwitcher />
 
       {/* Breadcrumbs */}
       <nav className="max-w-7xl mx-auto px-4 py-4 mt-12 md:mt-0 flex items-center gap-2 text-sm text-gray-500">
-        <Link href="/" className="hover:text-primary-900 transition-colors">{t.home}</Link>
-        <ChevronRight className="w-4 h-4" />
-        <Link href={`/${categorySlug}`} className="hover:text-primary-900 transition-colors">{displayCategory}</Link>
-        <ChevronRight className="w-4 h-4" />
+        <Link href="/en" className="hover:text-primary-900 transition-colors">{t.home}</Link>
+        <ChevronLeft className="w-4 h-4" />
+        <Link href={`/en/${categorySlug}`} className="hover:text-primary-900 transition-colors">{displayCategory}</Link>
+        <ChevronLeft className="w-4 h-4" />
         <span className="text-gray-900 font-medium truncate">{displayTitle}</span>
       </nav>
 
@@ -122,7 +98,7 @@ export default async function BookPage({ params }: Props) {
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8">
 
-            {/* Right: Book Cover & Quick Info */}
+            {/* Book Cover & Quick Info */}
             <div className="md:col-span-1 space-y-6">
               <div className="aspect-[3/4] bg-gray-100 rounded-2xl overflow-hidden relative shadow-md border border-gray-100">
                 {archiveBook?.coverImage ? (
@@ -139,14 +115,14 @@ export default async function BookPage({ params }: Props) {
               </div>
 
               <div className="space-y-4">
-                <Link href={`/author/${authorSlug}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gold-50 transition-colors">
+                <Link href={`/en/author/${authorSlug}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gold-50 transition-colors">
                   <User className="w-5 h-5 text-gold-600" />
                   <div>
                     <p className="text-xs text-gray-400">{t.author}</p>
                     <p className="font-bold text-gray-900">{displayAuthor}</p>
                   </div>
                 </Link>
-                <Link href={`/${categorySlug}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gold-50 transition-colors">
+                <Link href={`/en/${categorySlug}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gold-50 transition-colors">
                   <Tag className="w-5 h-5 text-gold-600" />
                   <div>
                     <p className="text-xs text-gray-400">{t.category}</p>
@@ -165,7 +141,7 @@ export default async function BookPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Left: Description & Actions */}
+            {/* Description & Actions */}
             <div className="md:col-span-2 space-y-8">
               <div>
                 <h1 className="text-3xl md:text-4xl font-amiri font-bold text-primary-900 mb-4 leading-tight">
@@ -173,13 +149,13 @@ export default async function BookPage({ params }: Props) {
                 </h1>
                 <div className="mb-8 max-w-sm">
                   {archiveBook && (
-                    <BookCard book={archiveBook} />
+                    <BookCard book={archiveBook} lang="en" />
                   )}
                 </div>
               </div>
 
               <div className="prose prose-lg max-w-none">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 border-r-4 border-gold-500 pr-4">{lang === 'ar' ? 'نبذة عن الكتاب' : 'About the Book'}</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 border-l-4 border-gold-500 pl-4">{lang === 'en' ? 'About the Book' : 'نبذة عن الكتاب'}</h2>
                 <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                   {displayDescription}
                 </div>
@@ -190,13 +166,13 @@ export default async function BookPage({ params }: Props) {
                 <div className="pt-12 border-t border-gray-100">
                   <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-gold-500" />
-                    {lang === 'ar' ? 'قد يعجبك أيضاً' : 'You May Also Like'}
+                    {lang === 'en' ? 'You May Also Like' : 'قد يعجبك أيضاً'}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {otherBooks.map(book => (
                       <Link
                         key={book.archiveId}
-                        href={`/book/${book.slug}--${book.archiveId}`}
+                        href={`/en/book/${book.slug}--${book.archiveId}`}
                         className="group p-4 bg-gray-50 rounded-2xl hover:bg-white hover:shadow-md border border-transparent hover:border-gold-200 transition-all flex items-center gap-4"
                       >
                         <div className="w-12 h-16 bg-white rounded-lg flex items-center justify-center border border-gray-100 flex-shrink-0">

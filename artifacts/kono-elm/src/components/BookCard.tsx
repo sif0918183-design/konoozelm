@@ -9,12 +9,15 @@ import { type Book, type BookFile, getBookFiles } from '@/lib/archive-api';
 import { cn } from '@/lib/utils';
 import BookPartsDialog from './BookPartsDialog';
 import DownloadModal from './DownloadModal';
+import { translations } from '@/lib/translations';
 
 interface BookCardProps {
   book: Book;
+  lang?: 'ar' | 'en';
 }
 
-export default function BookCard({ book }: BookCardProps) {
+export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
+  const t = translations[lang];
   const router = useRouter();
   const [seoSlug, setSeoSlug] = useState<string | null>(null);
   const [files, setFiles] = useState<BookFile[]>([]);
@@ -28,7 +31,7 @@ export default function BookCard({ book }: BookCardProps) {
   useEffect(() => {
     const fetchSeoData = async () => {
       try {
-        const res = await fetch(`/api/admin/books?archiveId=${book.identifier}`);
+        const res = await fetch(`/api/admin/books?archiveId=${book.identifier}&lang=${lang}`);
         if (res.ok) {
           const data = await res.json();
           if (data && data.slug) {
@@ -52,14 +55,14 @@ export default function BookCard({ book }: BookCardProps) {
 
     fetchSeoData();
     fetchFiles();
-  }, [book.identifier]);
+  }, [book.identifier, lang]);
 
   const handleRead = () => {
     if (files.length > 1) {
       setDialogMode('read');
       setShowPartsDialog(true);
     } else if (files.length === 1) {
-      const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}`;
+      const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
       router.push(readerUrl);
     } else {
       // Fallback if no specific files found yet
@@ -82,11 +85,15 @@ export default function BookCard({ book }: BookCardProps) {
     setShowDownloadModal(true);
   };
 
+  const detailsHref = lang === 'en'
+    ? (seoSlug ? `/en/book/${seoSlug}` : `/en/book/${slugify(book.title)}--${book.identifier}`)
+    : (seoSlug ? `/book/${seoSlug}` : `/book/${slugify(book.title)}--${book.identifier}`);
+
   return (
-    <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100/50 flex flex-col h-full overflow-hidden relative">
+    <div className={`group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100/50 flex flex-col h-full overflow-hidden relative ${lang === 'en' ? 'text-left' : 'text-right'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       {/* Detail Link (Internal SEO link) - Only for the card body, excluding buttons */}
       <a
-        href={seoSlug ? `/book/${seoSlug}` : `/book/${slugify(book.title)}--${book.identifier}`}
+        href={detailsHref}
         className="absolute inset-0 z-0 cursor-pointer"
         aria-label="View Details"
       />
@@ -117,7 +124,7 @@ export default function BookCard({ book }: BookCardProps) {
           {files.length > 1 && (
             <span className="bg-gold-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
               <Layers className="w-3 h-3" />
-              متعدد الأجزاء ({files.length})
+              {lang === 'ar' ? `متعدد الأجزاء (${files.length})` : `Multi-part (${files.length})`}
             </span>
           )}
         </div>
@@ -132,14 +139,14 @@ export default function BookCard({ book }: BookCardProps) {
         <div className="space-y-1 mb-4 flex-1">
           {book.author && (
             <p className="text-sm text-gray-600 flex items-center gap-2" title={book.author}>
-              <span className="text-gray-400 font-medium">المؤلف:</span>
+              <span className="text-gray-400 font-medium">{t.author}:</span>
               <span className="truncate">{book.author}</span>
             </p>
           )}
 
           {book.publisher && (
             <p className="text-xs text-gray-500 flex items-center gap-2" title={book.publisher}>
-              <span className="text-gray-400 font-medium">الناشر:</span>
+              <span className="text-gray-400 font-medium">{lang === 'ar' ? 'الناشر' : 'Publisher'}:</span>
               <span className="truncate">{book.publisher}</span>
             </p>
           )}
@@ -160,7 +167,7 @@ export default function BookCard({ book }: BookCardProps) {
             ) : (
               <BookOpen className="w-4 h-4" />
             )}
-            قراءة
+            {t.read_now}
           </button>
           
           <button
@@ -176,7 +183,7 @@ export default function BookCard({ book }: BookCardProps) {
             ) : (
               <Download className="w-4 h-4" />
             )}
-            تحميل
+            {t.download}
           </button>
         </div>
       </div>

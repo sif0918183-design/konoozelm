@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { checkAuth } from '@/lib/admin-auth';
 import { getSeoBooks, saveSeoBook, getBookByArchiveId } from '@/lib/seo-data';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const archiveId = searchParams.get('archiveId');
@@ -16,8 +18,9 @@ export async function GET(request: Request) {
   }
 
   if (!checkAuth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const lang = searchParams.get('lang') || 'ar';
   try {
-    const books = await getSeoBooks();
+    const books = await getSeoBooks(lang);
     return NextResponse.json(books || []);
   } catch (error: any) {
     console.error('Error in GET /api/admin/books:', error);

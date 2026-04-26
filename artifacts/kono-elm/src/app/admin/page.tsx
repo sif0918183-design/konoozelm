@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
   Plus,
+  Globe,
   Loader2,
   BookOpen,
   Sparkles,
@@ -25,7 +26,8 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { searchBooks, type Book, getBookFiles } from '@/lib/archive-api';
-import { slugify, generateCategorySlug } from '@/lib/utils';
+import { slugify, generateCategorySlug, generateEnglishSlug } from '@/lib/utils';
+import { translations, type Language } from '@/lib/translations';
 
 interface SeoBook {
   slug: string;
@@ -37,6 +39,7 @@ interface SeoBook {
   archiveId: string;
   seoTitle?: string;
   parts_count?: number;
+  lang?: string;
 }
 
 interface Category {
@@ -44,12 +47,14 @@ interface Category {
   title: string;
   description: string;
   display_order?: number;
+  lang?: string;
 }
 
 interface Author {
   slug: string;
   name: string;
   bio: string;
+  lang?: string;
 }
 
 interface Suggestion {
@@ -62,6 +67,8 @@ interface Suggestion {
 }
 
 export default function AdminDashboard() {
+  const [lang, setLang] = useState<Language>('ar');
+  const t = translations[lang];
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -103,37 +110,37 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 15;
 
-  useEffect(() => {
-    fetchCategories();
-    fetchAuthors();
-    fetchExistingBooks();
-  }, []);
-
-  const fetchCategories = async () => {
-    const res = await fetch('/api/admin/categories');
+  const fetchCategories = useCallback(async () => {
+    const res = await fetch(`/api/admin/categories?lang=${lang}`);
     if (res.ok) {
       const data = await res.json();
       setCategories(Array.isArray(data) ? data : []);
     }
-  };
+  }, [lang]);
 
-  const fetchAuthors = async () => {
-    const res = await fetch('/api/admin/authors');
+  const fetchAuthors = useCallback(async () => {
+    const res = await fetch(`/api/admin/authors?lang=${lang}`);
     if (res.ok) {
       const data = await res.json();
       setAuthors(Array.isArray(data) ? data : []);
     }
-  };
+  }, [lang]);
 
-  const fetchExistingBooks = async () => {
-    const res = await fetch('/api/admin/books');
+  const fetchExistingBooks = useCallback(async () => {
+    const res = await fetch(`/api/admin/books?lang=${lang}`);
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) {
         setExistingBookIds(new Set(data.map((b: SeoBook) => b.archiveId)));
       }
     }
-  };
+  }, [lang]);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchAuthors();
+    fetchExistingBooks();
+  }, [lang, fetchCategories, fetchAuthors, fetchExistingBooks]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +150,7 @@ export default function AdminDashboard() {
       const data = await searchBooks(query);
       setResults(data.books);
     } catch (err) {
-      alert('خطأ في البحث: ' + (err instanceof Error ? err.message : 'حدث خطأ غير معروف'));
+      alert(t.error_search + ': ' + (err instanceof Error ? err.message : ''));
     } finally {
       setIsLoading(false);
     }
@@ -158,8 +165,8 @@ export default function AdminDashboard() {
       partsCount = files.length;
     } catch (e) {}
 
-    const cleanSlug = slugify(book.title);
-    const defaultCategory = categories[0] || { title: 'عام', slug: 'عام' };
+    const cleanSlug = lang === 'ar' ? slugify(book.title) : generateEnglishSlug(book.title);
+    const defaultCategory = categories[0] || { title: lang === 'ar' ? 'عام' : 'General', slug: lang === 'ar' ? 'عام' : 'general' };
 
     setFormData({
       slug: cleanSlug,
@@ -169,8 +176,11 @@ export default function AdminDashboard() {
       category: defaultCategory.title,
       category_slug: defaultCategory.slug,
       archiveId: book.identifier,
-      seoTitle: `تحميل كتاب ${book.title} PDF وقراءته أونلاين - موسوعة كنوز العلم`,
-      parts_count: partsCount
+      seoTitle: lang === 'ar'
+        ? `تحميل كتاب ${book.title} PDF وقراءته أونلاين - موسوعة كنوز العلم`
+        : `Download ${book.title} PDF - Read Online - Kono Elm Encyclopedia`,
+      parts_count: partsCount,
+      lang: lang
     });
   };
 
@@ -181,7 +191,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: formData.title, author: formData.author }),
+        body: JSON.stringify({ title: formData.title, author: formData.author, lang }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -192,10 +202,10 @@ export default function AdminDashboard() {
         }));
       } else {
         const err = await res.json();
-        alert('فشل توليد المحتوى: ' + (err.error || 'خطأ غير معروف'));
+        alert(t.admin_bulk_error + ': ' + (err.error || ''));
       }
     } catch (err) {
-      alert('خطأ في الاتصال أثناء توليد المحتوى');
+      alert(t.admin_conn_error);
     } finally {
       setIsGenerating(false);
     }
@@ -207,26 +217,45 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/books', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, lang }),
       });
       if (res.ok) {
-        alert('تم حفظ الكتاب بنجاح');
+        alert(t.admin_success_save_book);
         setSelectedBook(null);
         fetchExistingBooks();
       } else {
         const err = await res.json();
-        alert('خطأ في الحفظ: ' + (err.error || 'تأكد من إنشاء الجداول في Supabase'));
+        alert(t.admin_error_save_book + ': ' + (err.error || ''));
       }
     } catch (err) {
-      alert('خطأ في الاتصال أثناء الحفظ');
+      alert(t.admin_conn_error);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleSaveCategory = async (categoryData?: any) => {
-    const payload = categoryData || { ...newCategory, slug: generateCategorySlug(newCategory.title) };
-    if (!payload.title) return;
+  const handleSaveCategory = async (e?: React.FormEvent | Category, categoryData?: any) => {
+    if (e && 'preventDefault' in e) {
+      e.preventDefault();
+    }
+
+    console.log("Submitting category...", { newCategory, categoryData });
+
+    // If the first argument is a category object (from order update), use it
+    // Otherwise use newCategory state
+    const isEvent = e && 'preventDefault' in e;
+    const dataToSave = (!e || isEvent) ? newCategory : (e as Category);
+
+    const payload = {
+      ...dataToSave,
+      slug: dataToSave.slug || (lang === 'ar' ? generateCategorySlug(dataToSave.title) : generateEnglishSlug(dataToSave.title)),
+      lang
+    };
+
+    if (!payload.title) {
+      console.warn("Category title is missing, aborting save.");
+      return;
+    }
 
     try {
       const res = await fetch('/api/admin/categories', {
@@ -236,17 +265,17 @@ export default function AdminDashboard() {
       });
       if (res.ok) {
         if (!categoryData) {
-          alert('تمت إضافة التصنيف');
+          alert(t.admin_success_save_cat);
           setNewCategory({ title: '', slug: '', description: '' });
           setShowCategoryForm(false);
         }
         fetchCategories();
       } else {
         const err = await res.json();
-        alert('خطأ: ' + (err.error || 'تأكد من إنشاء الجداول في Supabase'));
+        alert(t.admin_error_save_cat + ': ' + (err.error || ''));
       }
     } catch (e) {
-      alert('خطأ في الاتصال');
+      alert(t.admin_conn_error);
     }
   };
 
@@ -274,7 +303,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/generate/category', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newCategory.title }),
+        body: JSON.stringify({ title: newCategory.title, lang }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -289,9 +318,17 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSaveAuthor = async () => {
+  const handleSaveAuthor = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    console.log("Submitting author...", newAuthor);
+
     if (!newAuthor.name) return;
-    const payload = { ...newAuthor, slug: slugify(newAuthor.name) };
+    const payload = {
+      ...newAuthor,
+      slug: lang === 'ar' ? slugify(newAuthor.name) : generateEnglishSlug(newAuthor.name),
+      lang
+    };
     try {
       const res = await fetch('/api/admin/authors', {
         method: 'POST',
@@ -299,16 +336,16 @@ export default function AdminDashboard() {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        alert('تمت إضافة المؤلف');
+        alert(t.admin_success_save_author);
         setNewAuthor({ name: '', slug: '', bio: '' });
         setShowAuthorForm(false);
         fetchAuthors();
       } else {
         const err = await res.json();
-        alert('خطأ: ' + (err.error || 'تأكد من إنشاء الجداول في Supabase'));
+        alert(t.admin_error_save_author + ': ' + (err.error || ''));
       }
     } catch (e) {
-      alert('خطأ في الاتصال');
+      alert(t.admin_conn_error);
     }
   };
 
@@ -332,7 +369,8 @@ export default function AdminDashboard() {
         body: JSON.stringify({
             category: category.title,
             categorySlug: category.slug,
-            query: customQuery || category.title
+            query: customQuery || category.title,
+            lang: lang
         }),
       });
 
@@ -341,10 +379,10 @@ export default function AdminDashboard() {
         setSuggestions(data.suggestions || []);
       } else {
         const err = await res.json();
-        alert('فشل جلب الاقتراحات: ' + (err.error || 'خطأ غير معروف'));
+        alert(t.admin_bulk_error + ': ' + (err.error || ''));
       }
     } catch (err) {
-      alert('خطأ في الاتصال أثناء جلب الاقتراحات');
+      alert(t.admin_conn_error);
     } finally {
       setIsSuggesting(false);
     }
@@ -371,7 +409,8 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           books: selectedBooks,
           category: selectedCategoryForSuggestions.title,
-          categorySlug: selectedCategoryForSuggestions.slug // Ensure correct slug is passed
+          categorySlug: selectedCategoryForSuggestions.slug, // Ensure correct slug is passed
+          lang: lang
         }),
       });
 
@@ -380,20 +419,20 @@ export default function AdminDashboard() {
         const failures = data.results?.filter((r: any) => r.status === 'error') || [];
 
         if (failures.length > 0) {
-            alert(`تمت الإضافة مع وجود أخطاء في ${failures.length} كتب. راجع السجلات.`);
+            alert(t.admin_bulk_partial_error.replace('{count}', failures.length.toString()));
             console.error('Bulk addition failures:', failures);
         } else {
-            alert('تمت إضافة جميع الكتب بنجاح');
+            alert(t.admin_bulk_success);
         }
 
         setSelectedCategoryForSuggestions(null);
         fetchExistingBooks();
       } else {
         const err = await res.json();
-        alert('فشل الإضافة الجماعية (خطأ خادم): ' + (err.error || 'خطأ غير معروف'));
+        alert(t.admin_bulk_error + ': ' + (err.error || ''));
       }
     } catch (err) {
-      alert('خطأ في الاتصال أثناء الإضافة الجماعية');
+      alert(t.admin_conn_error);
     } finally {
       setIsBulkAdding(false);
     }
@@ -410,7 +449,8 @@ export default function AdminDashboard() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 books: booksToReject,
-                categorySlug: selectedCategoryForSuggestions.slug
+                categorySlug: selectedCategoryForSuggestions.slug,
+                lang: lang
             }),
         });
 
@@ -426,20 +466,37 @@ export default function AdminDashboard() {
   const currentItems = suggestions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
-    <div className="min-h-screen bg-gray-50 font-tajawal" dir="rtl">
+    <div className={`min-h-screen bg-gray-50 font-tajawal ${lang === 'ar' ? 'font-arabic' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       {/* Sidebar/Header */}
       <header className="bg-primary-900 text-white p-4 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <LayoutDashboard className="w-6 h-6 text-gold-400" />
-            <h1 className="text-xl font-bold">لوحة تحكم موسوعة كنوز العلم</h1>
+            <h1 className="text-xl font-bold">{t.admin_title}</h1>
           </div>
+
+          {/* Language Switcher Tabs */}
+          <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+            <button
+              onClick={() => setLang('ar')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${lang === 'ar' ? 'bg-gold-500 text-primary-900 shadow-lg' : 'text-primary-100 hover:bg-white/10'}`}
+            >
+              {t.admin_tab_arabic}
+            </button>
+            <button
+              onClick={() => setLang('en')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${lang === 'en' ? 'bg-gold-500 text-primary-900 shadow-lg' : 'text-primary-100 hover:bg-white/10'}`}
+            >
+              {t.admin_tab_english}
+            </button>
+          </div>
+
           <button
             onClick={() => window.location.href = '/'}
             className="flex items-center gap-2 text-sm bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-all"
           >
             <LogOut className="w-4 h-4" />
-            الموقع الرئيسي
+            {t.admin_main_site}
           </button>
         </div>
       </header>
@@ -451,22 +508,22 @@ export default function AdminDashboard() {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-primary-900">
               <Search className="w-5 h-5" />
-              البحث في المكتبة العالمية (Archive)
+              {t.admin_search_archive}
             </h2>
             <form onSubmit={handleSearch} className="flex gap-2">
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="ابحث بالعنوان أو المؤلف..."
-                className="flex-1 px-4 py-2 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder={t.search_placeholder}
+                className={`flex-1 px-4 py-2 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-primary-500 ${lang === 'en' ? 'text-left' : 'text-right'}`}
               />
               <button
                 type="submit"
                 disabled={isLoading}
                 className="bg-primary-900 text-white px-6 py-2 rounded-xl font-bold hover:bg-primary-800 disabled:opacity-50"
               >
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'بحث'}
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.search_button}
               </button>
             </form>
           </div>
@@ -503,14 +560,14 @@ export default function AdminDashboard() {
               <h2 className="text-xl font-bold mb-6 flex items-center justify-between text-primary-900">
                 <span className="flex items-center gap-2">
                   <Sparkles className="w-6 h-6 text-gold-600" />
-                  تجهيز صفحة SEO احترافية
+                  {t.admin_seo_preparation}
                 </span>
-                <button onClick={() => setSelectedBook(null)} className="text-sm text-gray-400 hover:text-gray-600">إلغاء</button>
+                <button onClick={() => setSelectedBook(null)} className="text-sm text-gray-400 hover:text-gray-600">{t.admin_cancel}</button>
               </h2>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">العنوان (SEO Meta Title)</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">{t.admin_seo_meta_title}</label>
                   <input
                     type="text"
                     value={formData.seoTitle}
@@ -521,7 +578,7 @@ export default function AdminDashboard() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">الرابط (Slug)</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">{t.admin_slug}</label>
                     <input
                       type="text"
                       value={formData.slug}
@@ -531,7 +588,7 @@ export default function AdminDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">التصنيف</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">{t.admin_category}</label>
                     <select
                       value={formData.category_slug}
                       onChange={(e) => {
@@ -550,7 +607,7 @@ export default function AdminDashboard() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">المؤلف</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">{t.admin_author}</label>
                     <input
                       type="text"
                       list="authors-list"
@@ -563,7 +620,7 @@ export default function AdminDashboard() {
                     </datalist>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">عدد الأجزاء</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">{t.admin_parts_count}</label>
                     <input
                       type="number"
                       value={formData.parts_count}
@@ -576,14 +633,14 @@ export default function AdminDashboard() {
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="block text-sm font-bold text-gray-700">وصف الكتاب (SEO Content)</label>
+                    <label className="block text-sm font-bold text-gray-700">{t.admin_seo_description}</label>
                     <button
                       onClick={generateContent}
                       disabled={isGenerating}
                       className="text-xs flex items-center gap-1 text-gold-600 hover:text-gold-700 font-bold bg-gold-50 px-2 py-1 rounded"
                     >
                       {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                      توليد ذكي (OpenAI)
+                      {t.admin_generate_ai}
                     </button>
                   </div>
                   <textarea
@@ -592,7 +649,7 @@ export default function AdminDashboard() {
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                     className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm leading-relaxed"
                   />
-                  <p className="text-[10px] text-gray-400 mt-1 italic">يفضل أن يكون الوصف بين 150 إلى 300 كلمة لضمان أفضل أرشفة.</p>
+                  <p className="text-[10px] text-gray-400 mt-1 italic">{t.admin_desc_limit_hint}</p>
                 </div>
 
                 <button
@@ -601,7 +658,7 @@ export default function AdminDashboard() {
                   className="w-full bg-primary-900 text-white py-4 rounded-2xl font-bold hover:bg-primary-800 transition-all flex items-center justify-center gap-2 shadow-xl"
                 >
                   {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                  {existingBookIds.has(formData.archiveId) ? 'تحديث البيانات' : 'حفظ ونشر الصفحة'}
+                  {existingBookIds.has(formData.archiveId) ? t.admin_update_data : t.admin_save_and_publish}
                 </button>
               </div>
             </div>
@@ -613,47 +670,49 @@ export default function AdminDashboard() {
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-bold flex items-center gap-2 text-primary-900">
                     <FolderPlus className="w-5 h-5" />
-                    إدارة التصنيفات والاقتراحات الذكية
+                    {t.admin_categories_suggestions}
                   </h2>
                   <button
                     onClick={() => setShowCategoryForm(!showCategoryForm)}
                     className="text-xs bg-gold-50 text-gold-700 px-3 py-1 rounded-lg font-bold"
                   >
-                    {showCategoryForm ? 'إلغاء' : 'إضافة تصنيف'}
+                    {showCategoryForm ? t.admin_cancel : t.admin_add_category}
                   </button>
                 </div>
 
                 {showCategoryForm && (
-                  <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gold-100">
+                  <form onSubmit={handleSaveCategory} className="space-y-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gold-100">
                     <input
-                      placeholder="اسم التصنيف (مثال: كتب الحديث)"
+                      placeholder={t.admin_cat_placeholder}
                       className="w-full px-4 py-2 rounded-lg border border-gray-200"
                       value={newCategory.title}
                       onChange={e => setNewCategory({...newCategory, title: e.target.value})}
+                      required
                     />
                     <div className="relative">
                       <textarea
-                        placeholder="وصف التصنيف لـ SEO"
+                        placeholder={t.admin_cat_desc_placeholder}
                         className="w-full px-4 py-2 rounded-lg border border-gray-200 min-h-[100px]"
                         value={newCategory.description}
                         onChange={e => setNewCategory({...newCategory, description: e.target.value})}
                       />
                       <button
+                        type="button"
                         onClick={handleGenerateCategoryDescription}
                         disabled={isGeneratingCategory || !newCategory.title}
-                        className="absolute bottom-3 left-3 flex items-center gap-1 text-[10px] bg-gold-100 text-gold-700 px-2 py-1 rounded font-bold hover:bg-gold-200 transition-all disabled:opacity-50"
+                        className={`absolute bottom-3 ${lang === 'en' ? 'right-3' : 'left-3'} flex items-center gap-1 text-[10px] bg-gold-100 text-gold-700 px-2 py-1 rounded font-bold hover:bg-gold-200 transition-all disabled:opacity-50`}
                       >
                         {isGeneratingCategory ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                        توليد آلي (OpenAI)
+                        {t.admin_generate_ai}
                       </button>
                     </div>
                     <button
-                      onClick={handleSaveCategory}
+                      type="submit"
                       className="w-full bg-primary-900 text-white py-2 rounded-lg font-bold hover:bg-primary-800 transition-all"
                     >
-                      حفظ التصنيف
+                      {t.admin_save_category}
                     </button>
-                  </div>
+                  </form>
                 )}
 
                 <div className="grid grid-cols-1 gap-2">
@@ -686,7 +745,7 @@ export default function AdminDashboard() {
                         className="flex items-center gap-1 text-xs bg-gold-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-gold-700 transition-all shadow-sm"
                       >
                         <Zap className="w-3.5 h-3.5" />
-                        اقتراح كتب ذكية
+                        {t.admin_smart_suggestions}
                       </button>
                     </div>
                   ))}
@@ -698,37 +757,38 @@ export default function AdminDashboard() {
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-bold flex items-center gap-2 text-primary-900">
                     <User className="w-5 h-5" />
-                    إدارة المؤلفين
+                    {t.admin_authors_management}
                   </h2>
                   <button
                     onClick={() => setShowAuthorForm(!showAuthorForm)}
                     className="text-xs bg-gold-50 text-gold-700 px-3 py-1 rounded-lg font-bold"
                   >
-                    {showAuthorForm ? 'إلغاء' : 'إضافة مؤلف'}
+                    {showAuthorForm ? t.admin_cancel : t.admin_add_author}
                   </button>
                 </div>
 
                 {showAuthorForm && (
-                  <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gold-100">
+                  <form onSubmit={handleSaveAuthor} className="space-y-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gold-100">
                     <input
-                      placeholder="اسم المؤلف الكامل"
+                      placeholder={t.admin_author_name_placeholder}
                       className="w-full px-4 py-2 rounded-lg border border-gray-200"
                       value={newAuthor.name}
                       onChange={e => setNewAuthor({...newAuthor, name: e.target.value})}
+                      required
                     />
                     <textarea
-                      placeholder="نبذة مختصرة عن المؤلف لصفحة SEO"
+                      placeholder={t.admin_author_bio_placeholder}
                       className="w-full px-4 py-2 rounded-lg border border-gray-200"
                       value={newAuthor.bio}
                       onChange={e => setNewAuthor({...newAuthor, bio: e.target.value})}
                     />
                     <button
-                      onClick={handleSaveAuthor}
+                      type="submit"
                       className="w-full bg-primary-900 text-white py-2 rounded-lg font-bold"
                     >
-                      حفظ المؤلف
+                      {t.admin_save_author}
                     </button>
-                  </div>
+                  </form>
                 )}
                 <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
                   {authors.map(a => (
@@ -741,8 +801,8 @@ export default function AdminDashboard() {
 
               <div className="bg-gold-50 p-8 rounded-3xl border border-gold-200 text-center">
                 <Sparkles className="w-12 h-12 text-gold-400 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-primary-900 mb-2">النظام الذكي جاهز</h3>
-                <p className="text-gray-600 text-sm">استخدم زر &quot;اقتراح كتب ذكية&quot; لإضافة محتوى احترافي بسرعة فائقة بالاعتماد على الذكاء الاصطناعي.</p>
+                <h3 className="text-xl font-bold text-primary-900 mb-2">{t.admin_smart_system_ready}</h3>
+                <p className="text-gray-600 text-sm">{t.admin_smart_system_desc}</p>
               </div>
             </div>
           )}
@@ -759,9 +819,9 @@ export default function AdminDashboard() {
                 <div>
                   <h2 className="text-xl font-bold flex items-center gap-2">
                     <Zap className="w-6 h-6 text-gold-400" />
-                    كتب مقترحة لتصنيف: {selectedCategoryForSuggestions.title}
+                    {t.admin_suggested_books.replace('{category}', selectedCategoryForSuggestions.title)}
                   </h2>
-                  <p className="text-xs text-primary-100 mt-1">تم جلب {suggestions.length} كتاباً من Archive.org.</p>
+                  <p className="text-xs text-primary-100 mt-1">{t.admin_found_books.replace('{count}', suggestions.length.toString())}</p>
                 </div>
                 <button
                   onClick={() => setSelectedCategoryForSuggestions(null)}
@@ -779,16 +839,16 @@ export default function AdminDashboard() {
                     value={suggestionQuery}
                     onChange={(e) => setSuggestionQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSuggestBooks(selectedCategoryForSuggestions, suggestionQuery)}
-                    placeholder="ابحث عن كتب أخرى لهذا التصنيف..."
-                    className="w-full bg-white/10 border border-white/20 rounded-xl py-2 px-4 pr-10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-500/50"
+                    placeholder={t.admin_search_more}
+                    className={`w-full bg-white/10 border border-white/20 rounded-xl py-2 px-4 ${lang === 'en' ? 'pl-10' : 'pr-10'} text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-500/50`}
                 />
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <Search className={`absolute ${lang === 'en' ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-white/40`} />
                 <button
                     onClick={() => handleSuggestBooks(selectedCategoryForSuggestions, suggestionQuery)}
                     disabled={isSuggesting}
-                    className="absolute left-1.5 top-1.5 bottom-1.5 bg-gold-500 text-primary-900 px-4 rounded-lg text-xs font-bold hover:bg-gold-400 disabled:opacity-50"
+                    className={`absolute ${lang === 'en' ? 'right-1.5' : 'left-1.5'} top-1.5 bottom-1.5 bg-gold-500 text-primary-900 px-4 rounded-lg text-xs font-bold hover:bg-gold-400 disabled:opacity-50`}
                 >
-                    {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : 'بحث'}
+                    {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : t.search_button}
                 </button>
               </div>
             </div>
@@ -797,7 +857,7 @@ export default function AdminDashboard() {
               {isSuggesting ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4 text-gray-500">
                   <Loader2 className="w-12 h-12 animate-spin text-gold-500" />
-                  <p className="font-bold text-center px-4">جاري تحليل مئات الكتب وترتيبها بالذكاء الاصطناعي... يرجى الانتظار</p>
+                  <p className="font-bold text-center px-4">{t.admin_analyzing}</p>
                 </div>
               ) : suggestions.length === 0 ? (
                 <div className="text-center py-20 text-gray-500">
@@ -824,15 +884,15 @@ export default function AdminDashboard() {
                                 <h4 className="font-bold text-gray-900 line-clamp-1">{s.title}</h4>
                                 <p className="text-sm text-gray-500 truncate">{s.author}</p>
                                 </div>
-                                <div className="text-left flex-shrink-0 flex flex-col gap-1 items-end">
+                                <div className={`${lang === 'en' ? 'text-right' : 'text-left'} flex-shrink-0 flex flex-col gap-1 items-end`}>
                                     {isAdded && (
-                                        <span className="text-[10px] font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full">مضاف مسبقاً</span>
+                                        <span className="text-[10px] font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full">{t.admin_added_already}</span>
                                     )}
                                     {isRejected && (
-                                        <span className="text-[10px] font-bold px-2 py-1 bg-red-100 text-red-700 rounded-full">مستبعد</span>
+                                        <span className="text-[10px] font-bold px-2 py-1 bg-red-100 text-red-700 rounded-full">{t.admin_rejected}</span>
                                     )}
                                     {!isAdded && !isRejected && (
-                                        <span className="text-[10px] font-bold px-2 py-1 bg-primary-100 text-primary-700 rounded-full">جديد</span>
+                                        <span className="text-[10px] font-bold px-2 py-1 bg-primary-100 text-primary-700 rounded-full">{t.admin_new}</span>
                                     )}
                                 </div>
                             </div>
@@ -852,15 +912,17 @@ export default function AdminDashboard() {
                         disabled={currentPage === 1}
                         className="p-2 bg-white rounded-lg border border-gray-200 disabled:opacity-30"
                     >
-                        <ChevronRight className="w-5 h-5" />
+                        {lang === 'en' ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                     </button>
-                    <span className="text-sm font-bold text-gray-600">صفحة {currentPage} من {totalPages}</span>
+                    <span className="text-sm font-bold text-gray-600">
+                        {t.page_of.replace('{current}', currentPage.toString()).replace('{total}', totalPages.toString())}
+                    </span>
                     <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
                         className="p-2 bg-white rounded-lg border border-gray-200 disabled:opacity-30"
                     >
-                        <ChevronLeft className="w-5 h-5" />
+                        {lang === 'en' ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
                     </button>
                 </div>
 
@@ -872,9 +934,9 @@ export default function AdminDashboard() {
                             className="px-6 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-all flex items-center gap-2"
                         >
                             <Trash2 className="w-4 h-4" />
-                            استبعاد المختارة
+                            {t.admin_reject_selected}
                         </button>
-                        <p className="text-sm text-gray-500 self-center">تم اختيار {selectedSuggestions.size} كتاباً</p>
+                        <p className="text-sm text-gray-500 self-center">{t.admin_selected_count.replace('{count}', selectedSuggestions.size.toString())}</p>
                     </div>
 
                     <button
@@ -885,12 +947,12 @@ export default function AdminDashboard() {
                     {isBulkAdding ? (
                         <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        جاري المعالجة...
+                        {t.admin_processing}
                         </>
                     ) : (
                         <>
                         <Plus className="w-5 h-5" />
-                        إضافة الكتب المختارة للنظام
+                        {t.admin_add_selected}
                         </>
                     )}
                     </button>
@@ -901,8 +963,8 @@ export default function AdminDashboard() {
             {isBulkAdding && (
               <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center p-10 text-center z-10">
                 <Loader2 className="w-16 h-16 animate-spin text-gold-600 mb-6" />
-                <h3 className="text-2xl font-bold text-primary-900 mb-2">جاري العمل على سحر الذكاء الاصطناعي...</h3>
-                <p className="text-gray-600 max-w-md">نقوم الآن بجلب أفضل النسخ، توليد محتوى SEO احترافي، وبناء الصفحات آلياً. يرجى عدم إغلاق النافذة.</p>
+                <h3 className="text-2xl font-bold text-primary-900 mb-2">{t.admin_ai_magic_working}</h3>
+                <p className="text-gray-600 max-w-md">{t.admin_ai_magic_desc}</p>
               </div>
             )}
           </div>

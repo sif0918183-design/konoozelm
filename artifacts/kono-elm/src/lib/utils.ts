@@ -89,3 +89,16 @@ export function slugify(text: string): string {
     .replace(/-+/g, '-') // Remove duplicate hyphens
     .replace(/^-+|-+$/g, ''); // Trim hyphens
 }
+
+/**
+ * Professional English Slug Generator
+ */
+export function generateEnglishSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim()
+    .replace(/^-+|-+$/g, '');
+}

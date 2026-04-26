@@ -6,8 +6,14 @@ import { BookOpen, Pin, PinOff, Trash2, Clock, ChevronLeft, WifiOff, CheckCircle
 import { getRecentBooks, togglePinBook, removeFromRecent, type RecentBook } from '@/lib/recent-books';
 import { cn } from '@/lib/utils';
 import { cachePDF, uncachePDF } from '@/lib/pdf-cache';
+import { translations } from '@/lib/translations';
 
-export default function RecentBooks() {
+interface RecentBooksProps {
+  lang?: 'ar' | 'en';
+}
+
+export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
+  const t = translations[lang];
   const [recentBooks, setRecentBooks] = useState<RecentBook[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
@@ -59,7 +65,7 @@ export default function RecentBooks() {
   const handleRemove = (e: React.MouseEvent, url: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (confirm('هل تريد إزالة هذا الكتاب من القائمة؟')) {
+    if (confirm(t.confirm_remove_recent)) {
       removeFromRecent(url);
       setRecentBooks(getRecentBooks());
     }
@@ -81,18 +87,18 @@ export default function RecentBooks() {
                 <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl border border-white/10">
                   <Clock className="w-6 h-6 text-gold-200" />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-amiri font-bold text-white">تابع القراءة</h2>
+                <h2 className="text-2xl md:text-3xl font-amiri font-bold text-white">{t.continue_reading}</h2>
               </div>
               <p className="text-primary-100/70 text-sm md:text-base mr-12">
-                (الكتب التي تحددها بعلامة الدبوس ستتمكن من قراءتها في حال انقطع الإنترنت)
+                {t.offline_notice}
               </p>
             </div>
             <Link
               href="/continue-reading"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-xl text-gold-200 font-bold transition-all hover:scale-105"
             >
-              عرض السجل الكامل
-              <ChevronLeft className="w-5 h-5" />
+              {lang === 'ar' ? 'عرض السجل الكامل' : 'View Full History'}
+              <ChevronLeft className={cn("w-5 h-5", lang === 'en' && "rotate-180")} />
             </Link>
           </div>
 
@@ -112,7 +118,7 @@ export default function RecentBooks() {
                   <BookOpen className="w-6 h-6 text-primary-900" />
                 </div>
                 {book.isPinned && (
-                  <div className="absolute -top-2 -right-2 bg-primary-600 text-white p-1 rounded-full border-2 border-white shadow-sm" title="متوفر بدون اتصال">
+                  <div className={`absolute -top-2 ${lang === 'ar' ? '-right-2' : '-left-2'} bg-primary-600 text-white p-1 rounded-full border-2 border-white shadow-sm`} title={lang === 'ar' ? 'متوفر بدون اتصال' : 'Available offline'}>
                     <CheckCircle2 className="w-3 h-3" />
                   </div>
                 )}
@@ -124,14 +130,14 @@ export default function RecentBooks() {
                     "p-2 rounded-lg transition-colors",
                     book.isPinned ? "text-gold-600 bg-gold-50" : "text-gray-400 hover:bg-gray-100"
                   )}
-                  title={book.isPinned ? "إلغاء التثبيت" : "تثبيت"}
+                  title={book.isPinned ? (lang === 'ar' ? "إلغاء التثبيت" : "Unpin") : (lang === 'ar' ? "تثبيت" : "Pin")}
                 >
                   {book.isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
                 </button>
                 <button
                   onClick={(e) => handleRemove(e, book.url)}
                   className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  title="إزالة"
+                  title={lang === 'ar' ? "إزالة" : "Remove"}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -145,11 +151,11 @@ export default function RecentBooks() {
               {book.isPinned && (
                 <div className="flex items-center gap-1 text-[10px] font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full w-fit mb-2">
                   <WifiOff className="w-3 h-3" />
-                  <span>جاهز للقراءة بدون إنترنت</span>
+                  <span>{lang === 'ar' ? 'جاهز للقراءة بدون إنترنت' : 'Ready for offline reading'}</span>
                 </div>
               )}
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>الصفحة {book.currentPage} من {book.totalPages}</span>
+              <div className="flex items-center justify-between text-xs text-gray-500" dir="ltr">
+                <span>{lang === 'ar' ? `الصفحة ${book.currentPage} من ${book.totalPages}` : `Page ${book.currentPage} of ${book.totalPages}`}</span>
                 <span>{Math.round((book.currentPage / book.totalPages) * 100)}%</span>
               </div>
               <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
@@ -169,7 +175,7 @@ export default function RecentBooks() {
                 onClick={() => setShowAllMobile(true)}
                 className="px-8 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-xl text-white font-bold transition-all"
               >
-                عرض المزيد من الكتب
+                {t.show_more}
               </button>
             </div>
           )}
