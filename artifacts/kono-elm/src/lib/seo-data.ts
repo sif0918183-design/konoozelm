@@ -211,65 +211,63 @@ export async function getCategoryBySlug(slug: string, lang: string = 'ar'): Prom
 }
 
 /**
- * Robust fetch for books in a category.
- * Performs multiple matching strategies and merges results for absolute reliability.
+ * Simplified and direct fetch for books in a category.
+ * Prioritizes category_slug for absolute matching as requested.
  */
-export async function getBooksByCategory(categorySlug: string, categoryTitle?: string, limit: number = 200, lang: string = 'ar'): Promise<SeoBook[]> {
+export async function getBooksByCategory(categorySlug: string, categoryTitle?: string, limit: number = 500, lang: string = 'ar'): Promise<SeoBook[]> {
   if (!supabase) return [];
 
+  console.log(`[getBooksByCategory] Querying: slug=${categorySlug}, lang=${lang}, limit=${limit}`);
+
   try {
-    // Stage 1: Try multiple fetch strategies in parallel for speed and coverage
-    const [bySlug, byTitle] = await Promise.all([
-        supabase.from('seo_books').select('*').eq('category_slug', categorySlug).eq('lang', lang).limit(limit),
-        categoryTitle ? supabase.from('seo_books').select('*').eq('category', categoryTitle).eq('lang', lang).limit(limit) : Promise.resolve({data: []})
-    ]);
-
-    // Merge results and deduplicate by archiveId
-    const merged = [...(bySlug.data || []), ...(byTitle.data || [])];
-    const uniqueMap = new Map();
-
-    for (const book of merged) {
-        uniqueMap.set(book.archive_id, book);
-    }
-
-    if (uniqueMap.size > 0) {
-        return Array.from(uniqueMap.values())
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, limit)
-            .map(b => ({
-                ...b,
-                archiveId: b.archive_id,
-                seoTitle: b.seo_title
-            }));
-    }
-
-    // Stage 2: Robust Fallback (Broad fetch and in-memory filter)
-    const { data: allData, error: allErr } = await supabase
+    // Direct query by category_slug and lang
+    const { data, error, count } = await supabase
         .from('seo_books')
-        .select('*')
+        .select('*', { count: 'exact' })
+        .eq('category_slug', categorySlug)
         .eq('lang', lang)
         .order('created_at', { ascending: false })
-        .limit(1000);
+        .limit(limit);
 
-    if (allErr || !allData) return [];
+    if (error) {
+        console.error('[getBooksByCategory] Supabase error:', error);
+        return [];
+    }
 
-    return allData
-        .filter(b =>
-            (b.lang === lang) && (
-              b.category_slug === categorySlug ||
-              (categoryTitle && b.category === categoryTitle) ||
-              (categoryTitle && b.category?.includes(categoryTitle))
-            )
-        )
-        .slice(0, limit)
-        .map(b => ({
+    console.log(`[getBooksByCategory] Results found: ${data?.length} (Total in DB for this query: ${count})`);
+
+    if (data && data.length > 0) {
+        return data.map(b => ({
             ...b,
             archiveId: b.archive_id,
             seoTitle: b.seo_title
         }));
+    }
 
+    // Secondary fallback: only if slug doesn't match, try matching by title
+    if (categoryTitle) {
+        console.log(`[getBooksByCategory] No results for slug, trying title match: ${categoryTitle}`);
+        const { data: titleData } = await supabase
+            .from('seo_books')
+            .select('*')
+            .eq('category', categoryTitle)
+            .eq('lang', lang)
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        if (titleData && titleData.length > 0) {
+            console.log(`[getBooksByCategory] Results found by title: ${titleData.length}`);
+            return titleData.map(b => ({
+                ...b,
+                archiveId: b.archive_id,
+                seoTitle: b.seo_title
+            }));
+        }
+    }
+
+    return [];
   } catch (err) {
-    console.error('Critical failure in getBooksByCategory:', err);
+    console.error('[getBooksByCategory] Critical failure:', err);
     return [];
   }
 }

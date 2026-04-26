@@ -37,7 +37,8 @@ export default async function CategoryPage({ params }: Props) {
 
   if (!category) notFound();
 
-  const books = await getBooksByCategory(category.slug, category.title, 200, lang);
+  // Fetch up to 500 books to ensure all books in category are displayed
+  const books = await getBooksByCategory(category.slug, category.title, 500, lang);
 
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">
