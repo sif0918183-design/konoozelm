@@ -465,6 +465,29 @@ export default function AdminDashboard() {
     setSelectedSuggestions(next);
   };
 
+  const handleRejectSuggestions = async () => {
+    if (!selectedCategoryForSuggestions || selectedSuggestions.size === 0) return;
+
+    const booksToReject = suggestions.filter(s => selectedSuggestions.has(s.id));
+
+    try {
+        const res = await fetch('/api/admin/suggest/reject', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                books: booksToReject,
+                categorySlug: selectedCategoryForSuggestions.slug,
+                lang: lang
+            }),
+        });
+
+        if (res.ok) {
+            setSuggestions(prev => prev.filter(s => !selectedSuggestions.has(s.id)));
+            setSelectedSuggestions(new Set());
+        }
+    } catch (e) {}
+  };
+
   const handleBulkAdd = async () => {
     if (!selectedCategoryForSuggestions || selectedSuggestions.size === 0) return;
 
@@ -511,29 +534,6 @@ export default function AdminDashboard() {
     } finally {
       setIsBulkAdding(false);
     }
-  };
-
-  const handleRejectSuggestions = async () => {
-    if (!selectedCategoryForSuggestions || selectedSuggestions.size === 0) return;
-
-    const booksToReject = suggestions.filter(s => selectedSuggestions.has(s.id));
-
-    try {
-        const res = await fetch('/api/admin/suggest/reject', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                books: booksToReject,
-                categorySlug: selectedCategoryForSuggestions.slug,
-                lang: lang
-            }),
-        });
-
-        if (res.ok) {
-            setSuggestions(prev => prev.filter(s => !selectedSuggestions.has(s.id)));
-            setSelectedSuggestions(new Set());
-        }
-    } catch (e) {}
   };
 
   // Filtering & Pagination Logic
@@ -1015,24 +1015,25 @@ export default function AdminDashboard() {
                     </button>
                   )}
 
-              {/* In-Modal Search */}
-              <div className="relative flex-1 w-full">
-                <input
-                    type="text"
-                    value={suggestionQuery}
-                    onChange={(e) => setSuggestionQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSuggestBooks(selectedCategoryForSuggestions, suggestionQuery)}
-                    placeholder={t.admin_search_more}
-                    className={`w-full bg-white/10 border border-white/20 rounded-xl py-2 px-4 ${lang === 'en' ? 'pl-10' : 'pr-10'} text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-500/50`}
-                />
-                <Search className={`absolute ${lang === 'en' ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-white/40`} />
-                <button
-                    onClick={() => handleSuggestBooks(selectedCategoryForSuggestions, suggestionQuery)}
-                    disabled={isSuggesting}
-                    className={`absolute ${lang === 'en' ? 'right-1.5' : 'left-1.5'} top-1.5 bottom-1.5 bg-gold-500 text-primary-900 px-4 rounded-lg text-xs font-bold hover:bg-gold-400 disabled:opacity-50`}
-                >
-                    {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : t.search_button}
-                </button>
+                  {/* In-Modal Search */}
+                  <div className="relative flex-1 w-full">
+                    <input
+                        type="text"
+                        value={suggestionQuery}
+                        onChange={(e) => setSuggestionQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSuggestBooks(selectedCategoryForSuggestions, suggestionQuery)}
+                        placeholder={t.admin_search_more}
+                        className={`w-full bg-white/10 border border-white/20 rounded-xl py-2 px-4 ${lang === 'en' ? 'pl-10' : 'pr-10'} text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-500/50`}
+                    />
+                    <Search className={`absolute ${lang === 'en' ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-white/40`} />
+                    <button
+                        onClick={() => handleSuggestBooks(selectedCategoryForSuggestions, suggestionQuery)}
+                        disabled={isSuggesting}
+                        className={`absolute ${lang === 'en' ? 'right-1.5' : 'left-1.5'} top-1.5 bottom-1.5 bg-gold-500 text-primary-900 px-4 rounded-lg text-xs font-bold hover:bg-gold-400 disabled:opacity-50`}
+                    >
+                        {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : t.search_button}
+                    </button>
+                  </div>
               </div>
             </div>
 

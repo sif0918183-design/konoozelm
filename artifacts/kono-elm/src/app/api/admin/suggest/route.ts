@@ -77,45 +77,72 @@ export async function POST(request: Request) {
     let aiApprovedCount = 0;
     let aiCheckedCount = 0;
 
+    if (!supabase) throw new Error('Supabase not configured');
+
     // Pipeline for English
     if (isEnglishTab) {
-      // Step 1: Pre-filtering
+      // Step 1: Pre-filtering (Fast Layer)
       allBooks = allBooks.filter(filterEnglishCandidates);
       preFilteredCount = allBooks.length;
 
-      // Step 2: AI Filtering with batching and timeout protection
-      const booksToVerify = allBooks.filter(b => !verificationCache.has(b.identifier));
+      const candidateIds = allBooks.map(b => b.identifier);
+
+      // Fetch existing verification status from DB to avoid redundant AI calls
+      const { data: dbVerifiedBooks } = await supabase
+        .from('seo_books')
+        .select('archive_id, is_english_verified')
+        .in('archive_id', candidateIds);
+
+      const dbVerifiedMap = new Map(dbVerifiedBooks?.map(b => [b.archive_id, b.is_english_verified]) || []);
+
+      // Step 2: AI Filtering (Smart Layer) with batching and timeout protection
+      // Only verify books that are not in memory cache and not explicitly verified in DB
+      const booksToVerify = allBooks.filter(b =>
+        !verificationCache.has(b.identifier) &&
+        dbVerifiedMap.get(b.identifier) !== true
+      );
 
       const BATCH_SIZE = 20;
+      const batches = [];
       for (let i = 0; i < booksToVerify.length; i += BATCH_SIZE) {
+          batches.push(booksToVerify.slice(i, i + BATCH_SIZE));
+      }
+
+      // Parallel batch processing with concurrency limit (max 3 concurrent batches to avoid rate limits)
+      const CONCURRENCY_LIMIT = 3;
+      for (let i = 0; i < batches.length; i += CONCURRENCY_LIMIT) {
         // Timeout protection
         if (Date.now() - startTime > MAX_RUNTIME) break;
 
-        const batch = booksToVerify.slice(i, i + BATCH_SIZE);
-        try {
-          const verifications = await verifyEnglishBooks(batch.map(b => ({
-            id: b.identifier,
-            title: b.title,
-            description: b.description
-          })));
+        const concurrentBatches = batches.slice(i, i + CONCURRENCY_LIMIT);
 
-          verifications.forEach(v => {
-            verificationCache.set(v.id, v.isEnglish);
-          });
-          aiCheckedCount += batch.length;
-        } catch (e) {
-          console.error('AI Verification batch failed:', e);
-        }
+        await Promise.all(concurrentBatches.map(async (batch) => {
+          try {
+            const verifications = await verifyEnglishBooks(batch.map(b => ({
+              id: b.identifier,
+              title: b.title,
+              description: b.description
+            })));
+
+            verifications.forEach(v => {
+              verificationCache.set(v.id, v.isEnglish);
+            });
+            aiCheckedCount += batch.length;
+          } catch (e) {
+            console.error('AI Verification batch failed:', e);
+          }
+        }));
       }
 
-      // Filter based on cache results
-      allBooks = allBooks.filter(b => verificationCache.get(b.identifier) === true);
+      // Final Filter: Include books that are verified in DB OR passed AI verification
+      allBooks = allBooks.filter(b =>
+        dbVerifiedMap.get(b.identifier) === true ||
+        verificationCache.get(b.identifier) === true
+      );
       aiApprovedCount = allBooks.length;
 
-      console.log(`[Suggest API] Fetched: ${totalFetched} → Pre-filtered: ${preFilteredCount} → AI Approved: ${aiApprovedCount} (Checked ${aiCheckedCount} new)`);
+      console.log(`[Suggest API] Fetched: ${totalFetched} → Pre-filtered: ${preFilteredCount} → AI Approved: ${aiApprovedCount} (Checked ${aiCheckedCount} new via AI)`);
     }
-
-    if (!supabase) throw new Error('Supabase not configured');
 
     const candidateIds = allBooks.map(b => b.identifier);
 
