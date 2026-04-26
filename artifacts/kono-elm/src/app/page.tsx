@@ -1,10 +1,11 @@
 import { Metadata } from 'next';
 import ArabicHomePage from '@/components/home/ArabicHomePage';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 300;
 
 export const metadata: Metadata = {
+  title: 'موسوعة كنوز العلم الإلكترونية - مكتبة إسلامية شاملة',
+  description: 'موسوعة شاملة للكتب الإسلامية، تتيح لك قراءة وتحميل آلاف الكتب بصيغة PDF مجاناً بروابط مباشرة من Archive.org.',
   alternates: {
     canonical: 'https://kono-elm.vercel.app',
     languages: {

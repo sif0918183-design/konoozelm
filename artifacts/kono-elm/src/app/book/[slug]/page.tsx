@@ -1,12 +1,12 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { BookOpen, Download, User, Tag, ChevronRight, Book as BookIcon, Sparkles, Globe } from 'lucide-react';
 import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug } from '@/lib/seo-data';
 import { getBookDetails } from '@/lib/archive-api';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 600;
 import BookCard from '@/components/BookCard';
 import { slugify } from '@/lib/utils';
 import { translations } from '@/lib/translations';
@@ -126,10 +126,12 @@ export default async function BookPage({ params }: Props) {
             <div className="md:col-span-1 space-y-6">
               <div className="aspect-[3/4] bg-gray-100 rounded-2xl overflow-hidden relative shadow-md border border-gray-100">
                 {archiveBook?.coverImage ? (
-                  <img
+                  <Image
                     src={archiveBook.coverImage}
                     alt={displayTitle}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 33vw"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-primary-50">
