@@ -6,11 +6,11 @@ export async function POST(request: Request) {
   if (!checkAuth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { title } = await request.json();
+    const { title, lang = 'ar' } = await request.json();
     if (!title) {
         return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
-    const description = await generateCategoryDescription(title);
+    const description = await generateCategoryDescription(title, lang);
     return NextResponse.json({ description });
   } catch (error: any) {
     console.error('Error in category generation API:', error);

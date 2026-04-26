@@ -191,7 +191,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: formData.title, author: formData.author }),
+        body: JSON.stringify({ title: formData.title, author: formData.author, lang }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -288,7 +288,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/generate/category', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newCategory.title }),
+        body: JSON.stringify({ title: newCategory.title, lang }),
       });
       if (res.ok) {
         const data = await res.json();
