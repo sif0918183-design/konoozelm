@@ -7,21 +7,35 @@ import { verifyEnglishBooks } from '@/lib/openai';
 // In-memory cache for verification results
 const verificationCache = new Map<string, boolean>();
 
+function safeString(val: any): string {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'string') return val;
+  if (Array.isArray(val)) return val.join(' ');
+  if (typeof val === 'object') {
+    try {
+      return JSON.stringify(val);
+    } catch (e) {
+      return '';
+    }
+  }
+  return String(val);
+}
+
 function filterEnglishCandidates(book: any) {
   // 1. Language field check
-  if (book.language) {
-    const lang = book.language.toLowerCase();
+  const bookLang = safeString(book.language).toLowerCase();
+  if (bookLang) {
     const allowed = ['eng', 'english', 'en'];
     const rejected = ['ara', 'arabic', 'urd', 'urdu', 'ind', 'indonesian', 'bahasa', 'per', 'persian'];
 
-    const isExplicitlyEnglish = allowed.some(l => lang.includes(l));
-    const isExplicitlyOther = rejected.some(l => lang.includes(l));
+    const isExplicitlyEnglish = allowed.some(l => bookLang.includes(l));
+    const isExplicitlyOther = rejected.some(l => bookLang.includes(l));
 
     if (isExplicitlyOther && !isExplicitlyEnglish) return false;
   }
 
-  const title = (book.title || '').toLowerCase();
-  const description = (book.description || '').toLowerCase();
+  const title = safeString(book.title).toLowerCase();
+  const description = safeString(book.description).toLowerCase();
 
   // 2. Text-based rejection
   const rejectKeywords = [

@@ -75,8 +75,8 @@ export async function searchBooks(
     author: normalizeField(doc.creator),
     language: normalizeField(doc.language),
     year: doc.date ? doc.date.substring(0, 4) : undefined,
-    publisher: doc.publisher,
-    description: doc.description,
+    publisher: normalizeField(doc.publisher),
+    description: normalizeField(doc.description),
     coverImage: `https://archive.org/services/img/${doc.identifier}`,
     previewLink: `https://archive.org/details/${doc.identifier}`,
   }));
