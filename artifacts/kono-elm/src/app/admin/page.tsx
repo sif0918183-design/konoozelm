@@ -234,13 +234,28 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSaveCategory = async (categoryData?: any) => {
-    const payload = categoryData || {
-      ...newCategory,
-      slug: lang === 'ar' ? generateCategorySlug(newCategory.title) : generateEnglishSlug(newCategory.title),
+  const handleSaveCategory = async (e?: React.FormEvent | Category, categoryData?: any) => {
+    if (e && 'preventDefault' in e) {
+      e.preventDefault();
+    }
+
+    console.log("Submitting category...", { newCategory, categoryData });
+
+    // If the first argument is a category object (from order update), use it
+    // Otherwise use newCategory state
+    const isEvent = e && 'preventDefault' in e;
+    const dataToSave = (!e || isEvent) ? newCategory : (e as Category);
+
+    const payload = {
+      ...dataToSave,
+      slug: dataToSave.slug || (lang === 'ar' ? generateCategorySlug(dataToSave.title) : generateEnglishSlug(dataToSave.title)),
       lang
     };
-    if (!payload.title) return;
+
+    if (!payload.title) {
+      console.warn("Category title is missing, aborting save.");
+      return;
+    }
 
     try {
       const res = await fetch('/api/admin/categories', {
@@ -303,7 +318,11 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSaveAuthor = async () => {
+  const handleSaveAuthor = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    console.log("Submitting author...", newAuthor);
+
     if (!newAuthor.name) return;
     const payload = {
       ...newAuthor,
@@ -662,12 +681,13 @@ export default function AdminDashboard() {
                 </div>
 
                 {showCategoryForm && (
-                  <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gold-100">
+                  <form onSubmit={handleSaveCategory} className="space-y-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gold-100">
                     <input
                       placeholder={t.admin_cat_placeholder}
                       className="w-full px-4 py-2 rounded-lg border border-gray-200"
                       value={newCategory.title}
                       onChange={e => setNewCategory({...newCategory, title: e.target.value})}
+                      required
                     />
                     <div className="relative">
                       <textarea
@@ -677,6 +697,7 @@ export default function AdminDashboard() {
                         onChange={e => setNewCategory({...newCategory, description: e.target.value})}
                       />
                       <button
+                        type="button"
                         onClick={handleGenerateCategoryDescription}
                         disabled={isGeneratingCategory || !newCategory.title}
                         className={`absolute bottom-3 ${lang === 'en' ? 'right-3' : 'left-3'} flex items-center gap-1 text-[10px] bg-gold-100 text-gold-700 px-2 py-1 rounded font-bold hover:bg-gold-200 transition-all disabled:opacity-50`}
@@ -686,12 +707,12 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                     <button
-                      onClick={handleSaveCategory}
+                      type="submit"
                       className="w-full bg-primary-900 text-white py-2 rounded-lg font-bold hover:bg-primary-800 transition-all"
                     >
                       {t.admin_save_category}
                     </button>
-                  </div>
+                  </form>
                 )}
 
                 <div className="grid grid-cols-1 gap-2">
@@ -747,12 +768,13 @@ export default function AdminDashboard() {
                 </div>
 
                 {showAuthorForm && (
-                  <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gold-100">
+                  <form onSubmit={handleSaveAuthor} className="space-y-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gold-100">
                     <input
                       placeholder={t.admin_author_name_placeholder}
                       className="w-full px-4 py-2 rounded-lg border border-gray-200"
                       value={newAuthor.name}
                       onChange={e => setNewAuthor({...newAuthor, name: e.target.value})}
+                      required
                     />
                     <textarea
                       placeholder={t.admin_author_bio_placeholder}
@@ -761,12 +783,12 @@ export default function AdminDashboard() {
                       onChange={e => setNewAuthor({...newAuthor, bio: e.target.value})}
                     />
                     <button
-                      onClick={handleSaveAuthor}
+                      type="submit"
                       className="w-full bg-primary-900 text-white py-2 rounded-lg font-bold"
                     >
                       {t.admin_save_author}
                     </button>
-                  </div>
+                  </form>
                 )}
                 <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
                   {authors.map(a => (
