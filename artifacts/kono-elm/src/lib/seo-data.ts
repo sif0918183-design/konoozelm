@@ -11,6 +11,7 @@ export interface SeoBook {
   seoTitle?: string;
   parts_count?: number;
   lang?: string;
+  is_english_verified?: boolean;
 }
 
 export interface Category {
@@ -68,7 +69,8 @@ export async function saveSeoBook(book: SeoBook) {
     archive_id: book.archiveId,
     seo_title: book.seoTitle,
     parts_count: book.parts_count || 1,
-    lang: book.lang || 'ar'
+    lang: book.lang || 'ar',
+    is_english_verified: book.is_english_verified || false
   };
 
   const { error } = await supabaseAdmin

@@ -63,6 +63,8 @@ interface Suggestion {
   author: string;
   relevance_score: number;
   isExisting?: boolean;
+  isVerified?: boolean;
+  isAiChecked?: boolean;
   feedbackStatus?: string | null;
 }
 
@@ -105,6 +107,8 @@ export default function AdminDashboard() {
   const [selectedCategoryForSuggestions, setSelectedCategoryForSuggestions] = useState<Category | null>(null);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
   const [isBulkAdding, setIsBulkAdding] = useState(false);
+  const [suggestionStats, setSuggestionStats] = useState<{ totalFetched: number; preFiltered: number; aiApproved: number } | null>(null);
+  const [showOnlyVerified, setShowOnlyVerified] = useState(true);
 
   // Pagination State for Suggestions
   const [currentPage, setCurrentPage] = useState(1);
@@ -442,6 +446,7 @@ export default function AdminDashboard() {
       if (res.ok) {
         const data = await res.json();
         setSuggestions(data.suggestions || []);
+        setSuggestionStats(data.stats || null);
       } else {
         const err = await res.json();
         alert(t.admin_bulk_error + ': ' + (err.error || ''));
@@ -465,7 +470,12 @@ export default function AdminDashboard() {
 
     setIsBulkAdding(true);
 
-    const selectedBooks = suggestions.filter(s => selectedSuggestions.has(s.id));
+    const selectedBooks = suggestions
+      .filter(s => selectedSuggestions.has(s.id))
+      .map(s => ({
+        ...s,
+        is_english_verified: s.isVerified
+      }));
 
     try {
       const res = await fetch('/api/admin/books/bulk', {
@@ -526,9 +536,13 @@ export default function AdminDashboard() {
     } catch (e) {}
   };
 
-  // Pagination Logic
-  const totalPages = Math.ceil(suggestions.length / ITEMS_PER_PAGE);
-  const currentItems = suggestions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  // Filtering & Pagination Logic
+  const filteredSuggestions = lang === 'en' && showOnlyVerified
+    ? suggestions.filter(s => s.isVerified)
+    : suggestions;
+
+  const totalPages = Math.ceil(filteredSuggestions.length / ITEMS_PER_PAGE);
+  const currentItems = filteredSuggestions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
     <div className={`min-h-screen bg-gray-50 font-tajawal ${lang === 'ar' ? 'font-arabic' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -972,8 +986,37 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
+              {/* Stats & Controls */}
+              {lang === 'en' && suggestionStats && (
+                <div className="grid grid-cols-3 gap-2 py-2 border-t border-white/10">
+                    <div className="text-center">
+                        <p className="text-[10px] text-white/50 uppercase">Total Fetched</p>
+                        <p className="font-bold text-lg">{suggestionStats.totalFetched}</p>
+                    </div>
+                    <div className="text-center border-x border-white/10">
+                        <p className="text-[10px] text-white/50 uppercase">Pre-Filtered</p>
+                        <p className="font-bold text-lg text-gold-400">{suggestionStats.preFiltered}</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-[10px] text-white/50 uppercase">AI Approved</p>
+                        <p className="font-bold text-lg text-green-400">{suggestionStats.aiApproved}</p>
+                    </div>
+                </div>
+              )}
+
+              <div className="flex flex-col md:flex-row gap-4 items-center">
+                  {lang === 'en' && (
+                    <button
+                        onClick={() => setShowOnlyVerified(!showOnlyVerified)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${showOnlyVerified ? 'bg-green-500 border-green-400 text-white shadow-lg' : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'}`}
+                    >
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-xs font-bold">Show Only Verified</span>
+                    </button>
+                  )}
+
               {/* In-Modal Search */}
-              <div className="relative">
+              <div className="relative flex-1 w-full">
                 <input
                     type="text"
                     value={suggestionQuery}
@@ -1025,6 +1068,20 @@ export default function AdminDashboard() {
                                 <p className="text-sm text-gray-500 truncate">{s.author}</p>
                                 </div>
                                 <div className={`${lang === 'en' ? 'text-right' : 'text-left'} flex-shrink-0 flex flex-col gap-1 items-end`}>
+                                    <div className="flex gap-1">
+                                        {s.isVerified && (
+                                            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded uppercase tracking-wider flex items-center gap-0.5">
+                                                <CheckCircle className="w-2.5 h-2.5" />
+                                                Verified English
+                                            </span>
+                                        )}
+                                        {s.isAiChecked && (
+                                            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded uppercase tracking-wider flex items-center gap-0.5">
+                                                <Zap className="w-2.5 h-2.5" />
+                                                AI Checked
+                                            </span>
+                                        )}
+                                    </div>
                                     {isAdded && (
                                         <span className="text-[10px] font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full">{t.admin_added_already}</span>
                                     )}
@@ -1055,7 +1112,7 @@ export default function AdminDashboard() {
                         {lang === 'en' ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                     </button>
                     <span className="text-sm font-bold text-gray-600">
-                        {t.page_of.replace('{current}', currentPage.toString()).replace('{total}', totalPages.toString())}
+                        {t.page_of.replace('{current}', currentPage.toString()).replace('{total}', (totalPages || 1).toString())}
                     </span>
                     <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}

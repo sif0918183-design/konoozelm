@@ -148,6 +148,63 @@ I want the result strictly in JSON format:
   }
 }
 
+export async function verifyEnglishBooks(books: { id: string; title: string; description?: string }[]) {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not defined');
+  }
+
+  const prompt = `
+You are a strict classifier.
+
+Determine if each book is actually written in English.
+
+Rules:
+- Return TRUE only if the content language is English
+- Return FALSE if:
+  - The content is Urdu, Indonesian, Arabic, etc.
+  - The title is English but the book is not
+  - Mixed or unclear language
+
+Return JSON:
+[
+ { "id": "...", "isEnglish": true/false }
+]
+
+Books:
+${JSON.stringify(books, null, 2)}
+`;
+
+  try {
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const result = JSON.parse(data.choices[0].message.content);
+
+    // Ensure it's an array, handle cases where AI might return it wrapped in an object
+    const verificationArray = Array.isArray(result) ? result : (result.books || Object.values(result)[0]);
+
+    return verificationArray as { id: string; isEnglish: boolean }[];
+  } catch (error) {
+    console.error('Error verifying English books with OpenAI:', error);
+    throw error;
+  }
+}
+
 export async function normalizeTitle(title: string, author?: string, lang: string = 'ar') {
   if (!OPENAI_API_KEY) return title;
 

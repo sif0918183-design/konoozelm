@@ -12,6 +12,7 @@ export interface Book {
   year?: string;
   publisher?: string;
   description?: string;
+  language?: string;
   coverImage?: string;
   downloadLink?: string;
   previewLink?: string;
@@ -52,7 +53,7 @@ export async function searchBooks(
   // and restricting to PDF and Texts as required by the application.
   const params = new URLSearchParams({
     q: `(${trimmedQuery}) AND format:pdf AND mediatype:texts`,
-    fl: 'identifier,title,creator,date,publisher,description,downloadable',
+    fl: 'identifier,title,creator,date,publisher,description,downloadable,language',
     rows: pageSize.toString(),
     page: page.toString(),
     output: 'json',
@@ -72,6 +73,7 @@ export async function searchBooks(
     identifier: doc.identifier,
     title: normalizeField(doc.title) || 'Untitled',
     author: normalizeField(doc.creator),
+    language: normalizeField(doc.language),
     year: doc.date ? doc.date.substring(0, 4) : undefined,
     publisher: doc.publisher,
     description: doc.description,
