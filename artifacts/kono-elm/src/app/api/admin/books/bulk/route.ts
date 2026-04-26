@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { checkAuth } from '@/lib/admin-auth';
 import { getBookFiles } from '@/lib/archive-api';
 import { generateEnhancedSeoContent } from '@/lib/ai-content';
@@ -49,6 +50,12 @@ export async function POST(request: Request) {
         };
 
         await saveSeoBook(bookPayload as any);
+
+        // On-demand revalidation
+        revalidatePath(`/${categorySlug}`);
+        revalidatePath(`/en/${categorySlug}`);
+        revalidatePath(`/book/${bookPayload.slug}`);
+        revalidatePath(`/en/book/${bookPayload.slug}`);
 
         if (supabaseAdmin) {
             await supabaseAdmin

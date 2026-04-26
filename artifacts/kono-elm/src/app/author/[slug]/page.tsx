@@ -5,8 +5,7 @@ import { User, Book as BookIcon, ChevronRight, Globe } from 'lucide-react';
 import { getAuthorBySlug, getBooksByAuthor } from '@/lib/seo-data';
 import SearchStateCleaner from '@/components/SearchStateCleaner';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 600;
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 

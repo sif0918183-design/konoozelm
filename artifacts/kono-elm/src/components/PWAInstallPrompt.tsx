@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Download, X } from 'lucide-react';
 
 export default function PWAInstallPrompt() {
@@ -59,8 +60,8 @@ export default function PWAInstallPrompt() {
       <div className="bg-white rounded-2xl shadow-2xl border border-primary-100 p-5 flex flex-col gap-4">
         <div className="flex items-start justify-between">
           <div className="flex gap-4">
-            <div className="w-12 h-12 bg-primary-900 rounded-xl flex items-center justify-center flex-shrink-0">
-              <img src="/icon.svg" alt="App Icon" className="w-8 h-8" />
+            <div className="w-12 h-12 bg-primary-900 rounded-xl flex items-center justify-center flex-shrink-0 relative">
+              <Image src="/icon.svg" alt="App Icon" width={32} height={32} />
             </div>
             <div>
               <h3 className="font-bold text-gray-900 text-lg">تثبيت موسوعة كنوز العلم</h3>

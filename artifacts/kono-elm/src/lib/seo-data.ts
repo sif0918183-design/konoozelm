@@ -81,6 +81,57 @@ export async function saveSeoBook(book: SeoBook) {
   }
 }
 
+export async function deleteSeoBook(archiveId: string) {
+  if (!supabaseAdmin) {
+    console.error('❌ Cannot delete book: SUPABASE_SERVICE_ROLE_KEY is missing');
+    throw new Error('Service Role Key missing');
+  }
+
+  const { error } = await supabaseAdmin
+    .from('seo_books')
+    .delete()
+    .eq('archive_id', archiveId);
+
+  if (error) {
+    console.error('Supabase Delete Error (Book):', error);
+    throw error;
+  }
+}
+
+export async function getTotalBookCount(lang: string = 'ar'): Promise<number> {
+  if (!supabase) return 0;
+  const { count, error } = await supabase
+    .from('seo_books')
+    .select('*', { count: 'exact', head: true })
+    .eq('lang', lang);
+
+  if (error) {
+    console.error('Supabase error (getTotalBookCount):', error);
+    return 0;
+  }
+  return count || 0;
+}
+
+export async function getCategoryBookCounts(lang: string = 'ar'): Promise<Record<string, number>> {
+  if (!supabase) return {};
+  const { data, error } = await supabase
+    .from('seo_books')
+    .select('category_slug')
+    .eq('lang', lang);
+
+  if (error) {
+    console.error('Supabase error (getCategoryBookCounts):', error);
+    return {};
+  }
+
+  const counts: Record<string, number> = {};
+  data.forEach(book => {
+    const slug = book.category_slug || 'عام';
+    counts[slug] = (counts[slug] || 0) + 1;
+  });
+  return counts;
+}
+
 export async function getCategories(lang: string = 'ar'): Promise<Category[]> {
   if (!supabase) return [];
   const { data, error } = await supabase

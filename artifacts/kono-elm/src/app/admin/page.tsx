@@ -110,6 +110,14 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 15;
 
+  // Book Management States
+  const [managedBooks, setManagedBooks] = useState<SeoBook[]>([]);
+  const [selectedCategoryForManagement, setSelectedCategoryForManagement] = useState<string | null>(null);
+  const [isDeletingBook, setIsDeletingBook] = useState<string | null>(null);
+  const [totalBookCount, setTotalBookCount] = useState(0);
+  const [categoryBookCounts, setCategoryBookCounts] = useState<Record<string, number>>({});
+  const [isLoadingManagedBooks, setIsLoadingManagedBooks] = useState(false);
+
   const fetchCategories = useCallback(async () => {
     const res = await fetch(`/api/admin/categories?lang=${lang}`);
     if (res.ok) {
@@ -136,11 +144,68 @@ export default function AdminDashboard() {
     }
   }, [lang]);
 
+  const fetchBookCounts = useCallback(async () => {
+    const res = await fetch(`/api/admin/books?lang=${lang}&counts=true`);
+    if (res.ok) {
+      const data = await res.json();
+      setTotalBookCount(data.total);
+      setCategoryBookCounts(data.categoryCounts);
+    }
+  }, [lang]);
+
   useEffect(() => {
     fetchCategories();
     fetchAuthors();
     fetchExistingBooks();
-  }, [lang, fetchCategories, fetchAuthors, fetchExistingBooks]);
+    fetchBookCounts();
+  }, [lang, fetchCategories, fetchAuthors, fetchExistingBooks, fetchBookCounts]);
+
+  const handleFetchManagedBooks = useCallback(async (categorySlug: string) => {
+    setIsLoadingManagedBooks(true);
+    try {
+      const res = await fetch(`/api/admin/books?lang=${lang}&categorySlug=${categorySlug}`);
+      if (res.ok) {
+        const data = await res.json();
+        setManagedBooks(data);
+      }
+    } catch (e) {
+      console.error('Error fetching managed books:', e);
+    } finally {
+      setIsLoadingManagedBooks(false);
+    }
+  }, [lang]);
+
+  useEffect(() => {
+    if (selectedCategoryForManagement) {
+      handleFetchManagedBooks(selectedCategoryForManagement);
+    } else {
+        setManagedBooks([]);
+    }
+  }, [selectedCategoryForManagement, handleFetchManagedBooks]);
+
+  const handleDeleteBook = async (archiveId: string) => {
+    if (!confirm(lang === 'ar' ? 'هل أنت متأكد من حذف هذا الكتاب؟' : 'Are you sure you want to delete this book?')) return;
+
+    setIsDeletingBook(archiveId);
+    try {
+      const res = await fetch(`/api/admin/books?archiveId=${archiveId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setManagedBooks(prev => prev.filter(b => b.archiveId !== archiveId));
+        setExistingBookIds(prev => {
+          const next = new Set(prev);
+          next.delete(archiveId);
+          return next;
+        });
+        fetchBookCounts();
+      } else {
+        alert('Failed to delete book');
+      }
+    } catch (e) {
+      alert('Error connecting to API');
+    } finally {
+      setIsDeletingBook(null);
+    }
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -809,6 +874,81 @@ export default function AdminDashboard() {
         </div>
 
       </main>
+
+      {/* Book Management Section */}
+      <section className="max-w-7xl mx-auto p-4 md:p-8 border-t border-gray-200 mt-8">
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Library className="w-6 h-6 text-primary-900" />
+              <h2 className="text-xl font-bold text-primary-900">{lang === 'ar' ? 'إدارة الكتب والمحتوى' : 'Content & Books Management'}</h2>
+            </div>
+            <div className="flex items-center gap-4">
+                <div className="bg-primary-900 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
+                    <span>{lang === 'ar' ? 'إجمالي الكتب:' : 'Total Books:'}</span>
+                    <span className="text-gold-400 text-lg">{totalBookCount}</span>
+                </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 min-h-[400px]">
+            {/* Categories Sidebar */}
+            <div className="lg:col-span-1 border-l border-gray-100 p-4 space-y-2 max-h-[600px] overflow-y-auto">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-2">{lang === 'ar' ? 'التصنيفات' : 'Categories'}</h3>
+              {categories.map(cat => (
+                <button
+                  key={cat.slug}
+                  onClick={() => setSelectedCategoryForManagement(cat.slug)}
+                  className={`w-full text-right flex items-center justify-between p-3 rounded-xl transition-all ${selectedCategoryForManagement === cat.slug ? 'bg-primary-900 text-white shadow-lg scale-[1.02]' : 'hover:bg-gray-100 text-gray-700'}`}
+                  dir={lang === 'ar' ? 'rtl' : 'ltr'}
+                >
+                  <span className="font-bold truncate ml-2">{cat.title}</span>
+                  <span className={`text-[10px] px-2 py-1 rounded-full ${selectedCategoryForManagement === cat.slug ? 'bg-white/20' : 'bg-gray-200'}`}>
+                    {categoryBookCounts[cat.slug] || 0}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Books List */}
+            <div className="lg:col-span-3 p-6 bg-gray-50/30">
+              {!selectedCategoryForManagement ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
+                  <BookOpen className="w-16 h-16 opacity-20" />
+                  <p className="font-bold">{lang === 'ar' ? 'اختر تصنيفاً لعرض الكتب' : 'Select a category to view books'}</p>
+                </div>
+              ) : isLoadingManagedBooks ? (
+                <div className="h-full flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-gold-500" />
+                </div>
+              ) : managedBooks.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
+                  <AlertCircle className="w-12 h-12 opacity-20" />
+                  <p className="font-bold">{lang === 'ar' ? 'لا توجد كتب في هذا التصنيف' : 'No books in this category'}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {managedBooks.map(book => (
+                    <div key={book.archiveId} className="bg-white p-4 rounded-2xl border border-gray-100 flex justify-between items-center group hover:border-red-200 transition-all">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-gray-900 truncate" title={book.title}>{book.title}</h4>
+                        <p className="text-xs text-gray-500 truncate">{book.author}</p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteBook(book.archiveId)}
+                        disabled={isDeletingBook === book.archiveId}
+                        className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                      >
+                        {isDeletingBook === book.archiveId ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Suggested Books Modal */}
       {selectedCategoryForSuggestions && (
