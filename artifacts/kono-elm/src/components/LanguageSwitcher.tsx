@@ -30,12 +30,12 @@ export default function LanguageSwitcher({ light = false }: { light?: boolean })
   }, [isEnglish]);
 
   return (
-    <div className={`absolute top-4 ${isEnglish ? 'right-4' : 'left-4'} z-20`}>
+    <div className={`absolute top-3 ${isEnglish ? 'right-2 md:right-4' : 'left-2 md:left-4'} z-20`}>
       <Link
         href={togglePath}
         onClick={handleLanguageSwitch}
         className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm transition-all border",
+            "flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold backdrop-blur-sm transition-all border",
             light
                 ? "bg-white/10 hover:bg-white/20 text-white border-white/10"
                 : "bg-primary-900/10 hover:bg-primary-900/20 text-primary-900 border-primary-900/10"

@@ -41,9 +41,9 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
         </svg>
       </div>
 
-      <div className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`}>
-        <h1 className={`text-lg sm:text-2xl md:text-3xl font-bold tracking-tight leading-tight md:leading-none mb-1.5 transition-colors duration-500 ${
-          isRtl ? 'whitespace-nowrap' : 'break-words'
+      <div className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'}`}>
+        <h1 className={`text-lg sm:text-2xl md:text-3xl font-bold tracking-tight leading-[1.3] md:leading-[1.2] py-1 mb-0.5 transition-colors duration-500 ${
+          isRtl ? 'whitespace-nowrap' : 'break-words px-1'
         } ${
           light ? 'text-white' : 'text-primary-950'
         } ${isRtl ? 'font-amiri' : 'font-playfair italic'}`}>

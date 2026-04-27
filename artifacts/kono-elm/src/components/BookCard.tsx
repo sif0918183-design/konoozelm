@@ -153,12 +153,12 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 mt-auto relative z-10">
+        <div className="flex gap-2 sm:gap-3 mt-auto relative z-10">
           <button
             onClick={handleRead}
             disabled={isLoadingFiles}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300",
+              "flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
               "bg-primary-900 text-white hover:bg-primary-800 hover:shadow-lg hover:shadow-primary-900/20 active:scale-95 disabled:opacity-50"
             )}
           >
@@ -167,14 +167,14 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
             ) : (
               <BookOpen className="w-4 h-4" />
             )}
-            {t.read_now}
+            <span className="whitespace-nowrap">{t.read_now}</span>
           </button>
           
           <button
             onClick={handleDownload}
             disabled={isLoadingFiles || files.length === 0}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300",
+              "flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
               "bg-gold-50 text-gold-700 border border-gold-200 hover:bg-gold-500 hover:text-white hover:border-gold-500 active:scale-95 disabled:opacity-50"
             )}
           >
@@ -183,7 +183,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
             ) : (
               <Download className="w-4 h-4" />
             )}
-            {t.download}
+            <span className="whitespace-nowrap">{t.download}</span>
           </button>
         </div>
       </div>
