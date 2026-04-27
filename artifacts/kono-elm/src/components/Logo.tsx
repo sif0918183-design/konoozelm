@@ -50,8 +50,8 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
           {t.title}
         </h1>
         <div className={`flex items-center gap-3 ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}>
-          <div className={`h-[2px] w-8 md:w-12 rounded-full ${light ? 'bg-gradient-to-r from-gold-500/60 to-transparent' : 'bg-gradient-to-r from-gold-600/60 to-transparent'}`} />
-          <span className={`text-[11px] md:text-xs font-bold uppercase tracking-[0.3em] transition-colors duration-500 ${
+          <div className={`h-[2px] w-8 md:w-12 rounded-full hidden sm:block ${light ? 'bg-gradient-to-r from-gold-500/60 to-transparent' : 'bg-gradient-to-r from-gold-600/60 to-transparent'}`} />
+          <span className={`text-[10px] sm:text-[11px] md:text-xs font-bold uppercase tracking-[0.15em] sm:tracking-[0.3em] transition-colors duration-500 whitespace-nowrap ${
             light ? 'text-gold-200/90' : 'text-primary-800'
           } ${isRtl ? 'font-tajawal' : 'font-inter'}`}>
             {lang === 'ar' ? 'المكتبة الرقمية العالمية' : 'Global Digital Library'}

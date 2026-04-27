@@ -281,7 +281,7 @@ export const translations: Record<Language, TranslationKeys> = {
     completion_rate: 'نسبة الإنجاز'
   },
   en: {
-    title: 'The Ultimate Islamic Digital Library',
+    title: 'The Ultimate Islamic Library',
     subtitle: 'Comprehensive Electronic Library for Islamic Books, Papers, and Manuscripts',
     search_placeholder: 'Search by title, author, or subject...',
     search_button: 'Search',
