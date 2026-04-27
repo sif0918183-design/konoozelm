@@ -15,7 +15,7 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
   return (
     <div className={`flex items-center gap-5 ${isRtl ? 'flex-row-reverse' : 'flex-row'} ${className}`}>
       {/* Scalable SVG Logo Icon - Enhanced Luxury Style */}
-      <div className={`relative flex-shrink-0 w-14 h-14 md:w-16 md:h-16 flex items-center justify-center rounded-2xl shadow-2xl overflow-hidden group transition-all duration-700 hover:scale-105 hover:rotate-2 ${
+      <div className={`relative flex-shrink-0 w-14 h-14 md:w-16 md:h-16 flex items-center justify-center rounded-2xl shadow-2xl overflow-hidden group transition-all duration-700 hover:scale-105 hover:rotate-2 -mt-1 md:mt-0 ${
         light
           ? 'bg-gradient-to-br from-white/25 to-white/5 backdrop-blur-xl border border-white/40 shadow-gold-500/20'
           : 'bg-gradient-to-br from-primary-900 to-primary-800 border border-primary-700 shadow-primary-900/40'

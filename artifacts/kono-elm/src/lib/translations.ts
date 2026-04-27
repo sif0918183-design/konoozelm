@@ -39,6 +39,10 @@ export interface TranslationKeys {
   remove: string;
   view_full_history: string;
   ready_for_offline: string;
+  pwa_install_title: string;
+  pwa_install_desc: string;
+  pwa_install_btn: string;
+  pwa_cancel: string;
   page_of: string; // e.g. "Page {current} of {total}"
   select_part_read: string;
   select_part_download: string;
@@ -139,7 +143,7 @@ export interface TranslationKeys {
 
 export const translations: Record<Language, TranslationKeys> = {
   ar: {
-    title: 'مَوْسُوعَةُ الكُتُبِ وَالمَكْتَبَاتِ الإِسْلَامِيَّةِ',
+    title: 'مَوْسُوعَةُ المَكْتَبَاتِ الإِسْلَامِيَّةِ',
     subtitle: 'المكتبة الإلكترونية الشاملة للكتب والرسائل والمخطوطات الإسلامية',
     search_placeholder: 'ابحث بالعنوان، المؤلف، أو الموضوع...',
     search_button: 'بحث',
@@ -177,6 +181,10 @@ export const translations: Record<Language, TranslationKeys> = {
     remove: 'إزالة',
     view_full_history: 'عرض السجل الكامل',
     ready_for_offline: 'جاهز للقراءة بدون إنترنت',
+    pwa_install_title: 'تثبيت التطبيق',
+    pwa_install_desc: 'تصفح واقرأ آلاف الكتب الإسلامية بسهولة من شاشتك الرئيسية',
+    pwa_install_btn: 'تثبيت الآن',
+    pwa_cancel: 'ليس الآن',
     page_of: 'الصفحة {current} من {total}',
     select_part_read: 'اختر الجزء للقراءة',
     select_part_download: 'اختر الجزء للتحميل',
@@ -311,6 +319,10 @@ export const translations: Record<Language, TranslationKeys> = {
     remove: 'Remove',
     view_full_history: 'View Full History',
     ready_for_offline: 'Ready for offline reading',
+    pwa_install_title: 'Install App',
+    pwa_install_desc: 'Browse and read thousands of Islamic books easily from your home screen',
+    pwa_install_btn: 'Install Now',
+    pwa_cancel: 'Not Now',
     page_of: 'Page {current} of {total}',
     select_part_read: 'Select part to read',
     select_part_download: 'Select part to download',

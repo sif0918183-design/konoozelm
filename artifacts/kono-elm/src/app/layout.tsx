@@ -30,14 +30,14 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'موسوعة كنوز العلم الإلكترونية',
-  description: 'موسوعة شاملة للكتب الإسلامية - قراءة مباشرة وتحميل من Archive.org',
-  keywords: ['كتب إسلامية', 'مكتبة', 'تحميل كتب', 'قراءة كتب', 'Archive.org'],
+  title: 'مَوْسُوعَةُ المَكْتَبَاتِ الإِسْلَامِيَّةِ',
+  description: 'موسوعة شاملة للكتب والرسائل والمخطوطات الإسلامية - قراءة مباشرة وتحميل من Archive.org',
+  keywords: ['كتب إسلامية', 'مكتبة', 'تحميل كتب', 'قراءة كتب', 'Archive.org', 'موسوعة المكتبات الإسلامية'],
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'كنوز العلم',
+    title: 'موسوعة المكتبات',
   },
 };
 
