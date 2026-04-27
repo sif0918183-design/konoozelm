@@ -40,7 +40,7 @@ export async function getSeoBooks(lang: string = 'ar'): Promise<SeoBook[]> {
     .from('seo_books')
     .select('*')
     .eq('lang', lang)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
 
   if (error) {
     console.error('Supabase error (getSeoBooks):', error);
@@ -279,7 +279,7 @@ export async function getBooksByCategory(categorySlug: string, categoryTitle?: s
         .select('*', { count: 'exact' })
         .eq('category_slug', categorySlug)
         .eq('lang', lang)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: true })
         .limit(limit);
 
     if (error) {
@@ -305,7 +305,7 @@ export async function getBooksByCategory(categorySlug: string, categoryTitle?: s
             .select('*')
             .eq('category', categoryTitle)
             .eq('lang', lang)
-            .order('created_at', { ascending: false })
+            .order('created_at', { ascending: true })
             .limit(limit);
 
         if (titleData && titleData.length > 0) {
@@ -332,7 +332,7 @@ export async function getBooksByAuthor(author: string, limit: number = 10, lang:
     .select('*')
     .eq('author', author)
     .eq('lang', lang)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: true })
     .limit(limit);
 
   if (error) return [];

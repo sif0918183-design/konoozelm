@@ -125,6 +125,16 @@ export interface TranslationKeys {
   preparing_book: string;
   preparation_progress: string;
   of_label: string;
+  history_title: string;
+  history_desc: string;
+  history_search: string;
+  history_total: string;
+  history_empty: string;
+  history_empty_desc: string;
+  history_last_read: string;
+  history_resume: string;
+  back_to_library: string;
+  completion_rate: string;
 }
 
 export const translations: Record<Language, TranslationKeys> = {
@@ -250,7 +260,17 @@ export const translations: Record<Language, TranslationKeys> = {
     security_restriction_msg: 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.',
     preparing_book: 'جارٍ تحضير الكتاب للتحميل',
     preparation_progress: 'نسبة التحضير',
-    of_label: 'من'
+    of_label: 'من',
+    history_title: 'قائمة القراءة',
+    history_desc: 'هنا تجد جميع الكتب التي بدأت قراءتها، مع حفظ تلقائي لآخر صفحة توقفت عندها.',
+    history_search: 'ابحث في قائمتك...',
+    history_total: 'إجمالي الكتب: {count}',
+    history_empty: 'قائمتك فارغة حالياً',
+    history_empty_desc: 'ابدأ بقراءة أي كتاب من المكتبة وسيظهر هنا تلقائياً.',
+    history_last_read: 'آخر قراءة: {date}',
+    history_resume: 'استكمال القراءة',
+    back_to_library: 'العودة للمكتبة',
+    completion_rate: 'نسبة الإنجاز'
   },
   en: {
     title: 'Kono Elm Encyclopedia',
@@ -374,6 +394,16 @@ export const translations: Record<Language, TranslationKeys> = {
     security_restriction_msg: 'This might be due to security restrictions (CORS) or an invalid link.',
     preparing_book: 'Preparing book for download',
     preparation_progress: 'Preparation Progress',
-    of_label: 'of'
+    of_label: 'of',
+    history_title: 'Reading History',
+    history_desc: 'Here you can find all the books you have started reading, with auto-save for the last page you stopped at.',
+    history_search: 'Search your list...',
+    history_total: 'Total books: {count}',
+    history_empty: 'Your list is currently empty',
+    history_empty_desc: 'Start reading any book from the library and it will appear here automatically.',
+    history_last_read: 'Last read: {date}',
+    history_resume: 'Continue Reading',
+    back_to_library: 'Back to Library',
+    completion_rate: 'Completion Rate'
   }
 };
