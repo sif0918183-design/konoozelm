@@ -53,7 +53,7 @@ export async function searchBooks(
   // and restricting to PDF and Texts as required by the application.
   const params = new URLSearchParams({
     q: `(${trimmedQuery}) AND format:pdf AND mediatype:texts`,
-    fl: 'identifier,title,creator,date,publisher,description,downloadable,language',
+    fl: 'identifier,title,creator,date,publisher,description,downloadable,language,format',
     rows: pageSize.toString(),
     page: page.toString(),
     output: 'json',
@@ -69,7 +69,12 @@ export async function searchBooks(
   const data = await response.json();
   const docs = data.response?.docs || [];
 
-  const books: Book[] = docs.map((doc: any) => ({
+  const books: Book[] = docs
+    .filter((doc: any) => {
+      const formats = Array.isArray(doc.format) ? doc.format : [doc.format];
+      return formats.some((f: any) => typeof f === 'string' && f.toLowerCase().includes('pdf'));
+    })
+    .map((doc: any) => ({
     identifier: doc.identifier,
     title: normalizeField(doc.title) || 'Untitled',
     author: normalizeField(doc.creator),
