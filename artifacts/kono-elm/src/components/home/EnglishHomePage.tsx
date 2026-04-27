@@ -191,9 +191,15 @@ export default function EnglishHome() {
                 <Link
                   key={cat.slug}
                   href={`/en/${cat.slug}`}
-                  className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gold-300 transition-all text-center group"
+                  className="relative overflow-hidden bg-primary-900 group p-5 rounded-2xl border border-white/10 shadow-lg hover:shadow-primary-900/20 hover:-translate-y-1 transition-all duration-300 text-center flex flex-col items-center justify-center min-h-[100px]"
                 >
-                  <p className="text-sm font-bold text-gray-700 group-hover:text-primary-900">{cat.title}</p>
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative z-10">
+                    <p className="text-sm md:text-base font-bold text-gold-100 group-hover:text-white transition-colors leading-relaxed">
+                      {cat.title}
+                    </p>
+                    <div className="w-8 h-1 bg-gold-500/50 rounded-full mt-3 mx-auto group-hover:w-12 group-hover:bg-gold-400 transition-all" />
+                  </div>
                 </Link>
               ))}
             </div>

@@ -125,34 +125,38 @@ export default function ContinueReadingPage() {
                   className="p-6 hover:bg-gray-50 transition-colors flex flex-col md:flex-row md:items-center gap-6"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <Link
-                          href={`/reader?pdf=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`}
-                          className="group"
-                        >
-                          <h2 className="text-xl font-bold text-gray-800 group-hover:text-primary-900 transition-colors truncate">
-                            {book.title}
-                          </h2>
-                        </Link>
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      <div className="flex flex-col gap-2 min-w-0 flex-1">
+                        <div className="flex items-center gap-3">
+                          <Link
+                            href={`/reader?pdf=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`}
+                            className="group min-w-0"
+                          >
+                            <h2 className="text-lg md:text-xl font-bold text-gray-800 group-hover:text-primary-900 transition-colors truncate">
+                              {book.title}
+                            </h2>
+                          </Link>
+                          {book.isPinned && (
+                            <div className="bg-primary-600 text-white p-1 rounded-full border-2 border-white shadow-sm flex-shrink-0" title={t.available_offline}>
+                              <CheckCircle2 className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
                         {book.isPinned && (
-                          <div className="bg-primary-600 text-white p-1 rounded-full border-2 border-white shadow-sm" title={t.available_offline}>
-                            <CheckCircle2 className="w-4 h-4" />
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full w-fit mt-1">
+                            <WifiOff className="w-3 h-3" />
+                            <span>{t.ready_for_offline}</span>
                           </div>
                         )}
                       </div>
-                      {book.isPinned && (
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full w-fit mb-2 mt-1">
-                          <WifiOff className="w-3 h-3" />
-                          <span>{t.ready_for_offline}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <button
                           onClick={() => handleTogglePin(book)}
                           className={cn(
-                            "p-2 rounded-xl transition-all",
-                            book.isPinned ? "bg-gold-50 text-gold-600 border border-gold-100 shadow-sm" : "text-gray-400 hover:bg-gray-100"
+                            "p-2.5 rounded-xl transition-all border shadow-sm",
+                            book.isPinned
+                              ? "bg-gold-50 text-gold-600 border-gold-100"
+                              : "bg-white text-gray-500 border-gray-100 hover:bg-gray-50 hover:text-primary-600"
                           )}
                           title={book.isPinned ? t.unpin : t.pin}
                         >
@@ -160,7 +164,7 @@ export default function ContinueReadingPage() {
                         </button>
                         <button
                           onClick={() => handleRemove(book.url)}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                          className="p-2.5 bg-white text-gray-500 border border-gray-100 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm"
                           title={t.remove}
                         >
                           <Trash2 className="w-5 h-5" />
