@@ -7,6 +7,7 @@ import { translations } from '@/lib/translations';
 
 export const revalidate = 600;
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import Logo from '@/components/Logo';
 
 interface Props {
   params: { slug: string };
@@ -51,15 +52,24 @@ export default async function EnglishAuthorPage({ params }: Props) {
         <span className="text-gray-900 font-medium">{author.name}</span>
       </nav>
 
-      <header className="bg-primary-900 text-white py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="w-20 h-20 bg-gold-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
-            <User className="w-10 h-10 text-primary-900" />
+      <header className="bg-primary-900 text-white pt-24 pb-20 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-0 left-0 w-64 h-64 border-4 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 border-4 border-white/20 rounded-full translate-x-1/3 translate-y-1/3" />
+        </div>
+
+        <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center">
+          <Link href="/en" className="mb-12 hover:opacity-90 transition-opacity">
+            <Logo lang="en" light />
+          </Link>
+
+          <div className="w-20 h-20 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full flex items-center justify-center mb-6 shadow-inner">
+            <User className="w-10 h-10 text-gold-200" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-amiri font-bold mb-6 text-gold-200">
+          <h1 className="text-4xl md:text-5xl font-amiri font-bold mb-6 text-gold-200 drop-shadow-sm">
             {author.name}
           </h1>
-          <p className="text-lg text-primary-100/90 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-lg text-primary-100/90 leading-relaxed max-w-2xl mx-auto font-medium">
             {author.bio || (lang === 'en' ? `Biography of ${author.name}` : `سيرة ${author.name}`)}
           </p>
         </div>

@@ -7,19 +7,21 @@
   --background-start-rgb: 252, 252, 248;
   --background-end-rgb: 245, 247, 242;
 
-  --primary-green: 21, 71, 52;
-  --islamic-gold: 184, 134, 11;
+  --primary-green: 15, 46, 34;
+  --islamic-gold: 180, 83, 9;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
       to bottom,
-      rgb(var(--background-start-rgb)),
-      rgb(var(--background-end-rgb))
+      #fcfcf8,
+      #f5f7f2
     )
     fixed;
-  font-family: var(--font-tajawal), 'Noto Sans Arabic', system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-tajawal), 'Noto Sans Arabic', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @layer utilities {

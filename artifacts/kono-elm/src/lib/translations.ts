@@ -139,7 +139,7 @@ export interface TranslationKeys {
 
 export const translations: Record<Language, TranslationKeys> = {
   ar: {
-    title: 'مُوسُوعَةُ كُنُوزِ العِلْمِ',
+    title: 'مَوْسُوعَةُ الكُتُبِ وَالمَكْتَبَاتِ الإِسْلَامِيَّةِ',
     subtitle: 'المكتبة الإلكترونية الشاملة للكتب والرسائل والمخطوطات الإسلامية',
     search_placeholder: 'ابحث بالعنوان، المؤلف، أو الموضوع...',
     search_button: 'بحث',
@@ -273,7 +273,7 @@ export const translations: Record<Language, TranslationKeys> = {
     completion_rate: 'نسبة الإنجاز'
   },
   en: {
-    title: 'Kono Elm Encyclopedia',
+    title: 'The Ultimate Islamic Digital Library',
     subtitle: 'Comprehensive Electronic Library for Islamic Books, Papers, and Manuscripts',
     search_placeholder: 'Search by title, author, or subject...',
     search_button: 'Search',
