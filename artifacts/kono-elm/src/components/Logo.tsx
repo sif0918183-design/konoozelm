@@ -13,7 +13,7 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
   const isRtl = lang === 'ar';
 
   return (
-    <div className={`flex items-center gap-5 ${isRtl ? 'flex-row-reverse' : 'flex-row'} ${className}`}>
+    <div className={`flex items-center gap-3 md:gap-5 max-w-full ${isRtl ? 'flex-row-reverse' : 'flex-row'} ${className}`}>
       {/* Scalable SVG Logo Icon - Enhanced Luxury Style */}
       <div className={`relative flex-shrink-0 w-14 h-14 md:w-16 md:h-16 flex items-center justify-center rounded-2xl shadow-2xl overflow-hidden group transition-all duration-700 hover:scale-105 hover:rotate-2 -mt-1 md:mt-0 ${
         light
@@ -41,8 +41,10 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
         </svg>
       </div>
 
-      <div className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'}`}>
-        <h1 className={`text-lg sm:text-2xl md:text-3xl font-bold tracking-tight leading-none mb-1.5 transition-colors duration-500 whitespace-nowrap ${
+      <div className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`}>
+        <h1 className={`text-lg sm:text-2xl md:text-3xl font-bold tracking-tight leading-tight md:leading-none mb-1.5 transition-colors duration-500 ${
+          isRtl ? 'whitespace-nowrap' : 'break-words'
+        } ${
           light ? 'text-white' : 'text-primary-950'
         } ${isRtl ? 'font-amiri' : 'font-playfair italic'}`}>
           {t.title}
