@@ -42,7 +42,7 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
       </div>
 
       <div className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'}`}>
-        <h1 className={`text-2xl md:text-3xl font-bold tracking-tight leading-none mb-1.5 transition-colors duration-500 ${
+        <h1 className={`text-lg sm:text-2xl md:text-3xl font-bold tracking-tight leading-none mb-1.5 transition-colors duration-500 whitespace-nowrap ${
           light ? 'text-white' : 'text-primary-950'
         } ${isRtl ? 'font-amiri' : 'font-playfair italic'}`}>
           {t.title}
