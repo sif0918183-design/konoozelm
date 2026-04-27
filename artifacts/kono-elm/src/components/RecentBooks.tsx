@@ -94,10 +94,10 @@ export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
               </p>
             </div>
             <Link
-              href="/continue-reading"
+              href={lang === 'en' ? "/en/continue-reading" : "/continue-reading"}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 rounded-xl text-gold-200 font-bold transition-all hover:scale-105"
             >
-              {lang === 'ar' ? 'عرض السجل الكامل' : 'View Full History'}
+              {t.view_full_history}
               <ChevronLeft className={cn("w-5 h-5", lang === 'en' && "rotate-180")} />
             </Link>
           </div>

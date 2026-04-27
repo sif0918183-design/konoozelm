@@ -117,7 +117,7 @@ export default function EnglishHome() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setFeaturedCategories(data.slice(0, 6));
+          setFeaturedCategories(data);
         }
       })
       .catch(() => {});
