@@ -2,23 +2,23 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { Download, X } from 'lucide-react';
 import { translations, type Language } from '@/lib/translations';
 
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const pathname = usePathname();
   const [lang, setLang] = useState<Language>('ar');
 
   useEffect(() => {
-    // Determine language from localStorage or URL
-    const storedLang = localStorage.getItem('lang') as Language;
-    if (storedLang === 'ar' || storedLang === 'en') {
-      setLang(storedLang);
-    } else if (window.location.pathname.startsWith('/en')) {
-      setLang('en');
-    }
+    // Determine language from URL
+    const isEnglish = pathname?.startsWith('/en');
+    setLang(isEnglish ? 'en' : 'ar');
+  }, [pathname]);
 
+  useEffect(() => {
     const handler = (e: any) => {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();

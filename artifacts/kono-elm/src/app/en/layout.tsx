@@ -44,7 +44,6 @@ export default function EnglishLayout({
         <LanguageRedirector />
         <DocumentLanguageSetter />
         {children}
-        <PWAInstallPrompt />
         <script
           dangerouslySetInnerHTML={{
             __html: `
