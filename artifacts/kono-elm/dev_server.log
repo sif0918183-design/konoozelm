@@ -1,0 +1,33 @@
+
+> kono-elm@1.0.0 dev /app/artifacts/kono-elm
+> next dev
+
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1795ms
+ ○ Compiling / ...
+ ✓ Compiled / in 8.7s (766 modules)
+ ✓ Compiled in 1067ms (375 modules)
+ GET / 200 in 9773ms
+ ○ Compiling /manifest.json ...
+ ✓ Compiled /manifest.json in 7.4s (830 modules)
+ GET /api/admin/categories 200 in 7610ms
+ GET /manifest.json?lang=ar 200 in 7539ms
+ GET /reader 200 in 7803ms
+ GET / 200 in 7805ms
+ GET /en 200 in 7911ms
+ GET /manifest.json?lang=en 200 in 143ms
+ GET /api/admin/categories?lang=en 200 in 174ms
+ GET /api/admin/categories?lang=en 200 in 13ms
+ GET /manifest.json?lang=ar 200 in 11ms
+ GET /manifest.json?lang=en 200 in 9ms
+ GET / 200 in 29ms
+ GET /api/admin/categories 200 in 22ms
+ GET /api/admin/categories 200 in 18ms
+ GET /api/admin/categories?lang=en 200 in 13ms
+ GET /api/admin/categories?lang=en 200 in 10ms
+ GET /en 200 in 29ms
+ GET /api/admin/categories?lang=en 200 in 149ms
+ GET /api/admin/categories?lang=en 200 in 9ms

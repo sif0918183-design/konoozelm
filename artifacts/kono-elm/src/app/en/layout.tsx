@@ -21,11 +21,11 @@ export const metadata: Metadata = {
   title: 'Kono Elm Encyclopedia',
   description: 'Comprehensive Electronic Library for Islamic Books - Read Online & Download from Archive.org',
   keywords: ['Islamic books', 'Library', 'Download books', 'Read books', 'Archive.org'],
-  manifest: '/manifest.json',
+  manifest: '/manifest.json?lang=en',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Kono Elm',
+    title: 'Islamic Library',
   },
 };
 
