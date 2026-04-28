@@ -42,14 +42,14 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
       </div>
 
       <div className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'} -mt-1 md:mt-0`}>
-        <h1 className={`font-bold tracking-tight leading-[1.2] transition-all duration-500 ${
+        <h1 className={`font-bold tracking-tight leading-[1.3] transition-all duration-500 ${
           isRtl ? 'text-2xl sm:text-3xl md:text-4xl whitespace-nowrap' : 'text-lg sm:text-2xl md:text-3xl break-words px-1'
         } ${
           light ? 'text-gold-200 drop-shadow-sm' : 'text-primary-950'
         } ${isRtl ? 'font-amiri' : 'font-playfair italic'}`}>
           {t.title}
         </h1>
-        <div className={`flex items-center gap-3 ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}>
+        <div className={`flex items-center gap-3 mt-1.5 md:mt-1 ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}>
           <div className={`h-[2px] w-8 md:w-12 rounded-full hidden sm:block ${light ? 'bg-gradient-to-r from-gold-500/60 to-transparent' : 'bg-gradient-to-r from-gold-600/60 to-transparent'}`} />
           <span className={`text-[10px] sm:text-[11px] md:text-xs font-bold uppercase tracking-[0.15em] sm:tracking-[0.3em] transition-colors duration-500 whitespace-nowrap ${
             light ? 'text-gold-200/90' : 'text-primary-800'
