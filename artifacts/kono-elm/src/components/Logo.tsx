@@ -30,7 +30,7 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
           strokeWidth="1.2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`w-8 h-8 md:w-9 md:h-9 transition-all duration-500 group-hover:scale-110 ${light ? 'text-gold-200' : 'text-gold-400'}`}
+          className={`w-8 h-8 md:w-9 md:h-9 transition-all duration-500 group-hover:scale-110 ${light ? 'text-gold-200' : 'text-gold-500'}`}
         >
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
@@ -41,9 +41,11 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
         </svg>
       </div>
 
-      <div className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'}`}>
-        <h1 className={`font-bold tracking-tight leading-[1.4] md:leading-[1.2] py-1 mb-0.5 transition-all duration-700 bg-clip-text text-transparent bg-[linear-gradient(110deg,#b45309,45%,#fbbf24,55%,#b45309)] bg-[length:200%_100%] animate-shine drop-shadow-sm ${
+      <div className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'} -mt-1 md:mt-0`}>
+        <h1 className={`font-bold tracking-tight leading-[1.2] transition-all duration-500 ${
           isRtl ? 'text-2xl sm:text-3xl md:text-4xl whitespace-nowrap' : 'text-lg sm:text-2xl md:text-3xl break-words px-1'
+        } ${
+          light ? 'text-gold-200 drop-shadow-sm' : 'text-primary-950'
         } ${isRtl ? 'font-amiri' : 'font-playfair italic'}`}>
           {t.title}
         </h1>
