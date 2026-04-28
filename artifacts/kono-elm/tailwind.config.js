@@ -52,6 +52,15 @@ module.exports = {
         inter: ['var(--font-inter)', 'sans-serif'],
         playfair: ['var(--font-playfair)', 'serif'],
       },
+      keyframes: {
+        shine: {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
+        },
+      },
+      animation: {
+        shine: 'shine 8s linear infinite',
+      },
     },
   },
   plugins: [],

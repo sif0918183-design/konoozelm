@@ -42,10 +42,8 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
       </div>
 
       <div className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'}`}>
-        <h1 className={`text-lg sm:text-2xl md:text-3xl font-bold tracking-tight leading-[1.3] md:leading-[1.2] py-1 mb-0.5 transition-colors duration-500 ${
-          isRtl ? 'whitespace-nowrap' : 'break-words px-1'
-        } ${
-          light ? 'text-white' : 'text-primary-950'
+        <h1 className={`font-bold tracking-tight leading-[1.4] md:leading-[1.2] py-1 mb-0.5 transition-all duration-700 bg-clip-text text-transparent bg-[linear-gradient(110deg,#b45309,45%,#fbbf24,55%,#b45309)] bg-[length:200%_100%] animate-shine drop-shadow-sm ${
+          isRtl ? 'text-2xl sm:text-3xl md:text-4xl whitespace-nowrap' : 'text-lg sm:text-2xl md:text-3xl break-words px-1'
         } ${isRtl ? 'font-amiri' : 'font-playfair italic'}`}>
           {t.title}
         </h1>
