@@ -10,6 +10,7 @@ import RecentBooks from '@/components/RecentBooks';
 import { translations } from '@/lib/translations';
 import Link from 'next/link';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import Logo from '@/components/Logo';
 
 
 export default function Home() {
@@ -134,10 +135,8 @@ export default function Home() {
 
         <LanguageSwitcher light />
 
-        <div className="max-w-4xl mx-auto text-center relative z-10 mt-12 md:mt-0">
-          <h1 className="text-4xl md:text-6xl font-amiri font-bold mb-4 tracking-tight text-gold-200 drop-shadow-sm">
-            {t.title}
-          </h1>
+        <div className="max-w-4xl mx-auto text-center relative z-10 mt-12 md:mt-0 flex flex-col items-center">
+          <Logo lang="ar" light className="mb-8" />
           <div className="flex flex-col gap-3 mb-10">
             <p className="text-sm md:text-lg text-primary-100/90 font-medium max-w-2xl mx-auto">
               {t.subtitle}
@@ -289,15 +288,16 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-100 py-12 mt-auto">
-        <div className="max-w-6xl mx-auto px-4 text-center">
-          <div className="inline-block p-3 bg-primary-50 rounded-2xl mb-4">
-            <BookOpen className="w-8 h-8 text-primary-900" />
-          </div>
-          <p className="text-gray-900 font-bold text-lg mb-2">
-            {t.title}
-          </p>
-          <p className="text-gray-500 text-sm max-w-md mx-auto">
+      <footer className="bg-white border-t border-gray-100 py-16 mt-auto">
+        <div className="max-w-6xl mx-auto px-4 text-center flex flex-col items-center">
+          <Logo lang="ar" className="mb-6 scale-90" />
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('show-pwa-install-prompt'))}
+            className="mb-6 text-primary-900/40 hover:text-primary-900 text-xs font-bold transition-colors border border-primary-900/10 px-3 py-1 rounded-full"
+          >
+            {t.pwa_install_title}
+          </button>
+          <p className="text-gray-500 text-sm max-w-md mx-auto leading-relaxed">
             {t.footer_text}
           </p>
           <div className="mt-8 pt-8 border-t border-gray-50 text-gray-400 text-xs">

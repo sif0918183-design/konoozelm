@@ -39,6 +39,10 @@ export interface TranslationKeys {
   remove: string;
   view_full_history: string;
   ready_for_offline: string;
+  pwa_install_title: string;
+  pwa_install_desc: string;
+  pwa_install_btn: string;
+  pwa_cancel: string;
   page_of: string; // e.g. "Page {current} of {total}"
   select_part_read: string;
   select_part_download: string;
@@ -139,8 +143,8 @@ export interface TranslationKeys {
 
 export const translations: Record<Language, TranslationKeys> = {
   ar: {
-    title: 'مُوسُوعَةُ كُنُوزِ العِلْمِ',
-    subtitle: 'المكتبة الإلكترونية الشاملة للكتب والرسائل والمخطوطات الإسلامية',
+    title: 'مَوْسُوعَةُ المَكْتَبَاتِ الإِسْلَامِيَّةِ',
+    subtitle: 'الموسوعة الإلكترونية الشاملة للكتب والرسائل والمخطوطات الإسلامية',
     search_placeholder: 'ابحث بالعنوان، المؤلف، أو الموضوع...',
     search_button: 'بحث',
     loading: 'جاري التحميل...',
@@ -148,11 +152,11 @@ export const translations: Record<Language, TranslationKeys> = {
     try_another_word: 'جرب البحث بكلمة أخرى',
     results_found: 'تم العثور على {count} كتاب',
     back_to_home: 'العودة للرئيسية',
-    featured_categories: 'أقسام المكتبة',
+    featured_categories: 'أقسام الموسوعة',
     read_more: 'اقرأ المزيد',
     offline_notice: '📚 يتم حفظ موضع قراءتك تلقائيًا لتيسير استكمال المطالعة من حيث توقفت',
     footer_text: 'مشروع غير ربحي يهدف لتيسير الوصول للكتب الإسلامية القيمة والمخطوطات النادرة من أرشيف المكتبات العالمية.',
-    rights_reserved: 'جميع الحقوق محفوظة © {year} - تعتمد على مكتبة Archive.org',
+    rights_reserved: 'جميع الحقوق محفوظة © {year} - موسوعة المكتبات الإسلامية',
     load_more: 'تحميل المزيد',
     continue_reading: 'تابع القراءة',
     recent_books: 'الكتب الأخيرة',
@@ -167,7 +171,7 @@ export const translations: Record<Language, TranslationKeys> = {
     home: 'الرئيسية',
     language_switcher: 'English',
     error_search: 'حدث خطأ في البحث',
-    search_start_title: 'ابحث في مكتبتنا الإسلامية',
+    search_start_title: 'ابحث في موسوعتنا الإسلامية',
     search_start_desc: 'اكتب اسم الكتاب أو المؤلف للبدء',
     publisher: 'الناشر',
     multi_part: 'متعدد الأجزاء ({count})',
@@ -177,6 +181,10 @@ export const translations: Record<Language, TranslationKeys> = {
     remove: 'إزالة',
     view_full_history: 'عرض السجل الكامل',
     ready_for_offline: 'جاهز للقراءة بدون إنترنت',
+    pwa_install_title: 'تثبيت التطبيق',
+    pwa_install_desc: 'تصفح واقرأ آلاف الكتب الإسلامية بسهولة من شاشتك الرئيسية',
+    pwa_install_btn: 'تثبيت الآن',
+    pwa_cancel: 'ليس الآن',
     page_of: 'الصفحة {current} من {total}',
     select_part_read: 'اختر الجزء للقراءة',
     select_part_download: 'اختر الجزء للتحميل',
@@ -273,7 +281,7 @@ export const translations: Record<Language, TranslationKeys> = {
     completion_rate: 'نسبة الإنجاز'
   },
   en: {
-    title: 'Kono Elm Encyclopedia',
+    title: 'The Ultimate Islamic Library',
     subtitle: 'Comprehensive Electronic Library for Islamic Books, Papers, and Manuscripts',
     search_placeholder: 'Search by title, author, or subject...',
     search_button: 'Search',
@@ -286,7 +294,7 @@ export const translations: Record<Language, TranslationKeys> = {
     read_more: 'Read More',
     offline_notice: '📚 Your reading position is automatically saved for easy continuation.',
     footer_text: 'A non-profit project aimed at facilitating access to valuable Islamic books and rare manuscripts from global library archives.',
-    rights_reserved: 'All Rights Reserved © {year} - Powered by Archive.org',
+    rights_reserved: 'All Rights Reserved © {year} - The Ultimate Islamic Library',
     load_more: 'Load More',
     continue_reading: 'Continue Reading',
     recent_books: 'Recent Books',
@@ -311,6 +319,10 @@ export const translations: Record<Language, TranslationKeys> = {
     remove: 'Remove',
     view_full_history: 'View Full History',
     ready_for_offline: 'Ready for offline reading',
+    pwa_install_title: 'Install App',
+    pwa_install_desc: 'Browse and read thousands of Islamic books easily from your home screen',
+    pwa_install_btn: 'Install Now',
+    pwa_cancel: 'Not Now',
     page_of: 'Page {current} of {total}',
     select_part_read: 'Select part to read',
     select_part_download: 'Select part to download',

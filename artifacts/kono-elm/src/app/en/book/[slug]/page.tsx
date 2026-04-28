@@ -11,6 +11,7 @@ import BookCard from '@/components/BookCard';
 import { generateEnglishSlug } from '@/lib/utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import Logo from '@/components/Logo';
 
 interface Props {
   params: { slug: string };
@@ -83,7 +84,14 @@ export default async function EnglishBookPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="ltr">
-      <LanguageSwitcher />
+      <header className="bg-primary-900 text-white pt-10 pb-8 px-4 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <Link href="/en" className="hover:opacity-90 transition-opacity">
+            <Logo lang="en" light className="scale-75 md:scale-90 origin-left" />
+          </Link>
+          <LanguageSwitcher light />
+        </div>
+      </header>
 
       {/* Breadcrumbs */}
       <nav className="max-w-7xl mx-auto px-4 py-4 mt-12 md:mt-0 flex items-center gap-2 text-sm text-gray-500">

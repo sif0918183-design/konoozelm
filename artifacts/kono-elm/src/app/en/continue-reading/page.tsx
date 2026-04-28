@@ -18,6 +18,7 @@ import { getRecentBooks, togglePinBook, removeFromRecent, type RecentBook } from
 import { cn } from '@/lib/utils';
 import { cachePDF, uncachePDF } from '@/lib/pdf-cache';
 import { translations } from '@/lib/translations';
+import Logo from '@/components/Logo';
 
 export default function EnglishContinueReadingPage() {
   const lang = 'en';
@@ -67,16 +68,24 @@ export default function EnglishContinueReadingPage() {
     <div className="min-h-screen bg-[#fcfcf8] pb-20">
       {/* Header */}
       <header className="bg-primary-900 text-white pt-12 pb-20 px-4 relative overflow-hidden">
-        <div className="max-w-5xl mx-auto relative z-10">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-0 left-0 w-64 h-64 border-4 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 border-4 border-white/20 rounded-full translate-x-1/3 translate-y-1/3" />
+        </div>
+        <div className="max-w-5xl mx-auto relative z-10 flex flex-col items-center">
+          <Link href="/en" className="mb-12 hover:opacity-90 transition-opacity">
+            <Logo lang="en" light />
+          </Link>
+
           <Link
             href="/en"
-            className="inline-flex items-center gap-2 text-gold-200 hover:text-white mb-8 transition-colors group"
+            className="inline-flex items-center gap-2 text-gold-200 hover:text-white mb-8 transition-colors group self-start"
           >
             <ArrowRight className="w-5 h-5 group-hover:-translate-x-1 transition-transform rotate-180" />
             <span>{t.back_to_library}</span>
           </Link>
 
-          <h1 className="text-4xl font-bold mb-4">{t.history_title}</h1>
+          <h1 className="text-4xl font-bold mb-4 text-gold-200 self-start">{t.history_title}</h1>
           <p className="text-primary-100/80 max-w-2xl">
             {t.history_desc}
           </p>

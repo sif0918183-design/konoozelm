@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Tajawal, Amiri } from 'next/font/google';
+import { Tajawal, Amiri, Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import LanguageRedirector from '@/components/LanguageRedirector';
@@ -17,15 +17,27 @@ const amiri = Amiri({
   variable: '--font-amiri',
 });
 
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  style: ['normal', 'italic'],
+  variable: '--font-playfair',
+});
+
 export const metadata: Metadata = {
-  title: 'موسوعة كنوز العلم الإلكترونية',
-  description: 'موسوعة شاملة للكتب الإسلامية - قراءة مباشرة وتحميل من Archive.org',
-  keywords: ['كتب إسلامية', 'مكتبة', 'تحميل كتب', 'قراءة كتب', 'Archive.org'],
+  title: 'مَوْسُوعَةُ المَكْتَبَاتِ الإِسْلَامِيَّةِ',
+  description: 'موسوعة شاملة للكتب والرسائل والمخطوطات الإسلامية - قراءة مباشرة وتحميل من Archive.org',
+  keywords: ['كتب إسلامية', 'مكتبة', 'تحميل كتب', 'قراءة كتب', 'Archive.org', 'موسوعة المكتبات الإسلامية'],
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'كنوز العلم',
+    title: 'موسوعة المكتبات',
   },
 };
 
@@ -39,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html className={`${tajawal.variable} ${amiri.variable}`}>
+    <html className={`${tajawal.variable} ${amiri.variable} ${inter.variable} ${playfair.variable}`}>
       <body className="min-h-screen bg-gradient-to-b from-[#fafaf5] to-[#f0f5eb] font-tajawal overflow-x-hidden">
         <LanguageRedirector />
         <DocumentLanguageSetter />
