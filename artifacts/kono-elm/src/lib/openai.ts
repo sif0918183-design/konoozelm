@@ -1,6 +1,46 @@
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
+// Constants for Hybrid OpenAI system
+const SEO_MODEL = "gpt-4.1-mini";
+const FILTER_MODEL = "gpt-4.1-nano";
+
+/**
+ * Generic helper to call OpenAI API with specific model and logging
+ */
+async function callOpenAI(model: string, messages: any[], responseFormat: any, logTag: string) {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not defined');
+  }
+
+  console.log(`${logTag} Using ${model}`);
+
+  try {
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        response_format: responseFormat,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return JSON.parse(data.choices[0].message.content);
+  } catch (error) {
+    console.error(`${logTag} Error with ${model}:`, error);
+    throw error;
+  }
+}
+
 export async function filterAndRankBooks(category: string, books: any[]) {
   // As per user request, we are removing OpenAI filtering to prevent losing important results.
   // We will return the results from Archive.org directly, but we'll still provide a default score.
@@ -12,11 +52,10 @@ export async function filterAndRankBooks(category: string, books: any[]) {
   }));
 }
 
+/**
+ * Generates SEO description for a book using GPT-4.1-mini
+ */
 export async function generateBookDescription(title: string, author: string, lang: string = 'ar') {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not defined');
-  }
-
   const isEnglish = lang === 'en';
 
   const prompt = isEnglish ? `
@@ -57,38 +96,19 @@ I want the result strictly in JSON format:
 }
 `;
 
-  try {
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o', // Using GPT-4o for higher quality "human-like" writing
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
-    return result as { seoTitle: string; description: string };
-  } catch (error) {
-    console.error('Error generating book description with OpenAI:', error);
-    throw error;
-  }
+  const result = await callOpenAI(
+    SEO_MODEL,
+    [{ role: 'user', content: prompt }],
+    { type: 'json_object' },
+    '[SEO]'
+  );
+  return result as { seoTitle: string; description: string };
 }
 
+/**
+ * Generates SEO description for a category using GPT-4.1-mini
+ */
 export async function generateCategoryDescription(categoryTitle: string, lang: string = 'ar') {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not defined');
-  }
-
   const isEnglish = lang === 'en';
 
   const prompt = isEnglish ? `
@@ -121,38 +141,19 @@ I want the result strictly in JSON format:
 }
 `;
 
-  try {
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
-    return result.description as string;
-  } catch (error) {
-    console.error('Error generating category description with OpenAI:', error);
-    throw error;
-  }
+  const result = await callOpenAI(
+    SEO_MODEL,
+    [{ role: 'user', content: prompt }],
+    { type: 'json_object' },
+    '[SEO]'
+  );
+  return result.description as string;
 }
 
+/**
+ * Verifies English books using GPT-4.1-nano
+ */
 export async function verifyEnglishBooks(books: { id: string; title: string; description?: string }[]) {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not defined');
-  }
-
   const prompt = `
 You are a strict classifier.
 
@@ -174,37 +175,22 @@ Books:
 ${JSON.stringify(books, null, 2)}
 `;
 
-  try {
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-      }),
-    });
+  const result = await callOpenAI(
+    FILTER_MODEL,
+    [{ role: 'user', content: prompt }],
+    { type: 'json_object' },
+    '[FILTER]'
+  );
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
-    }
+  // Ensure it's an array, handle cases where AI might return it wrapped in an object
+  const verificationArray = Array.isArray(result) ? result : (result.books || Object.values(result)[0]);
 
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
-
-    // Ensure it's an array, handle cases where AI might return it wrapped in an object
-    const verificationArray = Array.isArray(result) ? result : (result.books || Object.values(result)[0]);
-
-    return verificationArray as { id: string; isEnglish: boolean }[];
-  } catch (error) {
-    console.error('Error verifying English books with OpenAI:', error);
-    throw error;
-  }
+  return verificationArray as { id: string; isEnglish: boolean }[];
 }
 
+/**
+ * Standardizes and improves book titles using GPT-4.1-nano
+ */
 export async function normalizeTitle(title: string, author?: string, lang: string = 'ar') {
   if (!OPENAI_API_KEY) return title;
 
@@ -233,23 +219,27 @@ Requirements:
 `;
 
   try {
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-      }),
-    });
-
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const result = await callOpenAI(
+      FILTER_MODEL,
+      [{ role: 'user', content: prompt }],
+      { type: 'json_object' },
+      '[FILTER]'
+    );
     return result.normalizedTitle;
   } catch (error) {
     return title;
   }
+}
+
+/**
+ * Generic SEO content generation utility using GPT-4.1-mini
+ */
+export async function generateSeoDescription(prompt: string) {
+  const result = await callOpenAI(
+    SEO_MODEL,
+    [{ role: 'user', content: prompt }],
+    { type: 'json_object' },
+    '[SEO]'
+  );
+  return result;
 }
