@@ -17,6 +17,8 @@ export interface Book {
   downloadLink?: string;
   previewLink?: string;
   files?: BookFile[];
+  ocrUrl?: string;
+  firstPageImageUrl?: string;
 }
 
 export interface SearchResult {
@@ -84,6 +86,7 @@ export async function searchBooks(
     description: normalizeField(doc.description),
     coverImage: `https://archive.org/services/img/${doc.identifier}`,
     previewLink: `https://archive.org/details/${doc.identifier}`,
+    firstPageImageUrl: `https://archive.org/download/${doc.identifier}/page/n0.jpg`,
   }));
 
   const totalResults = data.response?.numFound || 0;
@@ -143,6 +146,9 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
     const description = data.metadata?.description;
 
     const files = data.files || [];
+    const ocrFile = files.find((f: any) => f.name && f.name.toLowerCase().endsWith('_djvu.txt'));
+    const ocrUrl = ocrFile ? `https://archive.org/download/${identifier}/${encodeURIComponent(ocrFile.name)}` : undefined;
+
     const bookFiles: BookFile[] = files
       .filter((file: any) =>
         file.name &&
@@ -165,8 +171,10 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
       description,
       coverImage: `https://archive.org/services/img/${identifier}`,
       previewLink: `https://archive.org/details/${identifier}`,
+      firstPageImageUrl: `https://archive.org/download/${identifier}/page/n0.jpg`,
       downloadLink: bookFiles.length > 0 ? bookFiles[0].url : undefined,
-      files: bookFiles
+      files: bookFiles,
+      ocrUrl
     };
   } catch (error) {
     console.error('Error getting book details:', error);

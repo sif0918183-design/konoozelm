@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { checkAuth } from '@/lib/admin-auth';
-import { searchBooks } from '@/lib/archive-api';
+import { searchBooks, getBookDetails } from '@/lib/archive-api';
 import { supabase } from '@/lib/supabase';
-import { verifyEnglishBooks } from '@/lib/openai';
+import { verifyEnglishBooks, verifyVisionEnglish, verifyTextEnglish } from '@/lib/openai';
 
 // In-memory cache for verification results
-const verificationCache = new Map<string, boolean>();
+const verificationCache = new Map<string, { isEnglish: boolean, score: number }>();
 
 function safeString(val: any): string {
   if (val === null || val === undefined) return '';
@@ -21,40 +21,45 @@ function safeString(val: any): string {
   return String(val);
 }
 
-function filterEnglishCandidates(book: any) {
-  // 1. Language field check
+function getEnglishScore(book: any) {
+  let score = 0;
+  const title = safeString(book.title);
+  const titleLower = title.toLowerCase();
+  const description = safeString(book.description).toLowerCase();
   const bookLang = safeString(book.language).toLowerCase();
+
+  // 1. Language field check (Metadata)
   if (bookLang) {
     const allowed = ['eng', 'english', 'en'];
-    const rejected = ['ara', 'arabic', 'urd', 'urdu', 'ind', 'indonesian', 'bahasa', 'per', 'persian'];
+    const rejected = ['ara', 'arabic', 'urd', 'urdu', 'ind', 'indonesian', 'bahasa', 'per', 'persian', 'fas', 'farsi'];
 
     const isExplicitlyEnglish = allowed.some(l => bookLang.includes(l));
     const isExplicitlyOther = rejected.some(l => bookLang.includes(l));
 
-    if (isExplicitlyOther && !isExplicitlyEnglish) return false;
+    if (isExplicitlyEnglish) score += 1;
+    if (isExplicitlyOther && !isExplicitlyEnglish) return -100; // Hard reject
   }
-
-  const title = safeString(book.title).toLowerCase();
-  const description = safeString(book.description).toLowerCase();
 
   // 2. Text-based rejection
   const rejectKeywords = [
     'urdu', 'indonesian', 'bahasa', 'arabic', 'ترجمة', 'عربي',
-    'farsi', 'persian', 'bengali', 'malayalam', 'tamil'
+    'farsi', 'persian', 'bengali', 'malayalam', 'tamil', 'punjabi', 'pashto'
   ];
 
-  if (rejectKeywords.some(kw => title.includes(kw) || description.includes(kw))) {
-    return false;
+  if (rejectKeywords.some(kw => titleLower.includes(kw) || description.includes(kw))) {
+    return -100; // Hard reject
   }
 
-  // 3. Character check (Reject if title contains non-latin characters)
+  // 3. Character check (Title Latin)
   // Allowed: Latin letters, numbers, common punctuation
-  if (/[^\u0000-\u007F\u00A0-\u00FF]/.test(book.title)) {
-    // If it has non-latin characters, it's likely not primarily English
-    return false;
+  const isLatin = !/[^\u0000-\u007F\u00A0-\u00FF]/.test(title);
+  if (isLatin) {
+    score += 1;
+  } else {
+    return -100; // Hard reject
   }
 
-  return true;
+  return score;
 }
 
 export async function POST(request: Request) {
@@ -96,10 +101,13 @@ export async function POST(request: Request) {
     // Pipeline for English
     if (isEnglishTab) {
       // Step 1: Pre-filtering (Fast Layer)
-      allBooks = allBooks.filter(filterEnglishCandidates);
-      preFilteredCount = allBooks.length;
+      const candidates = allBooks
+        .map(b => ({ book: b, score: getEnglishScore(b) }))
+        .filter(c => c.score >= 0);
 
-      const candidateIds = allBooks.map(b => b.identifier);
+      preFilteredCount = candidates.length;
+
+      const candidateIds = candidates.map(c => c.book.identifier);
 
       // Fetch existing verification status from DB to avoid redundant AI calls
       const { data: dbVerifiedBooks } = await supabase
@@ -110,49 +118,64 @@ export async function POST(request: Request) {
       const dbVerifiedMap = new Map(dbVerifiedBooks?.map(b => [b.archive_id, b.is_english_verified]) || []);
 
       // Step 2: AI Filtering (Smart Layer) with batching and timeout protection
-      // Only verify books that are not in memory cache and not explicitly verified in DB
-      const booksToVerify = allBooks.filter(b =>
-        !verificationCache.has(b.identifier) &&
-        dbVerifiedMap.get(b.identifier) !== true
+      const candidatesToVerify = candidates.filter(c =>
+        !verificationCache.has(c.book.identifier) &&
+        dbVerifiedMap.get(c.book.identifier) !== true
       );
 
-      const BATCH_SIZE = 20;
-      const batches = [];
-      for (let i = 0; i < booksToVerify.length; i += BATCH_SIZE) {
-          batches.push(booksToVerify.slice(i, i + BATCH_SIZE));
-      }
-
-      // Parallel batch processing with concurrency limit (max 3 concurrent batches to avoid rate limits)
-      const CONCURRENCY_LIMIT = 3;
-      for (let i = 0; i < batches.length; i += CONCURRENCY_LIMIT) {
-        // Timeout protection
+      // Parallel processing with concurrency limit to handle Vision + OCR per book
+      const CONCURRENCY = 5;
+      for (let i = 0; i < candidatesToVerify.length; i += CONCURRENCY) {
         if (Date.now() - startTime > MAX_RUNTIME) break;
 
-        const concurrentBatches = batches.slice(i, i + CONCURRENCY_LIMIT);
+        const batch = candidatesToVerify.slice(i, i + CONCURRENCY);
 
-        await Promise.all(concurrentBatches.map(async (batch) => {
+        await Promise.all(batch.map(async (candidate) => {
+          const b = candidate.book;
+          let currentScore = candidate.score;
+
           try {
-            const verifications = await verifyEnglishBooks(batch.map(b => ({
-              id: b.identifier,
-              title: b.title,
-              description: b.description
-            })));
+            // Run Vision (Cover) and Get Details in parallel
+            const [isCoverEnglish, details] = await Promise.all([
+              b.coverImage ? verifyVisionEnglish(b.coverImage) : Promise.resolve(false),
+              getBookDetails(b.identifier)
+            ]);
 
-            verifications.forEach(v => {
-              verificationCache.set(v.id, v.isEnglish);
+            if (isCoverEnglish) currentScore += 2;
+
+            if (details?.ocrUrl) {
+              const ocrResponse = await fetch(details.ocrUrl);
+              if (ocrResponse.ok) {
+                const ocrText = await ocrResponse.text();
+                const isTextEnglish = await verifyTextEnglish(ocrText);
+                if (isTextEnglish) currentScore += 5;
+              }
+            } else if (details?.firstPageImageUrl) {
+              const isFirstPageEnglish = await verifyVisionEnglish(details.firstPageImageUrl);
+              if (isFirstPageEnglish) currentScore += 5;
+            }
+
+            verificationCache.set(b.identifier, {
+              isEnglish: currentScore >= 5,
+              score: currentScore
             });
-            aiCheckedCount += batch.length;
+            aiCheckedCount++;
           } catch (e) {
-            console.error('AI Verification batch failed:', e);
+            console.error(`AI Verification failed for ${b.identifier}:`, e);
           }
         }));
       }
 
-      // Final Filter: Include books that are verified in DB OR passed AI verification
-      allBooks = allBooks.filter(b =>
-        dbVerifiedMap.get(b.identifier) === true ||
-        verificationCache.get(b.identifier) === true
-      );
+      // Map back and filter by score
+      allBooks = candidates
+        .map(c => {
+          const cached = verificationCache.get(c.book.identifier);
+          const isDbVerified = dbVerifiedMap.get(c.book.identifier) === true;
+          const finalScore = cached ? cached.score : (isDbVerified ? 10 : c.score);
+          return { ...c.book, score: finalScore };
+        })
+        .filter(b => (b as any).score >= 5);
+
       aiApprovedCount = allBooks.length;
 
       console.log(`[Suggest API] Fetched: ${totalFetched} → Pre-filtered: ${preFilteredCount} → AI Approved: ${aiApprovedCount} (Checked ${aiCheckedCount} new via AI)`);
@@ -183,9 +206,14 @@ export async function POST(request: Request) {
       id: book.identifier,
       title: book.title,
       author: book.author || (isEnglishTab ? 'Unknown' : 'غير معروف'),
-      relevance_score: 100,
+      year: (book as any).year,
+      language: (book as any).language,
+      coverImage: (book as any).coverImage,
+      firstPageImageUrl: (book as any).firstPageImageUrl,
+      relevance_score: (book as any).score || 100,
+      score: (book as any).score || 0,
       isExisting: existingIds.has(book.identifier),
-      isVerified: verifiedMap.get(book.identifier) || (isEnglishTab && verificationCache.get(book.identifier)),
+      isVerified: verifiedMap.get(book.identifier) || (isEnglishTab && verificationCache.get(book.identifier)?.isEnglish),
       isAiChecked: isEnglishTab, // Mark as AI checked if it passed the pipeline
       feedbackStatus: feedbackMap.get(book.identifier) || null
     }));

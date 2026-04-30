@@ -16,17 +16,25 @@ async function callOpenAI(model: string, messages: any[], responseFormat: any, l
   console.log(`${logTag} Using ${model}`);
 
   try {
+    // Determine if we should use response_format. type: 'json_object' requires 'json' in prompt
+    // For simple true/false we might not use it, but user asked for true/false.
+
+    const body: any = {
+      model,
+      messages,
+    };
+
+    if (responseFormat) {
+      body.response_format = responseFormat;
+    }
+
     const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        response_format: responseFormat,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -34,7 +42,12 @@ async function callOpenAI(model: string, messages: any[], responseFormat: any, l
     }
 
     const data = await response.json();
-    return JSON.parse(data.choices[0].message.content);
+    const content = data.choices[0].message.content.trim();
+
+    if (responseFormat?.type === 'json_object') {
+      return JSON.parse(content);
+    }
+    return content;
   } catch (error) {
     console.error(`${logTag} Error with ${model}:`, error);
     throw error;
@@ -186,6 +199,61 @@ ${JSON.stringify(books, null, 2)}
   const verificationArray = Array.isArray(result) ? result : (result.books || Object.values(result)[0]);
 
   return verificationArray as { id: string; isEnglish: boolean }[];
+}
+
+/**
+ * Verifies if the image (cover or page) is English using Vision
+ */
+export async function verifyVisionEnglish(imageUrl: string): Promise<boolean> {
+  const prompt = "Is the text shown on this cover/page written in English? Return only true or false.";
+
+  try {
+    const result = await callOpenAI(
+      FILTER_MODEL,
+      [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: imageUrl } }
+          ]
+        }
+      ],
+      undefined,
+      '[FILTER-VISION]'
+    );
+    return String(result).toLowerCase().includes('true');
+  } catch (e) {
+    console.error('Vision verification failed:', e);
+    return false;
+  }
+}
+
+/**
+ * Verifies if the provided text is English
+ */
+export async function verifyTextEnglish(text: string): Promise<boolean> {
+  if (!text || text.length < 10) return false;
+
+  const prompt = `
+Determine if this text is written in English.
+Return only true or false.
+
+Text:
+${text.substring(0, 1000)}
+`;
+
+  try {
+    const result = await callOpenAI(
+      FILTER_MODEL,
+      [{ role: 'user', content: prompt }],
+      undefined,
+      '[FILTER-TEXT]'
+    );
+    return String(result).toLowerCase().includes('true');
+  } catch (e) {
+    return false;
+  }
 }
 
 /**
