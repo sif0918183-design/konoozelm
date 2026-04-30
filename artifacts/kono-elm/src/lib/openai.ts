@@ -257,6 +257,63 @@ ${text.substring(0, 1000)}
 }
 
 /**
+ * Classifies text into Islamic, Hostile, or Secular categories
+ */
+export async function classifyIslamicContent(text: string, imageUrl?: string): Promise<string> {
+  if (!text && !imageUrl) return '[3]';
+
+  const prompt = `
+You are an Islamic book classifier. The text below is from the first page of a book and is already confirmed to be in English.
+
+Classify it into one of three categories:
+
+[1] Islamic - Authentic:
+Aqeedah, Fiqh, Tafsir, Hadith, Seerah, Islamic history, Dawah, Islamic ethics, objective comparative religion, Islamic education, family & parenting, Islamic finance & economics, spirituality & purification (Tazkiyah), Islamic medicine & prophetic medicine, Islamic astronomy, Islamic philosophy (Al-Ghazali, Ibn Sina), Usul al-Fiqh, Ulum al-Quran, Hadith sciences (Mustalah), biographies of scholars, Islamic governance (Siyasah Shar'iyyah), inheritance law (Fara'id), daily life rulings (food, clothing, vows, hunting, manners).
+
+[2] Hostile or Polemical - Reject:
+Criticism of Islam, attacks on Quran or Prophet, doubts & skepticism, negative orientalism, Christian missionary, atheism, agnosticism, secularism targeting Islam, deviant groups (Qadiani, Bahai, Ahmadi, Druze, Quranists rejecting Sunnah, Khawarij, Takfiris), texts mocking Islamic rituals (prayer, fasting, Hajj, Zakat), texts accusing Islam of violence or backwardness, texts promoting apostasy, texts insulting Allah or divine books.
+
+[3] Non-Islamic Secular - Reject:
+Physics, Chemistry, Biology, Math, Engineering (civil, electrical, mechanical, software), Medicine (purely scientific), Pure Philosophy (Aristotle, Plato, Kant, Nietzsche, Marx, existentialism), General Psychology (Freud, Jung, behaviorism), General Sociology, General Literature (novels, fiction, poetry, theater), General History (European, American, Chinese, Indian), General Geography, General Politics (democracy, secular governance), General Economics (capitalism, socialism, conventional banking), General Law (secular perspective), General Arts (music, painting, cinema), General Sports.
+
+Rules:
+- If contains "Bismillah" or Quranic verse or Hadith → [1]
+- If attacks Islam, Prophet, or Quran → [2]
+- If pure science or secular topic without Islamic context → [3]
+
+Text:
+"""${text ? text.substring(0, 2000) : (imageUrl ? 'Text in image' : '')}"""
+
+Reply ONLY with: [1] or [2] or [3]
+`;
+
+  try {
+    const messages: any[] = [];
+    if (!text && imageUrl) {
+      messages.push({
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: imageUrl } }
+        ]
+      });
+    } else {
+      messages.push({ role: 'user', content: prompt });
+    }
+
+    const result = await callOpenAI(
+      FILTER_MODEL,
+      messages,
+      undefined,
+      '[CLASSIFY]'
+    );
+    return String(result).trim();
+  } catch (e) {
+    return '[3]';
+  }
+}
+
+/**
  * Standardizes and improves book titles using GPT-4.1-nano
  */
 export async function normalizeTitle(title: string, author?: string, lang: string = 'ar') {

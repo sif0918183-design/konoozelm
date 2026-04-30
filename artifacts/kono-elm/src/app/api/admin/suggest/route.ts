@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { checkAuth } from '@/lib/admin-auth';
 import { searchBooks, getBookDetails } from '@/lib/archive-api';
 import { supabase } from '@/lib/supabase';
-import { verifyEnglishBooks, verifyVisionEnglish, verifyTextEnglish } from '@/lib/openai';
+import { verifyEnglishBooks, verifyVisionEnglish, verifyTextEnglish, classifyIslamicContent } from '@/lib/openai';
 
 // In-memory cache for verification results
 const verificationCache = new Map<string, { isEnglish: boolean, score: number }>();
@@ -135,24 +135,33 @@ export async function POST(request: Request) {
           let currentScore = candidate.score;
 
           try {
-            // Run Vision (Cover) and Get Details in parallel
-            const [isCoverEnglish, details] = await Promise.all([
-              b.coverImage ? verifyVisionEnglish(b.coverImage) : Promise.resolve(false),
-              getBookDetails(b.identifier)
-            ]);
+            // Get Details
+            const details = await getBookDetails(b.identifier);
 
-            if (isCoverEnglish) currentScore += 2;
+            let isContentEnglish = false;
+            let extractedText = '';
 
             if (details?.ocrUrl) {
               const ocrResponse = await fetch(details.ocrUrl);
               if (ocrResponse.ok) {
-                const ocrText = await ocrResponse.text();
-                const isTextEnglish = await verifyTextEnglish(ocrText);
-                if (isTextEnglish) currentScore += 5;
+                extractedText = await ocrResponse.text();
+                isContentEnglish = await verifyTextEnglish(extractedText);
               }
             } else if (details?.firstPageImageUrl) {
-              const isFirstPageEnglish = await verifyVisionEnglish(details.firstPageImageUrl);
-              if (isFirstPageEnglish) currentScore += 5;
+              isContentEnglish = await verifyVisionEnglish(details.firstPageImageUrl);
+            }
+
+            if (isContentEnglish) {
+              currentScore += 5;
+
+              // Step 2: Classify Content if English
+              // If we have text, use it. Otherwise use the first page image for vision classification.
+              const classification = await classifyIslamicContent(extractedText, extractedText ? undefined : details?.firstPageImageUrl);
+              console.log(`[Classify] ${b.identifier}: ${classification}`);
+
+              if (classification === '[2]' || classification === '[3]') {
+                currentScore = 0; // Hard reject if hostile or secular
+              }
             }
 
             verificationCache.set(b.identifier, {
