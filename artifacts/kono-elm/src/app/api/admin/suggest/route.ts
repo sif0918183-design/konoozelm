@@ -81,8 +81,8 @@ export async function POST(request: Request) {
     const searchTerm = query || category;
 
     // Direct Archive.org search preserving original relevance ranking
-    // Increased limit to 1000 for English to have more candidates after filtering
-    const limit = isEnglishTab ? 1000 : 600;
+    // Increased limit to 2000 for English to have more candidates after filtering
+    const limit = isEnglishTab ? 2000 : 600;
     const searchResult = await searchBooks(searchTerm, 1, limit);
 
     let allBooks = searchResult.books;
@@ -93,7 +93,9 @@ export async function POST(request: Request) {
     }
 
     let preFilteredCount = 0;
-    let aiApprovedCount = 0;
+    let englishVerifiedCount = 0;
+    let classifiedIslamicCount = 0;
+    let finalReturnedCount = 0;
     let aiCheckedCount = 0;
 
     if (!supabase) throw new Error('Supabase not configured');
@@ -153,14 +155,18 @@ export async function POST(request: Request) {
 
             if (isContentEnglish) {
               currentScore += 5;
+              englishVerifiedCount++;
 
               // Step 2: Classify Content if English
               // If we have text, use it. Otherwise use the first page image for vision classification.
               const classification = await classifyIslamicContent(extractedText, extractedText ? undefined : details?.firstPageImageUrl);
-              console.log(`[Classify] ${b.identifier}: ${classification}`);
 
-              if (classification === '[2]' || classification === '[3]') {
-                currentScore = 0; // Hard reject if hostile or secular
+              if (classification === '[1]') {
+                classifiedIslamicCount++;
+              } else if (classification === '[2]') {
+                currentScore = 0; // Hard reject for hostile
+              } else if (classification === '[3]') {
+                currentScore -= 2; // Moderate penalty for secular
               }
             }
 
@@ -183,11 +189,17 @@ export async function POST(request: Request) {
           const finalScore = cached ? cached.score : (isDbVerified ? 10 : c.score);
           return { ...c.book, score: finalScore };
         })
-        .filter(b => (b as any).score >= 5);
+        .filter(b => (b as any).score >= 2);
 
-      aiApprovedCount = allBooks.length;
+      finalReturnedCount = allBooks.length;
 
-      console.log(`[Suggest API] Fetched: ${totalFetched} → Pre-filtered: ${preFilteredCount} → AI Approved: ${aiApprovedCount} (Checked ${aiCheckedCount} new via AI)`);
+      console.log(`[Pipeline]
+Fetched: ${totalFetched}
+Pre-filtered: ${preFilteredCount}
+English Verified: ${englishVerifiedCount}
+Classified Islamic: ${classifiedIslamicCount}
+Final Returned: ${finalReturnedCount}
+(Checked ${aiCheckedCount} new via AI)`);
     }
 
     const candidateIds = allBooks.map(b => b.identifier);
@@ -211,28 +223,36 @@ export async function POST(request: Request) {
     const feedbackMap = new Map(feedback?.map(f => [f.archive_id, f.status]) || []);
 
     // Map all books with their current status
-    const suggestions = allBooks.map(book => ({
-      id: book.identifier,
-      title: book.title,
-      author: book.author || (isEnglishTab ? 'Unknown' : 'غير معروف'),
-      year: (book as any).year,
-      language: (book as any).language,
-      coverImage: (book as any).coverImage,
-      firstPageImageUrl: (book as any).firstPageImageUrl,
-      relevance_score: (book as any).score || 100,
-      score: (book as any).score || 0,
-      isExisting: existingIds.has(book.identifier),
-      isVerified: verifiedMap.get(book.identifier) || (isEnglishTab && verificationCache.get(book.identifier)?.isEnglish),
-      isAiChecked: isEnglishTab, // Mark as AI checked if it passed the pipeline
-      feedbackStatus: feedbackMap.get(book.identifier) || null
-    }));
+    const suggestions = allBooks.map(book => {
+      const score = (book as any).score || 0;
+      let confidenceLevel = 'low';
+      if (score >= 6) confidenceLevel = 'high';
+      else if (score >= 4) confidenceLevel = 'medium';
+
+      return {
+        id: book.identifier,
+        title: book.title,
+        author: book.author || (isEnglishTab ? 'Unknown' : 'غير معروف'),
+        year: (book as any).year,
+        language: (book as any).language,
+        coverImage: (book as any).coverImage,
+        firstPageImageUrl: (book as any).firstPageImageUrl,
+        relevance_score: score || 100,
+        score: score,
+        confidenceLevel,
+        isExisting: existingIds.has(book.identifier),
+        isVerified: verifiedMap.get(book.identifier) || (isEnglishTab && verificationCache.get(book.identifier)?.isEnglish),
+        isAiChecked: isEnglishTab, // Mark as AI checked if it passed the pipeline
+        feedbackStatus: feedbackMap.get(book.identifier) || null
+      };
+    });
 
     return NextResponse.json({
       suggestions,
       stats: isEnglishTab ? {
           totalFetched,
           preFiltered: preFilteredCount,
-          aiApproved: aiApprovedCount
+          aiApproved: finalReturnedCount
       } : undefined
     });
 

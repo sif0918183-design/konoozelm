@@ -119,6 +119,7 @@ export default function AdminDashboard() {
   const [isBulkAdding, setIsBulkAdding] = useState(false);
   const [suggestionStats, setSuggestionStats] = useState<{ totalFetched: number; preFiltered: number; aiApproved: number } | null>(null);
   const [showOnlyVerified, setShowOnlyVerified] = useState(true);
+  const [confidenceFilter, setConfidenceFilter] = useState<'high' | 'medium' | 'low'>('high');
 
   // Pagination State for Suggestions
   const [currentPage, setCurrentPage] = useState(1);
@@ -548,7 +549,11 @@ export default function AdminDashboard() {
 
   // Filtering & Pagination Logic
   const filteredSuggestions = lang === 'en' && showOnlyVerified
-    ? suggestions.filter(s => (s.score || 0) >= 5)
+    ? suggestions.filter(s => {
+        if (confidenceFilter === 'high') return (s.score || 0) >= 6;
+        if (confidenceFilter === 'medium') return (s.score || 0) >= 4;
+        return (s.score || 0) >= 2;
+      })
     : suggestions;
 
   const totalPages = Math.ceil(filteredSuggestions.length / ITEMS_PER_PAGE);
@@ -1016,13 +1021,26 @@ export default function AdminDashboard() {
 
               <div className="flex flex-col md:flex-row gap-4 items-center">
                   {lang === 'en' && (
-                    <button
-                        onClick={() => setShowOnlyVerified(!showOnlyVerified)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${showOnlyVerified ? 'bg-green-500 border-green-400 text-white shadow-lg' : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'}`}
-                    >
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-xs font-bold">Show only high confidence books (Score {'>'}= 5)</span>
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowOnlyVerified(!showOnlyVerified)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${showOnlyVerified ? 'bg-green-500 border-green-400 text-white shadow-lg' : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'}`}
+                        >
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-xs font-bold">{showOnlyVerified ? 'Filtered' : 'Filter by Confidence'}</span>
+                        </button>
+                        {showOnlyVerified && (
+                            <select
+                                value={confidenceFilter}
+                                onChange={(e) => setConfidenceFilter(e.target.value as any)}
+                                className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+                            >
+                                <option value="high" className="text-primary-900">High Confidence Only</option>
+                                <option value="medium" className="text-primary-900">High + Medium</option>
+                                <option value="low" className="text-primary-900">All (High/Med/Low)</option>
+                            </select>
+                        )}
+                    </div>
                   )}
 
                   {/* In-Modal Search */}
@@ -1100,10 +1118,19 @@ export default function AdminDashboard() {
                                         </span>
                                       )}
                                       {lang === 'en' && s.score !== undefined && (
-                                        <span className="flex items-center gap-1 font-bold text-gold-600">
-                                          <Award className="w-3 h-3" />
-                                          Score: {s.score}
-                                        </span>
+                                        <>
+                                          <span className="flex items-center gap-1 font-bold text-gold-600">
+                                            <Award className="w-3 h-3" />
+                                            Score: {s.score}
+                                          </span>
+                                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-tight ${
+                                            (s as any).confidenceLevel === 'high' ? 'bg-green-100 text-green-700' :
+                                            (s as any).confidenceLevel === 'medium' ? 'bg-gold-100 text-gold-700' :
+                                            'bg-gray-100 text-gray-500'
+                                          }`}>
+                                            {(s as any).confidenceLevel}
+                                          </span>
+                                        </>
                                       )}
                                     </div>
                                   </div>

@@ -142,6 +142,7 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
     const title = data.metadata?.title || 'Untitled';
     const author = data.metadata?.creator || data.metadata?.author;
     const year = data.metadata?.date?.substring(0, 4);
+    const language = normalizeField(data.metadata?.language);
     const publisher = data.metadata?.publisher;
     const description = data.metadata?.description;
 
@@ -169,6 +170,7 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
       year,
       publisher,
       description,
+      language,
       coverImage: `https://archive.org/services/img/${identifier}`,
       previewLink: `https://archive.org/details/${identifier}`,
       firstPageImageUrl: `https://archive.org/download/${identifier}/page/n0.jpg`,

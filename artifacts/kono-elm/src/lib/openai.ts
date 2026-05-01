@@ -280,6 +280,7 @@ Rules:
 - If contains "Bismillah" or Quranic verse or Hadith → [1]
 - If attacks Islam, Prophet, or Quran → [2]
 - If pure science or secular topic without Islamic context → [3]
+- If the text is neutral or could be Islamic-related, prefer [1] over [3].
 
 Text:
 """${text ? text.substring(0, 2000) : (imageUrl ? 'Text in image' : '')}"""
