@@ -18,6 +18,7 @@ export interface Book {
   previewLink?: string;
   files?: BookFile[];
   ocrUrl?: string;
+  guessedOcrUrl?: string;
   firstPageImageUrl?: string;
 }
 
@@ -90,6 +91,7 @@ export async function searchBooks(
     coverImage: `https://archive.org/services/img/${doc.identifier}`,
     previewLink: `https://archive.org/details/${doc.identifier}`,
     firstPageImageUrl: `https://archive.org/download/${doc.identifier}/page/n0.jpg`,
+    guessedOcrUrl: `https://archive.org/download/${doc.identifier}/${doc.identifier}_djvu.txt`,
   }));
 
   const totalResults = data.response?.numFound || 0;

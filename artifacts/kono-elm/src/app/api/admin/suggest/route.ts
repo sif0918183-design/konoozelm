@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { verifyEnglishBooks, verifyVisionEnglish, verifyTextEnglish, classifyIslamicContent } from '@/lib/openai';
 
 // In-memory cache for verification results
-const verificationCache = new Map<string, { isEnglish: boolean, score: number }>();
+const verificationCache = new Map<string, { isEnglish: boolean, score: number, isDoubtful: boolean }>();
 
 function safeString(val: any): string {
   if (val === null || val === undefined) return '';
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
       );
 
       // Parallel processing with concurrency limit to handle Vision + OCR per book
-      const CONCURRENCY = 5;
+      const CONCURRENCY = 10;
       for (let i = 0; i < candidatesToVerify.length; i += CONCURRENCY) {
         if (Date.now() - startTime > MAX_RUNTIME) break;
 
@@ -135,46 +135,80 @@ export async function POST(request: Request) {
         await Promise.all(batch.map(async (candidate) => {
           const b = candidate.book;
           let currentScore = candidate.score;
+          let isDoubtful = false;
 
           try {
-            // Get Details
-            const details = await getBookDetails(b.identifier);
-
-            let isContentEnglish = false;
             let extractedText = '';
+            let isContentEnglish = false;
 
-            if (details?.ocrUrl) {
-              const ocrResponse = await fetch(details.ocrUrl);
-              if (ocrResponse.ok) {
-                extractedText = await ocrResponse.text();
-                isContentEnglish = await verifyTextEnglish(extractedText);
+            // Strategy 1: Direct Guessed OCR (Fastest & Cost-effective)
+            const ocrUrl = (b as any).guessedOcrUrl;
+            if (ocrUrl) {
+              const ocrRes = await fetch(ocrUrl);
+              if (ocrRes.ok) {
+                extractedText = await ocrRes.text();
               }
-            } else if (details?.firstPageImageUrl) {
-              isContentEnglish = await verifyVisionEnglish(details.firstPageImageUrl);
             }
 
-            if (isContentEnglish) {
-              currentScore += 5;
-              englishVerifiedCount++;
+            // Step 1: Check English Content
+            if (extractedText) {
+              // Heuristic check for Islamic content to save AI calls
+              const lowerText = extractedText.toLowerCase();
+              const hasIslamicClues = /bismillah|quran|allah|prophet|islam|hadith|sahih|seerah|fiqh|tafsir/i.test(lowerText);
 
-              // Step 2: Classify Content if English
-              // If we have text, use it. Otherwise use the first page image for vision classification.
-              const classification = await classifyIslamicContent(extractedText, extractedText ? undefined : details?.firstPageImageUrl);
+              isContentEnglish = await verifyTextEnglish(extractedText);
 
-              if (classification === '[1]') {
-                classifiedIslamicCount++;
-              } else if (classification === '[2]') {
-                currentScore = 0; // Hard reject for hostile
-              } else if (classification === '[3]') {
-                currentScore -= 2; // Moderate penalty for secular
+              if (isContentEnglish) {
+                currentScore += 5;
+                englishVerifiedCount++;
+
+                if (hasIslamicClues) {
+                  // Direct bypass for obvious Islamic English content
+                  currentScore += 5; // Extra boost for being obvious Islamic
+                  classifiedIslamicCount++;
+                } else {
+                  // Step 2: AI Classification for borderline cases
+                  const classification = await classifyIslamicContent(extractedText);
+                  if (classification === '[1]') {
+                    currentScore += 5;
+                    classifiedIslamicCount++;
+                  } else if (classification === '[2]') {
+                    currentScore = 1; // Mark as doubtful hostile
+                    isDoubtful = true;
+                  } else if (classification === '[3]') {
+                    currentScore = 3; // Mark as doubtful secular
+                    isDoubtful = true;
+                  }
+                }
+              }
+            } else {
+              // Fallback to detailed fetch if guessed OCR fails
+              const details = await getBookDetails(b.identifier);
+              if (details?.firstPageImageUrl) {
+                isContentEnglish = await verifyVisionEnglish(details.firstPageImageUrl);
+                if (isContentEnglish) {
+                  currentScore += 5;
+                  englishVerifiedCount++;
+
+                  const classification = await classifyIslamicContent('', details.firstPageImageUrl);
+                  if (classification === '[1]') {
+                    currentScore += 5;
+                    classifiedIslamicCount++;
+                  } else if (classification === '[2]') {
+                    currentScore = 1;
+                    isDoubtful = true;
+                  } else if (classification === '[3]') {
+                    currentScore = 3;
+                    isDoubtful = true;
+                  }
+                }
               }
             }
 
             verificationCache.set(b.identifier, {
-              isEnglish: currentScore >= 2,
+              isEnglish: currentScore >= 1,
               score: currentScore,
-              year: details?.year,
-              language: details?.language
+              isDoubtful: isDoubtful
             } as any);
             aiCheckedCount++;
           } catch (e) {
@@ -196,7 +230,7 @@ export async function POST(request: Request) {
             language: cached?.language || (c.book as any).language
           };
         })
-        .filter(b => (b as any).score >= 2);
+        .filter(b => (b as any).score >= 1);
 
       finalReturnedCount = allBooks.length;
 
@@ -232,9 +266,12 @@ Final Returned: ${finalReturnedCount}
     // Map all books with their current status
     const suggestions = allBooks.map(book => {
       const score = (book as any).score || 0;
+      const cached = verificationCache.get(book.identifier);
+      const isDoubtful = cached?.isDoubtful || false;
+
       let confidenceLevel = 'low';
-      if (score >= 6) confidenceLevel = 'high';
-      else if (score >= 4) confidenceLevel = 'medium';
+      if (score >= 10) confidenceLevel = 'high';
+      else if (score >= 6) confidenceLevel = 'medium';
 
       return {
         id: book.identifier,
@@ -247,6 +284,7 @@ Final Returned: ${finalReturnedCount}
         relevance_score: score || 100,
         score: score,
         confidenceLevel,
+        isDoubtful,
         isExisting: existingIds.has(book.identifier),
         isVerified: verifiedMap.get(book.identifier) || (isEnglishTab && verificationCache.get(book.identifier)?.isEnglish),
         isAiChecked: isEnglishTab, // Mark as AI checked if it passed the pipeline

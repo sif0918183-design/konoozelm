@@ -72,6 +72,7 @@ interface Suggestion {
   relevance_score: number;
   score?: number;
   confidenceLevel?: 'high' | 'medium' | 'low';
+  isDoubtful?: boolean;
   isExisting?: boolean;
   isVerified?: boolean;
   isAiChecked?: boolean;
@@ -551,9 +552,9 @@ export default function AdminDashboard() {
   // Filtering & Pagination Logic
   const filteredSuggestions = lang === 'en' && showOnlyVerified
     ? suggestions.filter(s => {
-        if (confidenceFilter === 'high') return (s.score || 0) >= 6;
-        if (confidenceFilter === 'medium') return (s.score || 0) >= 4;
-        return (s.score || 0) >= 2;
+        if (confidenceFilter === 'high') return (s.score || 0) >= 10;
+        if (confidenceFilter === 'medium') return (s.score || 0) >= 6;
+        return (s.score || 0) >= 1;
       })
     : suggestions;
 
@@ -1036,9 +1037,9 @@ export default function AdminDashboard() {
                                 onChange={(e) => setConfidenceFilter(e.target.value as any)}
                                 className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
                             >
-                                <option value="high" className="text-primary-900">High Confidence Only</option>
-                                <option value="medium" className="text-primary-900">High + Medium</option>
-                                <option value="low" className="text-primary-900">All (High/Med/Low)</option>
+                                <option value="high" className="text-primary-900">High Confidence (Score {'>'}= 10)</option>
+                                <option value="medium" className="text-primary-900">Medium + (Score {'>'}= 6)</option>
+                                <option value="low" className="text-primary-900">All Suggestions (Score {'>'}= 1)</option>
                             </select>
                         )}
                     </div>
@@ -1131,6 +1132,12 @@ export default function AdminDashboard() {
                                           }`}>
                                             {s.confidenceLevel}
                                           </span>
+                                          {s.isDoubtful && (
+                                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-red-100 text-red-700 uppercase tracking-tight flex items-center gap-0.5">
+                                              <AlertCircle className="w-2 h-2" />
+                                              Doubtful Content
+                                            </span>
+                                          )}
                                         </>
                                       )}
                                     </div>
