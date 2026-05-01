@@ -171,9 +171,11 @@ export async function POST(request: Request) {
             }
 
             verificationCache.set(b.identifier, {
-              isEnglish: currentScore >= 5,
-              score: currentScore
-            });
+              isEnglish: currentScore >= 2,
+              score: currentScore,
+              year: details?.year,
+              language: details?.language
+            } as any);
             aiCheckedCount++;
           } catch (e) {
             console.error(`AI Verification failed for ${b.identifier}:`, e);
@@ -184,10 +186,15 @@ export async function POST(request: Request) {
       // Map back and filter by score
       allBooks = candidates
         .map(c => {
-          const cached = verificationCache.get(c.book.identifier);
+          const cached: any = verificationCache.get(c.book.identifier);
           const isDbVerified = dbVerifiedMap.get(c.book.identifier) === true;
           const finalScore = cached ? cached.score : (isDbVerified ? 10 : c.score);
-          return { ...c.book, score: finalScore };
+          return {
+            ...c.book,
+            score: finalScore,
+            year: cached?.year || (c.book as any).year,
+            language: cached?.language || (c.book as any).language
+          };
         })
         .filter(b => (b as any).score >= 2);
 

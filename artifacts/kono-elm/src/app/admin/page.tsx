@@ -71,6 +71,7 @@ interface Suggestion {
   firstPageImageUrl?: string;
   relevance_score: number;
   score?: number;
+  confidenceLevel?: 'high' | 'medium' | 'low';
   isExisting?: boolean;
   isVerified?: boolean;
   isAiChecked?: boolean;
@@ -1124,11 +1125,11 @@ export default function AdminDashboard() {
                                             Score: {s.score}
                                           </span>
                                           <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-tight ${
-                                            (s as any).confidenceLevel === 'high' ? 'bg-green-100 text-green-700' :
-                                            (s as any).confidenceLevel === 'medium' ? 'bg-gold-100 text-gold-700' :
+                                            s.confidenceLevel === 'high' ? 'bg-green-100 text-green-700' :
+                                            s.confidenceLevel === 'medium' ? 'bg-gold-100 text-gold-700' :
                                             'bg-gray-100 text-gray-500'
                                           }`}>
-                                            {(s as any).confidenceLevel}
+                                            {s.confidenceLevel}
                                           </span>
                                         </>
                                       )}

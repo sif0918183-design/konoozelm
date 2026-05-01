@@ -32,6 +32,15 @@ const ARCHIVE_API_BASE = 'https://archive.org/advancedsearch.php';
 const ARCHIVE_METADATA_BASE = 'https://archive.org/metadata/';
 
 /**
+ * Normalizes metadata fields that could be strings, arrays, or null
+ */
+function normalizeField(field: any): string {
+  if (!field) return '';
+  if (Array.isArray(field)) return field.join(' ');
+  return String(field);
+}
+
+/**
  * Search for books on Archive.org
  */
 export async function searchBooks(
@@ -44,12 +53,6 @@ export async function searchBooks(
   if (!trimmedQuery) {
     return { books: [], totalResults: 0, page, hasMore: false };
   }
-
-  const normalizeField = (field: any): string => {
-    if (!field) return '';
-    if (Array.isArray(field)) return field.join(' ');
-    return String(field);
-  };
 
   // Use Archive.org's native relevance ranking by passing the query directly
   // and restricting to PDF and Texts as required by the application.
@@ -139,12 +142,12 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
 
     const data = await response.json();
     
-    const title = data.metadata?.title || 'Untitled';
-    const author = data.metadata?.creator || data.metadata?.author;
-    const year = data.metadata?.date?.substring(0, 4);
+    const title = normalizeField(data.metadata?.title) || 'Untitled';
+    const author = normalizeField(data.metadata?.creator || data.metadata?.author);
+    const year = data.metadata?.date ? String(data.metadata.date).substring(0, 4) : undefined;
     const language = normalizeField(data.metadata?.language);
-    const publisher = data.metadata?.publisher;
-    const description = data.metadata?.description;
+    const publisher = normalizeField(data.metadata?.publisher);
+    const description = normalizeField(data.metadata?.description);
 
     const files = data.files || [];
     const ocrFile = files.find((f: any) => f.name && f.name.toLowerCase().endsWith('_djvu.txt'));
