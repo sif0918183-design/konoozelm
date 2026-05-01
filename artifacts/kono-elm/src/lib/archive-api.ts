@@ -17,6 +17,9 @@ export interface Book {
   downloadLink?: string;
   previewLink?: string;
   files?: BookFile[];
+  ocrUrl?: string;
+  guessedOcrUrl?: string;
+  firstPageImageUrl?: string;
 }
 
 export interface SearchResult {
@@ -28,6 +31,15 @@ export interface SearchResult {
 
 const ARCHIVE_API_BASE = 'https://archive.org/advancedsearch.php';
 const ARCHIVE_METADATA_BASE = 'https://archive.org/metadata/';
+
+/**
+ * Normalizes metadata fields that could be strings, arrays, or null
+ */
+function normalizeField(field: any): string {
+  if (!field) return '';
+  if (Array.isArray(field)) return field.join(' ');
+  return String(field);
+}
 
 /**
  * Search for books on Archive.org
@@ -42,12 +54,6 @@ export async function searchBooks(
   if (!trimmedQuery) {
     return { books: [], totalResults: 0, page, hasMore: false };
   }
-
-  const normalizeField = (field: any): string => {
-    if (!field) return '';
-    if (Array.isArray(field)) return field.join(' ');
-    return String(field);
-  };
 
   // Use Archive.org's native relevance ranking by passing the query directly
   // and restricting to PDF and Texts as required by the application.
@@ -84,6 +90,8 @@ export async function searchBooks(
     description: normalizeField(doc.description),
     coverImage: `https://archive.org/services/img/${doc.identifier}`,
     previewLink: `https://archive.org/details/${doc.identifier}`,
+    firstPageImageUrl: `https://archive.org/download/${doc.identifier}/page/n0.jpg`,
+    guessedOcrUrl: `https://archive.org/download/${doc.identifier}/${doc.identifier}_djvu.txt`,
   }));
 
   const totalResults = data.response?.numFound || 0;
@@ -136,13 +144,17 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
 
     const data = await response.json();
     
-    const title = data.metadata?.title || 'Untitled';
-    const author = data.metadata?.creator || data.metadata?.author;
-    const year = data.metadata?.date?.substring(0, 4);
-    const publisher = data.metadata?.publisher;
-    const description = data.metadata?.description;
+    const title = normalizeField(data.metadata?.title) || 'Untitled';
+    const author = normalizeField(data.metadata?.creator || data.metadata?.author);
+    const year = data.metadata?.date ? String(data.metadata.date).substring(0, 4) : undefined;
+    const language = normalizeField(data.metadata?.language);
+    const publisher = normalizeField(data.metadata?.publisher);
+    const description = normalizeField(data.metadata?.description);
 
     const files = data.files || [];
+    const ocrFile = files.find((f: any) => f.name && f.name.toLowerCase().endsWith('_djvu.txt'));
+    const ocrUrl = ocrFile ? `https://archive.org/download/${identifier}/${encodeURIComponent(ocrFile.name)}` : undefined;
+
     const bookFiles: BookFile[] = files
       .filter((file: any) =>
         file.name &&
@@ -163,10 +175,13 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
       year,
       publisher,
       description,
+      language,
       coverImage: `https://archive.org/services/img/${identifier}`,
       previewLink: `https://archive.org/details/${identifier}`,
+      firstPageImageUrl: `https://archive.org/download/${identifier}/page/n0.jpg`,
       downloadLink: bookFiles.length > 0 ? bookFiles[0].url : undefined,
-      files: bookFiles
+      files: bookFiles,
+      ocrUrl
     };
   } catch (error) {
     console.error('Error getting book details:', error);

@@ -16,17 +16,25 @@ async function callOpenAI(model: string, messages: any[], responseFormat: any, l
   console.log(`${logTag} Using ${model}`);
 
   try {
+    // Determine if we should use response_format. type: 'json_object' requires 'json' in prompt
+    // For simple true/false we might not use it, but user asked for true/false.
+
+    const body: any = {
+      model,
+      messages,
+    };
+
+    if (responseFormat) {
+      body.response_format = responseFormat;
+    }
+
     const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        response_format: responseFormat,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -34,7 +42,12 @@ async function callOpenAI(model: string, messages: any[], responseFormat: any, l
     }
 
     const data = await response.json();
-    return JSON.parse(data.choices[0].message.content);
+    const content = data.choices[0].message.content.trim();
+
+    if (responseFormat?.type === 'json_object') {
+      return JSON.parse(content);
+    }
+    return content;
   } catch (error) {
     console.error(`${logTag} Error with ${model}:`, error);
     throw error;
@@ -186,6 +199,119 @@ ${JSON.stringify(books, null, 2)}
   const verificationArray = Array.isArray(result) ? result : (result.books || Object.values(result)[0]);
 
   return verificationArray as { id: string; isEnglish: boolean }[];
+}
+
+/**
+ * Verifies if the image (cover or page) is English using Vision
+ */
+export async function verifyVisionEnglish(imageUrl: string): Promise<boolean> {
+  const prompt = "Is the text shown on this cover/page written in English? Return only true or false.";
+
+  try {
+    const result = await callOpenAI(
+      FILTER_MODEL,
+      [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: imageUrl } }
+          ]
+        }
+      ],
+      undefined,
+      '[FILTER-VISION]'
+    );
+    return String(result).toLowerCase().includes('true');
+  } catch (e) {
+    console.error('Vision verification failed:', e);
+    return false;
+  }
+}
+
+/**
+ * Verifies if the provided text is English
+ */
+export async function verifyTextEnglish(text: string): Promise<boolean> {
+  if (!text || text.length < 10) return false;
+
+  const prompt = `
+Determine if this text is written in English.
+Return only true or false.
+
+Text:
+${text.substring(0, 1000)}
+`;
+
+  try {
+    const result = await callOpenAI(
+      FILTER_MODEL,
+      [{ role: 'user', content: prompt }],
+      undefined,
+      '[FILTER-TEXT]'
+    );
+    return String(result).toLowerCase().includes('true');
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Classifies text into Islamic, Hostile, or Secular categories
+ */
+export async function classifyIslamicContent(text: string, imageUrl?: string): Promise<string> {
+  if (!text && !imageUrl) return '[3]';
+
+  const prompt = `
+You are an Islamic book classifier. The text below is from the first page of a book and is already confirmed to be in English.
+
+Classify it into one of three categories:
+
+[1] Islamic - Authentic:
+Aqeedah, Fiqh, Tafsir, Hadith, Seerah, Islamic history, Dawah, Islamic ethics, objective comparative religion, Islamic education, family & parenting, Islamic finance & economics, spirituality & purification (Tazkiyah), Islamic medicine & prophetic medicine, Islamic astronomy, Islamic philosophy (Al-Ghazali, Ibn Sina), Usul al-Fiqh, Ulum al-Quran, Hadith sciences (Mustalah), biographies of scholars, Islamic governance (Siyasah Shar'iyyah), inheritance law (Fara'id), daily life rulings (food, clothing, vows, hunting, manners).
+
+[2] Hostile or Polemical - Reject:
+Criticism of Islam, attacks on Quran or Prophet, doubts & skepticism, negative orientalism, Christian missionary, atheism, agnosticism, secularism targeting Islam, deviant groups (Qadiani, Bahai, Ahmadi, Druze, Quranists rejecting Sunnah, Khawarij, Takfiris), texts mocking Islamic rituals (prayer, fasting, Hajj, Zakat), texts accusing Islam of violence or backwardness, texts promoting apostasy, texts insulting Allah or divine books.
+
+[3] Non-Islamic Secular - Reject:
+Physics, Chemistry, Biology, Math, Engineering (civil, electrical, mechanical, software), Medicine (purely scientific), Pure Philosophy (Aristotle, Plato, Kant, Nietzsche, Marx, existentialism), General Psychology (Freud, Jung, behaviorism), General Sociology, General Literature (novels, fiction, poetry, theater), General History (European, American, Chinese, Indian), General Geography, General Politics (democracy, secular governance), General Economics (capitalism, socialism, conventional banking), General Law (secular perspective), General Arts (music, painting, cinema), General Sports.
+
+Rules:
+- If contains "Bismillah" or Quranic verse or Hadith → [1]
+- If attacks Islam, Prophet, or Quran → [2]
+- If pure science or secular topic without Islamic context → [3]
+- If the text is neutral or could be Islamic-related, prefer [1] over [3].
+
+Text:
+"""${text ? text.substring(0, 2000) : (imageUrl ? 'Text in image' : '')}"""
+
+Reply ONLY with: [1] or [2] or [3]
+`;
+
+  try {
+    const messages: any[] = [];
+    if (!text && imageUrl) {
+      messages.push({
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: imageUrl } }
+        ]
+      });
+    } else {
+      messages.push({ role: 'user', content: prompt });
+    }
+
+    const result = await callOpenAI(
+      FILTER_MODEL,
+      messages,
+      undefined,
+      '[CLASSIFY]'
+    );
+    return String(result).trim();
+  } catch (e) {
+    return '[3]';
+  }
 }
 
 /**

@@ -23,7 +23,11 @@ import {
   ChevronRight,
   ChevronLeft,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Eye,
+  Calendar,
+  Languages,
+  Award
 } from 'lucide-react';
 import { searchBooks, type Book, getBookFiles } from '@/lib/archive-api';
 import { slugify, generateCategorySlug, generateEnglishSlug } from '@/lib/utils';
@@ -61,7 +65,14 @@ interface Suggestion {
   id: string;
   title: string;
   author: string;
+  year?: string;
+  language?: string;
+  coverImage?: string;
+  firstPageImageUrl?: string;
   relevance_score: number;
+  score?: number;
+  confidenceLevel?: 'high' | 'medium' | 'low';
+  isDoubtful?: boolean;
   isExisting?: boolean;
   isVerified?: boolean;
   isAiChecked?: boolean;
@@ -106,9 +117,11 @@ export default function AdminDashboard() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [selectedCategoryForSuggestions, setSelectedCategoryForSuggestions] = useState<Category | null>(null);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
+  const [previewBook, setPreviewBook] = useState<Suggestion | null>(null);
   const [isBulkAdding, setIsBulkAdding] = useState(false);
   const [suggestionStats, setSuggestionStats] = useState<{ totalFetched: number; preFiltered: number; aiApproved: number } | null>(null);
   const [showOnlyVerified, setShowOnlyVerified] = useState(true);
+  const [confidenceFilter, setConfidenceFilter] = useState<'high' | 'medium' | 'low'>('high');
 
   // Pagination State for Suggestions
   const [currentPage, setCurrentPage] = useState(1);
@@ -538,7 +551,11 @@ export default function AdminDashboard() {
 
   // Filtering & Pagination Logic
   const filteredSuggestions = lang === 'en' && showOnlyVerified
-    ? suggestions.filter(s => s.isVerified)
+    ? suggestions.filter(s => {
+        if (confidenceFilter === 'high') return (s.score || 0) >= 10;
+        if (confidenceFilter === 'medium') return (s.score || 0) >= 6;
+        return (s.score || 0) >= 1;
+      })
     : suggestions;
 
   const totalPages = Math.ceil(filteredSuggestions.length / ITEMS_PER_PAGE);
@@ -1006,13 +1023,26 @@ export default function AdminDashboard() {
 
               <div className="flex flex-col md:flex-row gap-4 items-center">
                   {lang === 'en' && (
-                    <button
-                        onClick={() => setShowOnlyVerified(!showOnlyVerified)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${showOnlyVerified ? 'bg-green-500 border-green-400 text-white shadow-lg' : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'}`}
-                    >
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-xs font-bold">Show Only Verified</span>
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowOnlyVerified(!showOnlyVerified)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${showOnlyVerified ? 'bg-green-500 border-green-400 text-white shadow-lg' : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'}`}
+                        >
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-xs font-bold">{showOnlyVerified ? 'Filtered' : 'Filter by Confidence'}</span>
+                        </button>
+                        {showOnlyVerified && (
+                            <select
+                                value={confidenceFilter}
+                                onChange={(e) => setConfidenceFilter(e.target.value as any)}
+                                className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+                            >
+                                <option value="high" className="text-primary-900">High Confidence (Score {'>'}= 10)</option>
+                                <option value="medium" className="text-primary-900">Medium + (Score {'>'}= 6)</option>
+                                <option value="low" className="text-primary-900">All Suggestions (Score {'>'}= 1)</option>
+                            </select>
+                        )}
+                    </div>
                   )}
 
                   {/* In-Modal Search */}
@@ -1064,12 +1094,58 @@ export default function AdminDashboard() {
                                 <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${isAdded ? 'bg-green-500 border-green-500 text-white' : selectedSuggestions.has(s.id) ? 'bg-gold-500 border-gold-500 text-white' : 'border-gray-300'}`}>
                                     {(selectedSuggestions.has(s.id) || isAdded) && <CheckCircle className="w-4 h-4" />}
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-gray-900 line-clamp-1">{s.title}</h4>
-                                <p className="text-sm text-gray-500 truncate">{s.author}</p>
+
+                                {/* Book Info with Thumbnail */}
+                                <div className="flex-1 min-w-0 flex gap-4">
+                                  {s.coverImage && (
+                                    <div className="w-12 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 shadow-sm border border-gray-200">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img src={s.coverImage} alt="" className="w-full h-full object-cover" />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <h4 className="font-bold text-gray-900 line-clamp-1">{s.title}</h4>
+                                    <p className="text-sm text-gray-500 truncate">{s.author}</p>
+                                    <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-400">
+                                      {s.year && (
+                                        <span className="flex items-center gap-1">
+                                          <Calendar className="w-3 h-3" />
+                                          {s.year}
+                                        </span>
+                                      )}
+                                      {s.language && (
+                                        <span className="flex items-center gap-1">
+                                          <Languages className="w-3 h-3" />
+                                          {s.language}
+                                        </span>
+                                      )}
+                                      {lang === 'en' && s.score !== undefined && (
+                                        <>
+                                          <span className="flex items-center gap-1 font-bold text-gold-600">
+                                            <Award className="w-3 h-3" />
+                                            Score: {s.score}
+                                          </span>
+                                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-tight ${
+                                            s.confidenceLevel === 'high' ? 'bg-green-100 text-green-700' :
+                                            s.confidenceLevel === 'medium' ? 'bg-gold-100 text-gold-700' :
+                                            'bg-gray-100 text-gray-500'
+                                          }`}>
+                                            {s.confidenceLevel}
+                                          </span>
+                                          {s.isDoubtful && (
+                                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-red-100 text-red-700 uppercase tracking-tight flex items-center gap-0.5">
+                                              <AlertCircle className="w-2 h-2" />
+                                              Doubtful Content
+                                            </span>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className={`${lang === 'en' ? 'text-right' : 'text-left'} flex-shrink-0 flex flex-col gap-1 items-end`}>
-                                    <div className="flex gap-1">
+
+                                <div className={`${lang === 'en' ? 'text-right' : 'text-left'} flex-shrink-0 flex flex-col gap-2 items-end`}>
+                                    <div className="flex gap-1 flex-wrap justify-end">
                                         {s.isVerified && (
                                             <span className="text-[8px] font-bold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded uppercase tracking-wider flex items-center gap-0.5">
                                                 <CheckCircle className="w-2.5 h-2.5" />
@@ -1083,15 +1159,27 @@ export default function AdminDashboard() {
                                             </span>
                                         )}
                                     </div>
-                                    {isAdded && (
-                                        <span className="text-[10px] font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full">{t.admin_added_already}</span>
-                                    )}
-                                    {isRejected && (
-                                        <span className="text-[10px] font-bold px-2 py-1 bg-red-100 text-red-700 rounded-full">{t.admin_rejected}</span>
-                                    )}
-                                    {!isAdded && !isRejected && (
-                                        <span className="text-[10px] font-bold px-2 py-1 bg-primary-100 text-primary-700 rounded-full">{t.admin_new}</span>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setPreviewBook(s);
+                                        }}
+                                        className="p-1.5 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-primary-900 hover:border-primary-900 transition-all shadow-sm"
+                                        title="Preview"
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                      </button>
+                                      {isAdded && (
+                                          <span className="text-[10px] font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full">{t.admin_added_already}</span>
+                                      )}
+                                      {isRejected && (
+                                          <span className="text-[10px] font-bold px-2 py-1 bg-red-100 text-red-700 rounded-full">{t.admin_rejected}</span>
+                                      )}
+                                      {!isAdded && !isRejected && (
+                                          <span className="text-[10px] font-bold px-2 py-1 bg-primary-100 text-primary-700 rounded-full">{t.admin_new}</span>
+                                      )}
+                                    </div>
                                 </div>
                             </div>
                           );
@@ -1165,6 +1253,68 @@ export default function AdminDashboard() {
                 <p className="text-gray-600 max-w-md">{t.admin_ai_magic_desc}</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {previewBook && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-primary-900/60 backdrop-blur-md">
+          <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+            <div className="p-6 bg-primary-900 text-white flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-bold line-clamp-1">{previewBook.title}</h3>
+                <p className="text-sm text-primary-200">{previewBook.author}</p>
+              </div>
+              <button
+                onClick={() => setPreviewBook(null)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 bg-gray-100">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+                {/* Large Cover */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Cover Image</h4>
+                  <div className="aspect-[3/4] bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200 relative group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={previewBook.coverImage || `https://archive.org/services/img/${previewBook.id}`}
+                      alt="Cover"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                </div>
+
+                {/* First Page Preview */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">First Page Preview</h4>
+                  <div className="aspect-[3/4] bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200 relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={previewBook.firstPageImageUrl || `https://archive.org/download/${previewBook.id}/page/n0.jpg`}
+                      alt="First Page"
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                          (e.target as any).src = 'https://placehold.co/600x800?text=No+Preview+Available';
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white border-t border-gray-100 flex justify-end">
+                <button
+                    onClick={() => setPreviewBook(null)}
+                    className="px-8 py-3 bg-primary-900 text-white rounded-xl font-bold hover:bg-primary-800 transition-all"
+                >
+                    Close Preview
+                </button>
+            </div>
           </div>
         </div>
       )}
