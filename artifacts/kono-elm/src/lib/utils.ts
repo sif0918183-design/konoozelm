@@ -102,3 +102,45 @@ export function generateEnglishSlug(title: string): string {
     .trim()
     .replace(/^-+|-+$/g, '');
 }
+
+/**
+ * Safely extracts the year from various formats (string, array, number)
+ */
+export function normalizeYear(date: any): string | undefined {
+  if (!date) return undefined;
+
+  try {
+    let dateStr = '';
+    if (Array.isArray(date)) {
+      dateStr = String(date[0]);
+    } else {
+      dateStr = String(date);
+    }
+
+    const year = dateStr.substring(0, 4);
+    return /^\d{4}$/.test(year) ? year : undefined;
+  } catch (e) {
+    return undefined;
+  }
+}
+
+/**
+ * Fetch with timeout and error handling
+ */
+export async function safeFetch(url: string, options: RequestInit = {}, timeout = 8000): Promise<Response | null> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    console.error(`Fetch failed for ${url}:`, error);
+    return null;
+  }
+}
