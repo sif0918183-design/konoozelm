@@ -16,9 +16,6 @@ async function callOpenAI(model: string, messages: any[], responseFormat: any, l
   console.log(`${logTag} Using ${model}`);
 
   try {
-    // Determine if we should use response_format. type: 'json_object' requires 'json' in prompt
-    // For simple true/false we might not use it, but user asked for true/false.
-
     const body: any = {
       model,
       messages,
@@ -164,157 +161,6 @@ I want the result strictly in JSON format:
 }
 
 /**
- * Verifies English books using GPT-4.1-nano
- */
-export async function verifyEnglishBooks(books: { id: string; title: string; description?: string }[]) {
-  const prompt = `
-You are a strict classifier.
-
-Determine if each book is actually written in English.
-
-Rules:
-- Return TRUE only if the content language is English
-- Return FALSE if:
-  - The content is Urdu, Indonesian, Arabic, etc.
-  - The title is English but the book is not
-  - Mixed or unclear language
-
-Return JSON:
-[
- { "id": "...", "isEnglish": true/false }
-]
-
-Books:
-${JSON.stringify(books, null, 2)}
-`;
-
-  const result = await callOpenAI(
-    FILTER_MODEL,
-    [{ role: 'user', content: prompt }],
-    { type: 'json_object' },
-    '[FILTER]'
-  );
-
-  // Ensure it's an array, handle cases where AI might return it wrapped in an object
-  const verificationArray = Array.isArray(result) ? result : (result.books || Object.values(result)[0]);
-
-  return verificationArray as { id: string; isEnglish: boolean }[];
-}
-
-/**
- * Verifies if the image (cover or page) is English using Vision
- */
-export async function verifyVisionEnglish(imageUrl: string): Promise<boolean> {
-  const prompt = "Is the text shown on this cover/page written in English? Return only true or false.";
-
-  try {
-    const result = await callOpenAI(
-      FILTER_MODEL,
-      [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: imageUrl } }
-          ]
-        }
-      ],
-      undefined,
-      '[FILTER-VISION]'
-    );
-    return String(result).toLowerCase().includes('true');
-  } catch (e) {
-    console.error('Vision verification failed:', e);
-    return false;
-  }
-}
-
-/**
- * Verifies if the provided text is English
- */
-export async function verifyTextEnglish(text: string): Promise<boolean> {
-  if (!text || text.length < 10) return false;
-
-  const prompt = `
-Determine if this text is written in English.
-Return only true or false.
-
-Text:
-${text.substring(0, 1000)}
-`;
-
-  try {
-    const result = await callOpenAI(
-      FILTER_MODEL,
-      [{ role: 'user', content: prompt }],
-      undefined,
-      '[FILTER-TEXT]'
-    );
-    return String(result).toLowerCase().includes('true');
-  } catch (e) {
-    return false;
-  }
-}
-
-/**
- * Classifies text into Islamic, Hostile, or Secular categories
- */
-export async function classifyIslamicContent(text: string, imageUrl?: string): Promise<string> {
-  if (!text && !imageUrl) return '[3]';
-
-  const prompt = `
-You are an Islamic book classifier. The text below is from the first page of a book and is already confirmed to be in English.
-
-Classify it into one of three categories:
-
-[1] Islamic - Authentic:
-Aqeedah, Fiqh, Tafsir, Hadith, Seerah, Islamic history, Dawah, Islamic ethics, objective comparative religion, Islamic education, family & parenting, Islamic finance & economics, spirituality & purification (Tazkiyah), Islamic medicine & prophetic medicine, Islamic astronomy, Islamic philosophy (Al-Ghazali, Ibn Sina), Usul al-Fiqh, Ulum al-Quran, Hadith sciences (Mustalah), biographies of scholars, Islamic governance (Siyasah Shar'iyyah), inheritance law (Fara'id), daily life rulings (food, clothing, vows, hunting, manners).
-
-[2] Hostile or Polemical - Reject:
-Criticism of Islam, attacks on Quran or Prophet, doubts & skepticism, negative orientalism, Christian missionary, atheism, agnosticism, secularism targeting Islam, deviant groups (Qadiani, Bahai, Ahmadi, Druze, Quranists rejecting Sunnah, Khawarij, Takfiris), texts mocking Islamic rituals (prayer, fasting, Hajj, Zakat), texts accusing Islam of violence or backwardness, texts promoting apostasy, texts insulting Allah or divine books.
-
-[3] Non-Islamic Secular - Reject:
-Physics, Chemistry, Biology, Math, Engineering (civil, electrical, mechanical, software), Medicine (purely scientific), Pure Philosophy (Aristotle, Plato, Kant, Nietzsche, Marx, existentialism), General Psychology (Freud, Jung, behaviorism), General Sociology, General Literature (novels, fiction, poetry, theater), General History (European, American, Chinese, Indian), General Geography, General Politics (democracy, secular governance), General Economics (capitalism, socialism, conventional banking), General Law (secular perspective), General Arts (music, painting, cinema), General Sports.
-
-Rules:
-- If contains "Bismillah" or Quranic verse or Hadith → [1]
-- If attacks Islam, Prophet, or Quran → [2]
-- If pure science or secular topic without Islamic context → [3]
-- If the text is neutral or could be Islamic-related, prefer [1] over [3].
-
-Text:
-"""${text ? text.substring(0, 2000) : (imageUrl ? 'Text in image' : '')}"""
-
-Reply ONLY with: [1] or [2] or [3]
-`;
-
-  try {
-    const messages: any[] = [];
-    if (!text && imageUrl) {
-      messages.push({
-        role: 'user',
-        content: [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: imageUrl } }
-        ]
-      });
-    } else {
-      messages.push({ role: 'user', content: prompt });
-    }
-
-    const result = await callOpenAI(
-      FILTER_MODEL,
-      messages,
-      undefined,
-      '[CLASSIFY]'
-    );
-    return String(result).trim();
-  } catch (e) {
-    return '[3]';
-  }
-}
-
-/**
  * Standardizes and improves book titles using GPT-4.1-nano
  */
 export async function normalizeTitle(title: string, author?: string, lang: string = 'ar') {
@@ -369,3 +215,9 @@ export async function generateSeoDescription(prompt: string) {
   );
   return result;
 }
+
+// Deprecated functions - no longer used by the English suggestion pipeline
+export async function verifyEnglishBooks(_books: any[]) { return []; }
+export async function verifyVisionEnglish(_imageUrl: string): Promise<boolean> { return false; }
+export async function verifyTextEnglish(_text: string): Promise<boolean> { return false; }
+export async function classifyIslamicContent(_text: string, _imageUrl?: string): Promise<string> { return '[3]'; }
