@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Download, Loader2, Layers } from 'lucide-react';
+import { Book as BookIcon, Download, Loader2, Layers, BookOpen } from 'lucide-react';
 import { slugify } from '@/lib/utils';
 import { type Book, type BookFile, getBookFiles } from '@/lib/archive-api';
 import { cn } from '@/lib/utils';
@@ -109,8 +109,8 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
             unoptimized
           />
         ) : (
-          <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary-100 to-primary-200">
-            <BookOpen className="w-16 h-16 text-primary-400" />
+          <div className="flex items-center justify-center h-full bg-primary-50">
+            <BookIcon className="w-16 h-16 text-primary-200" />
           </div>
         )}
         

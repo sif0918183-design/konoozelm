@@ -125,7 +125,7 @@ export default function AdminDashboard() {
 
   // Pagination State for Suggestions
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 15;
+  const ITEMS_PER_PAGE = 20;
 
   // Book Management States
   const [managedBooks, setManagedBooks] = useState<SeoBook[]>([]);

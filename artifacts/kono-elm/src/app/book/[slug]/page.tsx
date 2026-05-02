@@ -95,16 +95,9 @@ export default async function BookPage({ params }: Props) {
     }
   }
 
-  // Internal Links
-  const [relatedBooks, authorBooks] = await Promise.all([
-    getBooksByCategory(categorySlug, displayCategory, 12),
-    getBooksByAuthor(displayAuthor, 12)
-  ]);
-
-  const otherBooks = [...relatedBooks, ...authorBooks]
-    .filter(b => b.archiveId !== archiveId)
-    .filter((v, i, a) => a.findIndex(t => t.archiveId === v.archiveId) === i)
-    .slice(0, 12);
+  // Internal Links - Restricted to same category as requested
+  const otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, lang)
+    .then(books => books.filter(b => b.archiveId !== archiveId));
 
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">
@@ -213,8 +206,8 @@ export default async function BookPage({ params }: Props) {
                           <BookIcon className="w-6 h-6 text-primary-300 group-hover:text-gold-500 transition-colors" />
                         </div>
                         <div className="min-w-0">
-                          <h4 className="font-bold text-gray-900 truncate group-hover:text-primary-900 transition-colors">{book.title}</h4>
-                          <p className="text-xs text-gray-500 truncate">{book.author}</p>
+                          <h4 className="font-bold text-gray-900 group-hover:text-primary-900 transition-colors">{book.title}</h4>
+                          <p className="text-xs text-gray-500">{book.author}</p>
                         </div>
                       </Link>
                     ))}

@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { BookOpen, ChevronRight, Book as BookIcon, Globe } from 'lucide-react';
 import { getCategoryBySlug, getBooksByCategory } from '@/lib/seo-data';
 import SearchStateCleaner from '@/components/SearchStateCleaner';
@@ -81,12 +82,22 @@ export default async function CategoryPage({ params }: Props) {
             <Link
               key={book.archiveId}
               href={`/book/${book.slug}--${book.archiveId}`}
-              className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-gray-100 hover:border-gold-200 flex flex-col h-full"
+              className="group bg-white rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all border border-gray-100 hover:border-gold-200 flex flex-col h-full"
             >
-              <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gold-50 transition-colors">
-                <BookIcon className="w-6 h-6 text-primary-900 group-hover:text-gold-600" />
+              <div className="aspect-[3/4] w-full bg-primary-50 rounded-xl flex items-center justify-center mb-4 overflow-hidden relative border border-gray-100 shadow-sm group-hover:shadow-md transition-all">
+                <Image
+                  src={`https://archive.org/services/img/${book.archiveId}`}
+                  alt={book.title}
+                  fill
+                  className="object-cover transition-opacity duration-300"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  unoptimized
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-primary-50 pointer-events-none -z-10">
+                  <BookIcon className="w-12 h-12 text-primary-200" />
+                </div>
               </div>
-              <h2 className="font-bold text-gray-900 mb-2 group-hover:text-primary-900 transition-colors line-clamp-2">
+              <h2 className="font-bold text-gray-900 mb-2 group-hover:text-primary-900 transition-colors line-clamp-2 min-h-[3rem]">
                 {book.title}
               </h2>
               <p className="text-sm text-gray-500 mb-4">{book.author}</p>
