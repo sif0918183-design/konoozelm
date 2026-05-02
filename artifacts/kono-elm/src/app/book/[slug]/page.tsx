@@ -96,7 +96,7 @@ export default async function BookPage({ params }: Props) {
   }
 
   // Internal Links - Restricted to same category as requested
-  const otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, lang)
+  const otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, 'ar')
     .then(books => books.filter(b => b.archiveId !== archiveId));
 
   return (
@@ -174,7 +174,7 @@ export default async function BookPage({ params }: Props) {
                 <h1 className="text-3xl md:text-4xl font-amiri font-bold text-primary-900 mb-4 leading-tight">
                   {dynamicSeoTitle || displayTitle}
                 </h1>
-                <div className="mb-8 max-w-sm">
+                <div className="mb-8 max-w-md">
                   {archiveBook && (
                     <BookCard book={archiveBook} />
                   )}

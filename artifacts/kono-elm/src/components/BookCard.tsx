@@ -150,37 +150,37 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2 relative z-10">
+          <div className="flex flex-wrap gap-2 relative z-10">
             <button
               onClick={handleRead}
               disabled={isLoadingFiles}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300",
+                "flex-1 min-w-[80px] flex items-center justify-center gap-1 px-2 py-2 rounded-xl font-bold text-[9px] sm:text-xs transition-all duration-300",
                 "bg-primary-900 text-white hover:bg-primary-800 hover:shadow-lg hover:shadow-primary-900/20 active:scale-95 disabled:opacity-50"
               )}
             >
               {isLoadingFiles ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
               ) : (
-                <BookOpen className="w-3.5 h-3.5" />
+                <BookOpen className="w-3 h-3 flex-shrink-0" />
               )}
-              <span className="whitespace-nowrap">{t.read_now}</span>
+              <span className="whitespace-nowrap overflow-hidden text-ellipsis">{t.read_now}</span>
             </button>
 
             <button
               onClick={handleDownload}
               disabled={isLoadingFiles || files.length === 0}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300",
+                "flex-1 min-w-[80px] flex items-center justify-center gap-1 px-2 py-2 rounded-xl font-bold text-[9px] sm:text-xs transition-all duration-300",
                 "bg-gold-50 text-gold-700 border border-gold-200 hover:bg-gold-500 hover:text-white hover:border-gold-500 active:scale-95 disabled:opacity-50"
               )}
             >
               {isLoadingFiles ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
               ) : (
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3 h-3 flex-shrink-0" />
               )}
-              <span className="whitespace-nowrap">{t.download}</span>
+              <span className="whitespace-nowrap overflow-hidden text-ellipsis">{t.download}</span>
             </button>
           </div>
         </div>
