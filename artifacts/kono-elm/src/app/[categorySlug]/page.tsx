@@ -82,28 +82,30 @@ export default async function CategoryPage({ params }: Props) {
             <Link
               key={book.archiveId}
               href={`/book/${book.slug}--${book.archiveId}`}
-              className="group bg-white rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all border border-gray-100 hover:border-gold-200 flex flex-col h-full"
+              className="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all border border-gray-100 hover:border-gold-200 flex items-center gap-4 h-full"
             >
-              <div className="aspect-[3/4] w-full bg-primary-50 rounded-xl flex items-center justify-center mb-4 overflow-hidden relative border border-gray-100 shadow-sm group-hover:shadow-md transition-all">
+              <div className="w-20 h-28 bg-primary-50 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden relative border border-gray-100 shadow-sm group-hover:shadow-md transition-all">
                 <Image
                   src={`https://archive.org/services/img/${book.archiveId}`}
                   alt={book.title}
                   fill
                   className="object-cover transition-opacity duration-300"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  sizes="80px"
                   unoptimized
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-primary-50 pointer-events-none -z-10">
-                  <BookIcon className="w-12 h-12 text-primary-200" />
+                  <BookIcon className="w-8 h-8 text-primary-200" />
                 </div>
               </div>
-              <h2 className="font-bold text-gray-900 mb-2 group-hover:text-primary-900 transition-colors line-clamp-2 min-h-[3rem]">
-                {book.title}
-              </h2>
-              <p className="text-sm text-gray-500 mb-4">{book.author}</p>
-              <div className="mt-auto flex items-center text-xs font-bold text-gold-600 group-hover:text-gold-700">
-                {t.read_more}
-                <ChevronRight className="w-4 h-4 mr-1 group-hover:translate-x-[-4px] transition-transform" />
+              <div className="flex-1 min-w-0">
+                <h2 className="font-bold text-gray-900 mb-1 group-hover:text-primary-900 transition-colors line-clamp-2 leading-snug">
+                  {book.title}
+                </h2>
+                <p className="text-xs text-gray-500 mb-2 truncate">{book.author}</p>
+                <div className="flex items-center text-[10px] font-bold text-gold-600 group-hover:text-gold-700">
+                  {t.read_more}
+                  <ChevronRight className="w-3 h-3 mr-1 group-hover:translate-x-[-4px] transition-transform" />
+                </div>
               </div>
             </Link>
           ))}

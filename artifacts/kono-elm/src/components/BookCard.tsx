@@ -90,101 +90,99 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
     : (seoSlug ? `/book/${seoSlug}` : `/book/${slugify(book.title)}--${book.identifier}`);
 
   return (
-    <div className={`group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100/50 flex flex-col h-full overflow-hidden relative ${lang === 'en' ? 'text-left' : 'text-right'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`group bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100 flex flex-col sm:flex-row h-full overflow-hidden relative ${lang === 'en' ? 'text-left' : 'text-right'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       {/* Detail Link (Internal SEO link) - Only for the card body, excluding buttons */}
       <a
         href={detailsHref}
         className="absolute inset-0 z-0 cursor-pointer"
         aria-label="View Details"
       />
-      {/* Cover Image */}
-      <div className="relative h-48 bg-gray-100 overflow-hidden">
-        {!imageError ? (
-          <Image
-            src={book.coverImage || '/placeholder-book.jpg'}
-            alt={book.title}
-            fill
-            className="object-cover"
-            onError={() => setImageError(true)}
-            unoptimized
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full bg-primary-50">
-            <BookIcon className="w-16 h-16 text-primary-200" />
+
+      {/* Horizontal Layout for Mobile and Tablet/Desktop */}
+      <div className="flex flex-row flex-1 p-4 gap-4">
+        {/* Cover Image Section */}
+        <div className="relative w-24 sm:w-32 h-36 sm:h-44 bg-primary-50 rounded-2xl overflow-hidden flex-shrink-0 border border-gray-100 shadow-sm transition-all group-hover:shadow-md">
+          {!imageError ? (
+            <Image
+              src={book.coverImage || `https://archive.org/services/img/${book.identifier}`}
+              alt={book.title}
+              fill
+              className="object-cover"
+              onError={() => setImageError(true)}
+              unoptimized
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full bg-primary-50">
+              <BookIcon className="w-10 sm:w-12 h-10 sm:h-12 text-primary-200" />
+            </div>
+          )}
+
+          {/* Badges Overlay */}
+          <div className="absolute top-2 right-2 flex flex-col gap-1 z-10 pointer-events-none">
+            {book.year && (
+              <span className="bg-white/90 backdrop-blur-sm text-primary-900 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-sm border border-gray-100">
+                {book.year}
+              </span>
+            )}
           </div>
-        )}
-        
-        {/* Badges */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
-          {book.year && (
-            <span className="bg-white/90 backdrop-blur-sm text-primary-900 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-gray-100">
-              {book.year}
-            </span>
-          )}
-          {files.length > 1 && (
-            <span className="bg-gold-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
-              <Layers className="w-3 h-3" />
-              {lang === 'ar' ? `متعدد الأجزاء (${files.length})` : `Multi-part (${files.length})`}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-5 flex flex-col flex-1">
-        <h3 className="font-bold text-gray-800 mb-3 line-clamp-2 leading-snug group-hover:text-primary-800 transition-colors" title={book.title}>
-          {book.title}
-        </h3>
-        
-        <div className="space-y-1 mb-4 flex-1">
-          {book.author && (
-            <p className="text-sm text-gray-600 flex items-center gap-2" title={book.author}>
-              <span className="text-gray-400 font-medium">{t.author}:</span>
-              <span className="truncate">{book.author}</span>
-            </p>
-          )}
-
-          {book.publisher && (
-            <p className="text-xs text-gray-500 flex items-center gap-2" title={book.publisher}>
-              <span className="text-gray-400 font-medium">{lang === 'ar' ? 'الناشر' : 'Publisher'}:</span>
-              <span className="truncate">{book.publisher}</span>
-            </p>
-          )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2 sm:gap-3 mt-auto relative z-10">
-          <button
-            onClick={handleRead}
-            disabled={isLoadingFiles}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
-              "bg-primary-900 text-white hover:bg-primary-800 hover:shadow-lg hover:shadow-primary-900/20 active:scale-95 disabled:opacity-50"
-            )}
-          >
-            {isLoadingFiles ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <BookOpen className="w-4 h-4" />
-            )}
-            <span className="whitespace-nowrap">{t.read_now}</span>
-          </button>
+        {/* Content Section */}
+        <div className="flex flex-col flex-1 min-w-0">
+          <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 leading-snug text-sm sm:text-base group-hover:text-primary-900 transition-colors" title={book.title}>
+            {book.title}
+          </h3>
           
-          <button
-            onClick={handleDownload}
-            disabled={isLoadingFiles || files.length === 0}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
-              "bg-gold-50 text-gold-700 border border-gold-200 hover:bg-gold-500 hover:text-white hover:border-gold-500 active:scale-95 disabled:opacity-50"
+          <div className="space-y-1 mb-3 flex-1">
+            {book.author && (
+              <p className="text-xs text-gray-600 flex items-center gap-1.5" title={book.author}>
+                <span className="text-gray-400 font-medium whitespace-nowrap">{t.author}:</span>
+                <span className="truncate">{book.author}</span>
+              </p>
             )}
-          >
-            {isLoadingFiles ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
+
+            {files.length > 1 && (
+              <div className="flex items-center gap-1.5 text-gold-600 text-[10px] font-bold">
+                <Layers className="w-3 h-3" />
+                <span>{lang === 'ar' ? `متعدد الأجزاء (${files.length})` : `Multi-part (${files.length})`}</span>
+              </div>
             )}
-            <span className="whitespace-nowrap">{t.download}</span>
-          </button>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 relative z-10">
+            <button
+              onClick={handleRead}
+              disabled={isLoadingFiles}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300",
+                "bg-primary-900 text-white hover:bg-primary-800 hover:shadow-lg hover:shadow-primary-900/20 active:scale-95 disabled:opacity-50"
+              )}
+            >
+              {isLoadingFiles ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <BookOpen className="w-3.5 h-3.5" />
+              )}
+              <span className="whitespace-nowrap">{t.read_now}</span>
+            </button>
+
+            <button
+              onClick={handleDownload}
+              disabled={isLoadingFiles || files.length === 0}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300",
+                "bg-gold-50 text-gold-700 border border-gold-200 hover:bg-gold-500 hover:text-white hover:border-gold-500 active:scale-95 disabled:opacity-50"
+              )}
+            >
+              {isLoadingFiles ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              <span className="whitespace-nowrap">{t.download}</span>
+            </button>
+          </div>
         </div>
       </div>
 
