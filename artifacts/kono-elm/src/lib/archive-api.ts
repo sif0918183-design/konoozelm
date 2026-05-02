@@ -1,3 +1,5 @@
+import { normalizeYear, safeFetch } from './utils';
+
 export interface BookFile {
   name: string;
   url: string;
@@ -66,10 +68,10 @@ export async function searchBooks(
     // We don't specify sort to use Archive.org's default relevance ranking
   });
 
-  const response = await fetch(`${ARCHIVE_API_BASE}?${params.toString()}`);
+  const response = await safeFetch(`${ARCHIVE_API_BASE}?${params.toString()}`);
 
-  if (!response.ok) {
-    throw new Error(`Failed to search books: ${response.statusText}`);
+  if (!response || !response.ok) {
+    return { books: [], totalResults: 0, page, hasMore: false };
   }
 
   const data = await response.json();
@@ -85,7 +87,7 @@ export async function searchBooks(
     title: normalizeField(doc.title) || 'Untitled',
     author: normalizeField(doc.creator),
     language: normalizeField(doc.language),
-    year: doc.date ? doc.date.substring(0, 4) : undefined,
+    year: normalizeYear(doc.date),
     publisher: normalizeField(doc.publisher),
     description: normalizeField(doc.description),
     coverImage: `https://archive.org/services/img/${doc.identifier}`,
@@ -110,8 +112,8 @@ export async function searchBooks(
  */
 export async function getBookFiles(identifier: string): Promise<BookFile[]> {
   try {
-    const response = await fetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
-    if (!response.ok) return [];
+    const response = await safeFetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
+    if (!response || !response.ok) return [];
 
     const data = await response.json();
     const files = data.files || [];
@@ -139,14 +141,14 @@ export async function getBookFiles(identifier: string): Promise<BookFile[]> {
  */
 export async function getBookDetails(identifier: string): Promise<Book | null> {
   try {
-    const response = await fetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
-    if (!response.ok) return null;
+    const response = await safeFetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
+    if (!response || !response.ok) return null;
 
     const data = await response.json();
     
     const title = normalizeField(data.metadata?.title) || 'Untitled';
     const author = normalizeField(data.metadata?.creator || data.metadata?.author);
-    const year = data.metadata?.date ? String(data.metadata.date).substring(0, 4) : undefined;
+    const year = normalizeYear(data.metadata?.date);
     const language = normalizeField(data.metadata?.language);
     const publisher = normalizeField(data.metadata?.publisher);
     const description = normalizeField(data.metadata?.description);
