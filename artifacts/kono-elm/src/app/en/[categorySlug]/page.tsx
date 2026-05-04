@@ -64,7 +64,7 @@ export default async function EnglishCategoryPage({ params }: Props) {
 
         <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center">
           <Link href="/en" className="mb-12 hover:opacity-90 transition-opacity">
-            <Logo lang="en" light />
+            <Logo lang="en" />
           </Link>
 
           <h1 className="text-4xl md:text-5xl font-amiri font-bold mb-6 text-gold-200 drop-shadow-sm">

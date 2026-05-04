@@ -74,7 +74,7 @@ export default function ContinueReadingPage() {
         </div>
         <div className="max-w-5xl mx-auto relative z-10 flex flex-col items-center">
           <Link href="/" className="mb-12 hover:opacity-90 transition-opacity">
-            <Logo lang="ar" light />
+            <Logo lang="ar" />
           </Link>
 
           <Link

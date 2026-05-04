@@ -80,9 +80,9 @@ export default async function EnglishBookPage({ params }: Props) {
       <header className="bg-primary-900 text-white pt-16 pb-12 px-4 relative overflow-hidden">
         <div className="max-w-7xl mx-auto flex flex-col items-center gap-8">
           <Link href="/en" className="hover:opacity-90 transition-opacity">
-            <Logo lang="en" light />
+            <Logo lang="en" />
           </Link>
-          <LanguageSwitcher light />
+          <LanguageSwitcher />
         </div>
       </header>
 

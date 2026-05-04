@@ -74,7 +74,7 @@ export default function EnglishContinueReadingPage() {
         </div>
         <div className="max-w-5xl mx-auto relative z-10 flex flex-col items-center">
           <Link href="/en" className="mb-12 hover:opacity-90 transition-opacity">
-            <Logo lang="en" light />
+            <Logo lang="en" />
           </Link>
 
           <Link

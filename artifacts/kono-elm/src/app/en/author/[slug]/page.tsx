@@ -60,7 +60,7 @@ export default async function EnglishAuthorPage({ params }: Props) {
 
         <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center">
           <Link href="/en" className="mb-12 hover:opacity-90 transition-opacity">
-            <Logo lang="en" light />
+            <Logo lang="en" />
           </Link>
 
           <div className="w-20 h-20 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full flex items-center justify-center mb-6 shadow-inner">
