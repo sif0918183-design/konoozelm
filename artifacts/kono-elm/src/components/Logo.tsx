@@ -15,14 +15,14 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
 
   return (
     <div className={`flex flex-col items-center text-center gap-4 sm:gap-6 ${className}`}>
-      {/* New Logo Image - Medium to Large Size */}
+      {/* New Logo Image - Large and Clear */}
       <div className="relative group">
         {/* Glow effect for luxury feel */}
-        <div className={`absolute inset-0 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-700 ${
+        <div className={`absolute inset-0 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-700 ${
           light ? 'bg-gold-400' : 'bg-primary-600'
         }`} />
 
-        <div className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 transition-all duration-700 hover:scale-105">
+        <div className="relative w-36 h-36 sm:w-48 sm:h-48 md:w-64 md:h-64 transition-all duration-700 hover:scale-105">
           <Image
             src="/icon.png"
             alt={t.title}
@@ -33,17 +33,9 @@ export default function Logo({ lang = 'ar', light = false, className = '' }: Log
         </div>
       </div>
 
-      {/* Titles Section */}
-      <div className="flex flex-col items-center">
-        <h1 className={`font-bold tracking-tight leading-tight transition-all duration-500 ${
-          isRtl ? 'text-3xl sm:text-4xl md:text-5xl' : 'text-xl sm:text-3xl md:text-4xl'
-        } ${
-          light ? 'text-gold-200 drop-shadow-md' : 'text-primary-950'
-        } ${isRtl ? 'font-amiri' : 'font-playfair italic'}`}>
-          {t.title}
-        </h1>
-
-        <div className="flex items-center gap-4 mt-3">
+      {/* Subtitle Section - Titles removed as they are in the logo */}
+      <div className="flex flex-col items-center -mt-2">
+        <div className="flex items-center gap-4">
           <div className={`h-[1.5px] w-10 md:w-16 rounded-full ${
             light ? 'bg-gradient-to-r from-transparent via-gold-500/50 to-transparent' : 'bg-gradient-to-r from-transparent via-gold-600/50 to-transparent'
           }`} />
