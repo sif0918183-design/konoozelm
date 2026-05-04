@@ -1,0 +1,67 @@
+
+> kono-elm@1.0.0 dev /app/artifacts/kono-elm
+> next dev
+
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 1821ms
+ ○ Compiling / ...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iurf6YBj_oCad4k1l5qjHrRpiZtK6GwN9w.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iurf6YBj_oCad4k1l5qjHrFpiZtK6Gw.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iura6YBj_oCad4k1nzSBC5xLhLFw4Q.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iura6YBj_oCad4k1nzGBC5xLhLE.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iurf6YBj_oCad4k1l8KiHrRpiZtK6GwN9w.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iurf6YBj_oCad4k1l8KiHrFpiZtK6Gw.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iurf6YBj_oCad4k1l4qkHrRpiZtK6GwN9w.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iurf6YBj_oCad4k1l4qkHrFpiZtK6Gw.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iurf6YBj_oCad4k1l5anHrRpiZtK6GwN9w.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iurf6YBj_oCad4k1l5anHrFpiZtK6Gw.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iurf6YBj_oCad4k1l7KmHrRpiZtK6GwN9w.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/tajawal/v12/Iurf6YBj_oCad4k1l7KmHrFpiZtK6Gw.woff2 failed, reason:
+
+Retrying 1/3...
+ ✓ Compiled / in 7.1s (768 modules)
+ ✓ Compiled in 789ms (376 modules)
+ GET / 200 in 7986ms
+ ○ Compiling /[categorySlug] ...
+ ✓ Compiled /en in 7.9s (434 modules)
+ ✓ Compiled in 870ms (398 modules)
+ GET /api/admin/categories 200 in 9598ms
+ GET /reader 200 in 9670ms
+ GET / 200 in 9674ms
+ GET /en 200 in 9446ms
+ GET /api/admin/categories 200 in 265ms
+ GET /favicon.ico 404 in 9966ms
+ ✓ Compiled /manifest.json in 463ms (489 modules)
+ GET /reader 200 in 350ms
+ GET / 200 in 352ms
+ GET /favicon.ico 404 in 343ms

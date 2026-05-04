@@ -18,15 +18,15 @@ export async function GET(request: NextRequest) {
     dir: lang === 'en' ? "ltr" : "rtl" as const,
     icons: [
       {
-        src: "/icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/icon.png",
+        sizes: "1024x1024",
+        type: "image/png",
         purpose: "any"
       },
       {
-        src: "/icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/icon.png",
+        sizes: "1024x1024",
+        type: "image/png",
         purpose: "maskable"
       }
     ]
