@@ -101,12 +101,12 @@ export default async function BookPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">
-      <header className="bg-primary-900 text-white pt-10 pb-8 px-4 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="hover:opacity-90 transition-opacity">
-            <Logo lang="ar" light className="scale-75 md:scale-90 origin-right" />
+      <header className="bg-primary-900 text-white pt-2 pb-12 px-4 relative overflow-hidden">
+        <LanguageSwitcher light />
+        <div className="max-w-7xl mx-auto flex flex-col items-center mt-8 md:mt-4">
+          <Link href="/" className="w-full hover:opacity-90 transition-opacity">
+            <Logo lang="ar" />
           </Link>
-          <LanguageSwitcher light />
         </div>
       </header>
 

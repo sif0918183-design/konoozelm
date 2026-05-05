@@ -43,30 +43,25 @@ export default async function EnglishAuthorPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="ltr">
-      <LanguageSwitcher />
-
-      {/* Breadcrumbs */}
-      <nav className="max-w-7xl mx-auto px-4 py-4 mt-12 md:mt-0 flex items-center gap-2 text-sm text-gray-500">
-        <Link href="/en" className="hover:text-primary-900 transition-colors">{t.home}</Link>
-        <ChevronLeft className="w-4 h-4" />
-        <span className="text-gray-900 font-medium">{author.name}</span>
-      </nav>
-
-      <header className="bg-primary-900 text-white pt-24 pb-20 px-4 relative overflow-hidden">
+      <header className="bg-primary-900 text-white pt-2 pb-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute top-0 left-0 w-64 h-64 border-4 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 right-0 w-96 h-96 border-4 border-white/20 rounded-full translate-x-1/3 translate-y-1/3" />
         </div>
 
-        <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center">
-          <Link href="/en" className="mb-12 hover:opacity-90 transition-opacity">
-            <Logo lang="en" light />
+        <LanguageSwitcher light />
+
+        <div className="max-w-4xl mx-auto text-center relative z-10 mt-8 md:mt-4 flex flex-col items-center">
+          <Link href="/en" className="w-full mb-8 hover:opacity-90 transition-opacity">
+            <Logo lang="en" />
           </Link>
+
+          <div className="w-24 h-1 bg-gold-500/50 mx-auto mb-8 rounded-full" />
 
           <div className="w-20 h-20 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full flex items-center justify-center mb-6 shadow-inner">
             <User className="w-10 h-10 text-gold-200" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-amiri font-bold mb-6 text-gold-200 drop-shadow-sm">
+          <h1 className="text-4xl md:text-5xl font-playfair font-bold mb-6 text-white drop-shadow-sm">
             {author.name}
           </h1>
           <p className="text-lg text-primary-100/90 leading-relaxed max-w-2xl mx-auto font-medium">
@@ -74,6 +69,13 @@ export default async function EnglishAuthorPage({ params }: Props) {
           </p>
         </div>
       </header>
+
+      {/* Breadcrumbs */}
+      <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 text-sm text-gray-500">
+        <Link href="/en" className="hover:text-primary-900 transition-colors">{t.home}</Link>
+        <ChevronLeft className="w-4 h-4" />
+        <span className="text-gray-900 font-medium">{author.name}</span>
+      </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-12">
         <h2 className="text-2xl font-bold text-primary-900 mb-8 border-l-4 border-gold-500 pl-4">

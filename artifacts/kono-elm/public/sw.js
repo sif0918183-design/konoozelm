@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kono-elm-shell-v1';
+const CACHE_NAME = 'kono-elm-shell-v2';
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDFJS_WORKER_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -9,7 +9,9 @@ const ASSETS_TO_CACHE = [
   '/favicon.png',
   '/manifest.json?lang=ar',
   '/manifest.json?lang=en',
-  '/icon.svg',
+  '/icon.png',
+  '/icon-top.png',
+  '/apple-icon.png',
   PDFJS_CDN,
   PDFJS_WORKER_CDN
 ];

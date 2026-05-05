@@ -139,6 +139,7 @@ export interface TranslationKeys {
   history_resume: string;
   back_to_library: string;
   completion_rate: string;
+  global_digital_library: string;
 }
 
 export const translations: Record<Language, TranslationKeys> = {
@@ -278,7 +279,8 @@ export const translations: Record<Language, TranslationKeys> = {
     history_last_read: 'آخر قراءة: {date}',
     history_resume: 'استكمال القراءة',
     back_to_library: 'العودة للمكتبة',
-    completion_rate: 'نسبة الإنجاز'
+    completion_rate: 'نسبة الإنجاز',
+    global_digital_library: 'المكتبة الرقمية العالمية'
   },
   en: {
     title: 'The Ultimate Islamic Library',
@@ -416,6 +418,7 @@ export const translations: Record<Language, TranslationKeys> = {
     history_last_read: 'Last read: {date}',
     history_resume: 'Continue Reading',
     back_to_library: 'Back to Library',
-    completion_rate: 'Completion Rate'
+    completion_rate: 'Completion Rate',
+    global_digital_library: 'Global Digital Library'
   }
 };

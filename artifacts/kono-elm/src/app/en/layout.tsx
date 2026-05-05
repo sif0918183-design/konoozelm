@@ -22,6 +22,10 @@ export const metadata: Metadata = {
   description: 'Comprehensive Electronic Library for Islamic Books - Read Online & Download from Archive.org',
   keywords: ['Islamic books', 'Library', 'Download books', 'Read books', 'Archive.org'],
   manifest: '/manifest.json?lang=en',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/apple-icon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
