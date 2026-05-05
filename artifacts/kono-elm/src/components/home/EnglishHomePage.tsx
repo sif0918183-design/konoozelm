@@ -127,7 +127,7 @@ export default function EnglishHome() {
   return (
     <div className="min-h-screen bg-[#fcfcf8]">
       {/* Header */}
-      <header className="bg-primary-900 text-white pt-6 md:pt-10 pb-20 md:pb-24 px-4 relative overflow-hidden">
+      <header className="bg-primary-900 text-white pt-2 pb-20 md:pb-24 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute top-0 left-0 w-64 h-64 border-4 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 right-0 w-96 h-96 border-4 border-white/20 rounded-full translate-x-1/3 translate-y-1/3" />
@@ -135,7 +135,7 @@ export default function EnglishHome() {
 
         <LanguageSwitcher light />
 
-        <div className="max-w-4xl mx-auto text-center relative z-10 mt-12 md:mt-0 flex flex-col items-center">
+        <div className="max-w-4xl mx-auto text-center relative z-10 mt-8 md:mt-4 flex flex-col items-center">
           <Logo lang="en" className="mb-8" />
           <div className="flex flex-col gap-3 mb-10">
             <div className="inline-flex items-center justify-center gap-2 text-[10px] md:text-xs text-gold-200/80 bg-white/5 py-1.5 px-4 rounded-full self-center border border-white/10 backdrop-blur-sm">
