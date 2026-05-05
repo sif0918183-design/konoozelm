@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { translations } from '@/lib/translations';
 
 interface LogoProps {
@@ -14,13 +13,13 @@ export default function Logo({ lang = 'ar', showText = true, className = '' }: L
   const t = translations[lang];
 
   return (
-    <div className={`flex flex-col items-center gap-2 group ${className}`}>
-      <div className="relative w-full aspect-[2/1] md:w-[500px] md:h-[250px] lg:w-[750px] lg:h-[375px] transition-transform duration-300 group-hover:scale-[1.02]">
+    <div className={`flex flex-col items-center gap-2 group w-full md:w-auto ${className}`}>
+      <div className="relative w-[calc(100%+2rem)] -mx-4 aspect-[2/1] md:w-[500px] md:h-[250px] lg:w-[750px] lg:h-[375px] md:mx-0 transition-transform duration-300 group-hover:scale-[1.02]">
         <Image
           src="/icon-top.png"
           alt={t.title}
           fill
-          className="object-contain px-2 md:px-0"
+          className="object-contain"
           priority
         />
       </div>
