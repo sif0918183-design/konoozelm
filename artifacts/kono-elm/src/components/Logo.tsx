@@ -26,12 +26,9 @@ export default function Logo({ lang = 'ar', showText = true, className = '' }: L
       </div>
 
       {showText && (
-        <div className="flex flex-col items-center text-center -mt-4 md:-mt-6 lg:-mt-8 space-y-2 animate-fade-in">
-          <h1 className={`text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-amber-700 via-amber-900 to-amber-700 bg-clip-text text-transparent ${lang === 'ar' ? 'font-amiri' : 'font-playfair'}`}>
-            {t.title}
-          </h1>
-          <div className="w-32 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
-          <p className={`text-[10px] md:text-xs lg:text-sm text-emerald-800/70 font-medium tracking-wide max-w-xs md:max-w-md lg:max-w-xl ${lang === 'ar' ? 'font-tajawal' : 'font-inter'}`}>
+        <div className="flex flex-col items-center text-center -mt-6 md:-mt-8 lg:-mt-10 space-y-3 animate-fade-in">
+          <div className="w-48 h-px bg-gradient-to-r from-transparent via-amber-500/60 to-transparent shadow-[0_0_8px_rgba(245,158,11,0.3)]" />
+          <p className={`text-[10px] md:text-xs lg:text-sm font-bold tracking-widest uppercase bg-gradient-to-b from-amber-200 via-gold-400 to-amber-700 bg-clip-text text-transparent drop-shadow-sm max-w-xs md:max-w-md lg:max-w-2xl ${lang === 'ar' ? 'font-tajawal' : 'font-inter'}`}>
             {t.subtitle}
           </p>
         </div>
