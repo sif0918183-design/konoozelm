@@ -103,7 +103,7 @@ export default async function BookPage({ params }: Props) {
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="rtl">
       <header className="bg-primary-900 text-white pt-16 pb-12 px-4 relative overflow-hidden">
         <div className="max-w-7xl mx-auto flex flex-col items-center gap-8">
-          <Link href="/" className="hover:opacity-90 transition-opacity">
+          <Link href="/" className="w-full hover:opacity-90 transition-opacity">
             <Logo lang="ar" />
           </Link>
           <LanguageSwitcher />

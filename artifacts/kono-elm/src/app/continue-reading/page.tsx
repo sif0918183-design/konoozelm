@@ -73,9 +73,11 @@ export default function ContinueReadingPage() {
           <div className="absolute bottom-0 right-0 w-96 h-96 border-4 border-white/20 rounded-full translate-x-1/3 translate-y-1/3" />
         </div>
         <div className="max-w-5xl mx-auto relative z-10 flex flex-col items-center">
-          <Link href="/" className="mb-12 hover:opacity-90 transition-opacity">
+          <Link href="/" className="w-full mb-8 hover:opacity-90 transition-opacity">
             <Logo lang="ar" />
           </Link>
+
+          <div className="w-24 h-1 bg-gold-500/50 mx-auto mb-8 rounded-full" />
 
           <Link
             href="/"

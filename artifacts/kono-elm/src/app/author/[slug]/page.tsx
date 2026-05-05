@@ -60,9 +60,11 @@ export default async function AuthorPage({ params }: Props) {
         </div>
 
         <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center">
-          <Link href="/" className="mb-12 hover:opacity-90 transition-opacity">
+          <Link href="/" className="w-full mb-8 hover:opacity-90 transition-opacity">
             <Logo lang="ar" />
           </Link>
+
+          <div className="w-24 h-1 bg-gold-500/50 mx-auto mb-8 rounded-full" />
 
           <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 rounded-full mb-6 backdrop-blur-sm border border-white/10 shadow-inner">
             <User className="w-10 h-10 text-gold-200" />

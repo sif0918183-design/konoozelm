@@ -136,13 +136,7 @@ export default function Home() {
         <LanguageSwitcher light />
 
         <div className="max-w-4xl mx-auto text-center relative z-10 mt-12 md:mt-0 flex flex-col items-center">
-          <Logo lang="ar" className="mb-4" />
-          <h1 className="text-3xl md:text-5xl font-bold mb-4 text-gold-200 drop-shadow-sm font-amiri">
-            {t.title}
-          </h1>
-          <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto mb-8 font-tajawal">
-            {t.subtitle}
-          </p>
+          <Logo lang="ar" className="mb-8" />
           <div className="flex flex-col gap-3 mb-10">
             <div className="inline-flex items-center justify-center gap-2 text-[10px] md:text-xs text-gold-200/80 bg-white/5 py-1.5 px-4 rounded-full self-center border border-white/10 backdrop-blur-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-gold-400 animate-pulse" />

@@ -1,33 +1,41 @@
 'use client';
 
-import { translations } from '@/lib/translations';
 import Image from 'next/image';
+import Link from 'next/link';
+import { translations } from '@/lib/translations';
 
 interface LogoProps {
-  className?: string;
   lang?: 'ar' | 'en';
+  showText?: boolean;
+  className?: string;
 }
 
-export default function Logo({ className = '', lang = 'ar' }: LogoProps) {
+export default function Logo({ lang = 'ar', showText = true, className = '' }: LogoProps) {
   const t = translations[lang];
 
   return (
-    <div className={`flex flex-col items-center text-center w-full ${className}`}>
-      {/*
-          New Header Logo - Wide and Professional
-          The image already contains both Arabic and English titles.
-          Responsive: full width (edge-to-edge) on mobile, constrained on larger screens.
-          No shadows or glow as per user request.
-      */}
-      <div className="relative w-full sm:max-w-[550px] md:max-w-[650px] aspect-[2/1] transition-transform duration-500 hover:scale-[1.01]">
+    <Link href={lang === 'en' ? '/en' : '/'} className={`flex flex-col items-center gap-2 group ${className}`}>
+      <div className="relative w-64 h-32 md:w-80 md:h-40 lg:w-[450px] lg:h-[225px] transition-transform duration-300 group-hover:scale-[1.02]">
         <Image
           src="/icon-top.png"
           alt={t.title}
           fill
-          priority
           className="object-contain"
+          priority
         />
       </div>
-    </div>
+
+      {showText && (
+        <div className="flex flex-col items-center text-center -mt-4 md:-mt-6 lg:-mt-8 space-y-2 animate-fade-in">
+          <h1 className={`text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-amber-700 via-amber-900 to-amber-700 bg-clip-text text-transparent ${lang === 'ar' ? 'font-amiri' : 'font-playfair'}`}>
+            {t.title}
+          </h1>
+          <div className="w-32 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+          <p className={`text-[10px] md:text-xs lg:text-sm text-emerald-800/70 font-medium tracking-wide max-w-xs md:max-w-md lg:max-w-xl ${lang === 'ar' ? 'font-tajawal' : 'font-inter'}`}>
+            {t.subtitle}
+          </p>
+        </div>
+      )}
+    </Link>
   );
 }
