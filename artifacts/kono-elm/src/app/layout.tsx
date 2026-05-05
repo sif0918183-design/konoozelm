@@ -34,6 +34,10 @@ export const metadata: Metadata = {
   description: 'موسوعة شاملة للكتب والرسائل والمخطوطات الإسلامية - قراءة مباشرة وتحميل من Archive.org',
   keywords: ['كتب إسلامية', 'مكتبة', 'تحميل كتب', 'قراءة كتب', 'Archive.org', 'موسوعة المكتبات الإسلامية'],
   manifest: '/manifest.json?lang=ar',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/apple-icon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

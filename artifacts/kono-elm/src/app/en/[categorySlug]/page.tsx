@@ -47,22 +47,15 @@ export default async function EnglishCategoryPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="ltr">
       <SearchStateCleaner />
-      <LanguageSwitcher />
-
-      {/* Breadcrumbs */}
-      <nav className="max-w-7xl mx-auto px-4 py-4 mt-12 md:mt-0 flex items-center gap-2 text-sm text-gray-500">
-        <Link href="/en" className="hover:text-primary-900 transition-colors">{t.home}</Link>
-        <ChevronLeft className="w-4 h-4" />
-        <span className="text-gray-900 font-medium">{category.title}</span>
-      </nav>
-
-      <header className="bg-primary-900 text-white pt-24 pb-20 px-4 relative overflow-hidden">
+      <header className="bg-primary-900 text-white pt-2 pb-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute top-0 left-0 w-64 h-64 border-4 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 right-0 w-96 h-96 border-4 border-white/20 rounded-full translate-x-1/3 translate-y-1/3" />
         </div>
 
-        <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center">
+        <LanguageSwitcher light />
+
+        <div className="max-w-4xl mx-auto text-center relative z-10 mt-8 md:mt-4 flex flex-col items-center">
           <Link href="/en" className="w-full mb-8 hover:opacity-90 transition-opacity">
             <Logo lang="en" />
           </Link>
@@ -77,6 +70,13 @@ export default async function EnglishCategoryPage({ params }: Props) {
           </p>
         </div>
       </header>
+
+      {/* Breadcrumbs */}
+      <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 text-sm text-gray-500">
+        <Link href="/en" className="hover:text-primary-900 transition-colors">{t.home}</Link>
+        <ChevronLeft className="w-4 h-4" />
+        <span className="text-gray-900 font-medium">{category.title}</span>
+      </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-12 -mt-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
