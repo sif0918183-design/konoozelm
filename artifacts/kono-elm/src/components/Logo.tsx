@@ -15,7 +15,7 @@ export default function Logo({ lang = 'ar', showText = true, className = '' }: L
 
   return (
     <Link href={lang === 'en' ? '/en' : '/'} className={`flex flex-col items-center gap-2 group ${className}`}>
-      <div className="relative w-64 h-32 md:w-80 md:h-40 lg:w-[450px] lg:h-[225px] transition-transform duration-300 group-hover:scale-[1.02]">
+      <div className="relative w-80 h-40 md:w-[500px] md:h-[250px] lg:w-[750px] lg:h-[375px] transition-transform duration-300 group-hover:scale-[1.02]">
         <Image
           src="/icon-top.png"
           alt={t.title}
