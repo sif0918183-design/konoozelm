@@ -61,7 +61,7 @@ function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible }: PageItemPr
     }
 
     return () => observer.disconnect();
-  }, [pdf, scale, isRendered]);
+  }, [pdf, scale, isRendered, pageNumber, onVisible]);
 
   const renderPage = async () => {
     if (!pdf || !canvasRef.current || isRendered || isRendering) return;
