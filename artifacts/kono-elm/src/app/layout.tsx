@@ -56,7 +56,7 @@ export default function RootLayout({
 }) {
   return (
     <html className={`${tajawal.variable} ${amiri.variable} ${inter.variable} ${playfair.variable}`}>
-      <body className="min-h-screen bg-gradient-to-b from-[#fafaf5] to-[#f0f5eb] font-tajawal overflow-x-hidden">
+      <body className="min-h-screen bg-[#f8f9fa] font-tajawal overflow-x-hidden">
         <LanguageRedirector />
         <DocumentLanguageSetter />
         {children}

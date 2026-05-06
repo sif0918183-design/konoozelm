@@ -125,7 +125,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#fcfcf8] font-tajawal">
+    <div className="min-h-screen bg-transparent font-tajawal">
       {/* Header */}
       <header className="bg-primary-900 text-white pt-2 pb-20 md:pb-24 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -181,20 +181,22 @@ export default function Home() {
         {/* Featured Categories */}
         {!hasSearched && !isLoading && featuredCategories.length > 0 && (
           <div className="mb-12">
-            <h2 className="text-xl font-bold text-primary-900 mb-6 border-r-4 border-gold-500 pr-4">{t.featured_categories}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <h2 className="text-2xl font-bold text-primary-900 mb-8 border-r-4 border-gold-500 pr-4">{t.featured_categories}</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-5">
               {featuredCategories.map((cat) => (
                 <Link
                   key={cat.slug}
                   href={`/${cat.slug}`}
-                  className="relative overflow-hidden bg-primary-900 group p-5 rounded-2xl border border-white/10 shadow-lg hover:shadow-primary-900/20 hover:-translate-y-1 transition-all duration-300 text-center flex flex-col items-center justify-center min-h-[100px]"
+                  className="group relative flex flex-col items-center justify-center p-6 bg-white rounded-[2rem] border border-primary-900/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(15,46,34,0.12)] hover:-translate-y-1.5 transition-all duration-500 text-center min-h-[140px]"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary-50/30 rounded-bl-[4rem] -z-0 transition-all duration-500 group-hover:bg-gold-50/50 group-hover:w-full group-hover:h-full group-hover:rounded-[2rem]" />
                   <div className="relative z-10">
-                    <p className="text-sm md:text-base font-bold text-gold-100 group-hover:text-white transition-colors leading-relaxed">
+                    <div className="w-12 h-12 bg-primary-900 rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg group-hover:scale-110 transition-transform duration-500">
+                      <BookOpen className="w-6 h-6 text-gold-200" />
+                    </div>
+                    <p className="text-sm md:text-base font-bold text-gray-900 group-hover:text-primary-900 transition-colors leading-relaxed line-clamp-2">
                       {cat.title}
                     </p>
-                    <div className="w-8 h-1 bg-gold-500/50 rounded-full mt-3 mx-auto group-hover:w-12 group-hover:bg-gold-400 transition-all" />
                   </div>
                 </Link>
               ))}
