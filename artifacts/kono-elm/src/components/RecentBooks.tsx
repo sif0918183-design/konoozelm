@@ -92,6 +92,9 @@ export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
               <p className="text-primary-100/70 text-sm md:text-base mr-12">
                 {t.offline_notice}
               </p>
+              <p className="text-gold-200/90 text-xs font-bold mr-12 mt-1">
+                {t.pin_offline_hint}
+              </p>
             </div>
             <Link
               href={lang === 'en' ? "/en/continue-reading" : "/continue-reading"}

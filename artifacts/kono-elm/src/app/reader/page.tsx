@@ -42,9 +42,10 @@ function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible }: PageItemPr
       (entries) => {
         const entry = entries[0];
         if (entry.isIntersecting) {
-          // If the page is significantly visible in the viewport, update the current page number
-          // We use a stricter threshold for page number tracking than for rendering
-          if (entry.intersectionRatio > 0.4) {
+          // Accurate page tracking: We want to trigger when the top of the page is near the top of viewport
+          // IntersectionRatio > 0.3 AND top of entry is within upper half of viewport
+          const rect = entry.boundingClientRect;
+          if (rect.top < window.innerHeight / 2 && rect.bottom > 100) {
              onVisible(pageNumber);
           }
 

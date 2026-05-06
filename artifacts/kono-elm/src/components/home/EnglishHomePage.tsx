@@ -147,7 +147,7 @@ export default function EnglishHome() {
 
           {/* Search Form */}
           <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto group w-full">
-            <h2 className="text-lg md:text-xl font-bold text-white mb-4 drop-shadow-sm text-left pl-2">
+            <h2 className="text-base md:text-lg font-bold text-white mb-3 drop-shadow-sm text-left pl-2">
               {t.search_header_text}
             </h2>
             <div className="relative">

@@ -259,7 +259,7 @@ export default function AdminDashboard() {
       category_slug: defaultCategory.slug,
       archiveId: book.identifier,
       seoTitle: lang === 'ar'
-        ? `تحميل كتاب ${book.title} PDF وقراءته أونلاين - مكتب الهدى`
+        ? `تحميل كتاب ${book.title} PDF وقراءته أونلاين - مكتبة الهدى`
         : `Download ${book.title} PDF - Read Online - Huda Library`,
       parts_count: partsCount,
       lang: lang

@@ -37,12 +37,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title = title || generated.seoTitle;
       description = generated.description;
     } catch (e) {
-      title = title || `تحميل كتاب ${archiveDetails.title} PDF وقراءته أونلاين - مكتب الهدى`;
+      title = title || `تحميل كتاب ${archiveDetails.title} PDF وقراءته أونلاين - مكتبة الهدى`;
       description = archiveDetails.description || `قراءة وتحميل كتاب ${archiveDetails.title} للمؤلف ${archiveDetails.author || 'غير معروف'} بصيغة PDF مجاناً.`;
     }
   }
 
-  title = title || `تحميل كتاب ${archiveDetails?.title || 'كتاب'} PDF وقراءته أونلاين - مكتب الهدى`;
+  title = title || `تحميل كتاب ${archiveDetails?.title || 'كتاب'} PDF وقراءته أونلاين - مكتبة الهدى`;
   description = description || `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${archiveDetails?.author || 'غير معروف'} بصيغة PDF مجاناً.`;
 
   return {

@@ -30,9 +30,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'مكتب الهدى',
+  title: 'مكتبة الهدى',
   description: 'موسوعة شاملة للكتب والرسائل والمخطوطات الإسلامية - قراءة مباشرة وتحميل من Archive.org',
-  keywords: ['كتب إسلامية', 'مكتبة', 'تحميل كتب', 'قراءة كتب', 'Archive.org', 'مكتب الهدى'],
+  keywords: ['كتب إسلامية', 'مكتبة', 'تحميل كتب', 'قراءة كتب', 'Archive.org', 'مكتبة الهدى'],
   manifest: '/manifest.json?lang=ar',
   icons: {
     icon: '/favicon.png',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'مكتب الهدى',
+    title: 'مكتبة الهدى',
   },
 };
 
