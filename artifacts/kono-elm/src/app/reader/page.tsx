@@ -260,17 +260,24 @@ function ReaderContent() {
         const pageElement = document.getElementById(`page-${pageNum}`);
         if (pageElement) {
           pageElement.scrollIntoView({ behavior: 'auto', block: 'start' });
-          setIsInitialScrollDone(true);
+          // Use a longer timeout or multiple checks to ensure it actually scrolled
+          // Before marking initial scroll as done
+          setTimeout(() => setIsInitialScrollDone(true), 500);
+        } else {
+          // If element not found yet, don't mark as done, it will retry
         }
-      }, 1000); // Give it some time to render the placeholders
+      }, 800);
       return () => clearTimeout(timer);
-    } else if (!isLoading && numPages > 0 && pageNum === 1) {
+    } else if (!isLoading && numPages > 0 && pageNum === 1 && !isInitialScrollDone) {
       setIsInitialScrollDone(true);
     }
   }, [isLoading, numPages, pageNum, isInitialScrollDone]);
 
   const onPageVisible = useCallback((page: number) => {
+    // Only update pageNum and storage IF we have finished the initial positioning
+    // OR if the page is different from the target initial page
     if (!isInitialScrollDone) return;
+
     setPageNum(page);
     if (pdfUrl) {
       localStorage.setItem(`page_${pdfUrl}`, page.toString());
@@ -283,7 +290,7 @@ function ReaderContent() {
         totalPages: numPages
       });
     }
-  }, [pdfUrl, bookTitle, numPages]);
+  }, [pdfUrl, bookTitle, numPages, isInitialScrollDone]);
 
   const toggleNightMode = () => {
     const newMode = !isNightMode;

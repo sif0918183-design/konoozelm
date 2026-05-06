@@ -1,0 +1,132 @@
+
+> kono-elm@1.0.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, trying 3001 instead.
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3001
+
+ ✓ Starting...
+ ✓ Ready in 2.3s
+ ○ Compiling / ...
+ ✓ Compiled / in 4.7s (732 modules)
+ GET / 200 in 5506ms
+ ✓ Compiled in 794ms (376 modules)
+ ○ Compiling /[categorySlug] ...
+ ✓ Compiled /[categorySlug] in 965ms (434 modules)
+ ✓ Compiled /en in 1494ms (853 modules)
+ GET /api/admin/categories 200 in 2836ms
+ GET /reader 200 in 3096ms
+ GET / 200 in 3098ms
+ GET /api/admin/categories 200 in 162ms
+ GET /en 200 in 1062ms
+ ○ Compiling /manifest.json ...
+ ✓ Compiled /manifest.json in 583ms (477 modules)
+ GET /manifest.json?lang=en 200 in 567ms
+ GET /manifest.json?lang=ar 200 in 710ms
+ GET /favicon.ico 404 in 4089ms
+ GET /favicon.ico 404 in 395ms
+ GET / 200 in 410ms
+ GET /reader 200 in 413ms
+ GET /api/admin/categories?lang=en 200 in 266ms
+ GET /api/admin/categories?lang=en 200 in 11ms
+ GET / 200 in 39ms
+ GET / 200 in 125ms
+ GET /reader 200 in 131ms
+ GET /favicon.ico 404 in 134ms
+ GET /api/admin/categories 200 in 54ms
+ GET /api/admin/categories 200 in 15ms
+ ○ Compiling /api/admin/books ...
+ ✓ Compiled /api/admin/books in 679ms (490 modules)
+ GET /api/admin/books?archiveId=dawat-e-jihaad&lang=ar 200 in 923ms
+ GET /api/admin/books?archiveId=nov-14&lang=ar 200 in 903ms
+ GET /api/admin/books?archiveId=20260103_20260103_1254&lang=ar 200 in 903ms
+ GET /api/admin/books?archiveId=20251125_20251125_1025&lang=ar 200 in 903ms
+ GET /api/admin/books?archiveId=3-march-2013&lang=ar 200 in 902ms
+ GET /api/admin/books?archiveId=agust-2007&lang=ar 200 in 924ms
+ GET /api/admin/books?archiveId=20251018_20251018_1734&lang=ar 200 in 22ms
+ GET /api/admin/books?archiveId=20260125_20260125_0708&lang=ar 200 in 21ms
+ GET /api/admin/books?archiveId=20260205_20260205_0534&lang=ar 200 in 21ms
+ GET /api/admin/books?archiveId=FirqaAhlEHadess_20170305&lang=ar 200 in 20ms
+ GET /api/admin/books?archiveId=11-november-2011_202510&lang=ar 200 in 20ms
+ GET /api/admin/books?archiveId=20260109_20260109_1255&lang=ar 200 in 20ms
+ GET /api/admin/books?archiveId=12-december-2006&lang=ar 200 in 30ms
+ GET /api/admin/books?archiveId=1_20250823_20250823_1536&lang=ar 200 in 31ms
+ GET /api/admin/books?archiveId=Navaqez-eslam-pdf-www.sunnibook.net&lang=ar 200 in 30ms
+ GET /api/admin/books?archiveId=20260204_20260204_0144&lang=ar 200 in 30ms
+ GET /api/admin/books?archiveId=20250123_20250123_1638&lang=ar 200 in 30ms
+ GET /api/admin/books?archiveId=20220914_20220914_1155&lang=ar 200 in 30ms
+ GET /api/admin/books?archiveId=4-april-2021&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=islamic-teachings-english-386pgs_202604&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=dawat-e-jihaad&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=nov-14&lang=ar 200 in 23ms
+ GET /api/admin/books?archiveId=20260103_20260103_1254&lang=ar 200 in 23ms
+ GET /api/admin/books?archiveId=20251125_20251125_1025&lang=ar 200 in 23ms
+ GET /api/admin/books?archiveId=3-march-2013&lang=ar 200 in 26ms
+ GET /api/admin/books?archiveId=agust-2007&lang=ar 200 in 26ms
+ GET /api/admin/books?archiveId=20251018_20251018_1734&lang=ar 200 in 26ms
+ GET /api/admin/books?archiveId=20260125_20260125_0708&lang=ar 200 in 26ms
+ GET /api/admin/books?archiveId=20260205_20260205_0534&lang=ar 200 in 26ms
+ GET /api/admin/books?archiveId=FirqaAhlEHadess_20170305&lang=ar 200 in 26ms
+ GET /api/admin/books?archiveId=11-november-2011_202510&lang=ar 200 in 25ms
+ GET /api/admin/books?archiveId=20260109_20260109_1255&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=12-december-2006&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=1_20250823_20250823_1536&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=Navaqez-eslam-pdf-www.sunnibook.net&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=20260204_20260204_0144&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=20250123_20250123_1638&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=20220914_20220914_1155&lang=ar 200 in 23ms
+ GET /api/admin/books?archiveId=4-april-2021&lang=ar 200 in 23ms
+ GET /api/admin/books?archiveId=islamic-teachings-english-386pgs_202604&lang=ar 200 in 22ms
+ GET /en 200 in 162ms
+ GET /reader 200 in 243ms
+ GET /favicon.ico 404 in 238ms
+ GET / 200 in 245ms
+ GET /api/admin/categories?lang=en 200 in 232ms
+ GET /api/admin/categories?lang=en 200 in 12ms
+ GET / 200 in 37ms
+ GET /favicon.ico 404 in 157ms
+ GET /reader 200 in 168ms
+ GET / 200 in 169ms
+ GET /api/admin/categories 200 in 67ms
+ GET /api/admin/categories 200 in 35ms
+ GET /api/admin/books?archiveId=ofloveloneliness00fult&lang=ar 200 in 43ms
+ GET /api/admin/books?archiveId=urduislambookftawapdffatawaonhaaj&lang=ar 200 in 42ms
+ GET /api/admin/books?archiveId=Snen-ibnMace-HadisKitabi&lang=ar 200 in 41ms
+ GET /api/admin/books?archiveId=bn_Fidak_niye_fatima_o_abu_bokorer_maje_birodher_haqikot.docx&lang=ar 200 in 41ms
+ GET /api/admin/books?archiveId=bn_Ghuser_voyabohota_o_ta_theke_uttoroner_upay&lang=ar 200 in 41ms
+ GET /api/admin/books?archiveId=bn_Iman_o_aqidar_mandonde_31st_night&lang=ar 200 in 41ms
+ GET /api/admin/books?archiveId=bn_sahaba_goner_naynishtota_o_uccha_morjada&lang=ar 200 in 30ms
+ GET /api/admin/books?archiveId=bn_zakaatul_fitr&lang=ar 200 in 29ms
+ GET /api/admin/books?archiveId=14-1_20250905&lang=ar 200 in 29ms
+ GET /api/admin/books?archiveId=n-7w-thqaft-islameet-aseelt-pdf-islam-translation-russian-language&lang=ar 200 in 29ms
+ GET /api/admin/books?archiveId=CanIslamObjectToEvolution&lang=ar 200 in 28ms
+ GET /api/admin/books?archiveId=kauthar0000zier&lang=ar 200 in 28ms
+ GET /api/admin/books?archiveId=muslimsinamerica0000hasa&lang=ar 200 in 27ms
+ GET /api/admin/books?archiveId=berlinersbothsid00anne&lang=ar 200 in 26ms
+ GET /api/admin/books?archiveId=whatshouldiwear0000lift&lang=ar 200 in 26ms
+ GET /api/admin/books?archiveId=bn_tahiatul_islam&lang=ar 200 in 26ms
+ GET /api/admin/books?archiveId=judaismchristian0000elia&lang=ar 200 in 26ms
+ GET /api/admin/books?archiveId=ur-thalathat-97744&lang=ar 200 in 26ms
+ GET /api/admin/books?archiveId=bn_noboborsho_udjapon_o_musllimder_koronio&lang=ar 200 in 25ms
+ GET /api/admin/books?archiveId=islam-muslims-quran-surah-9.29-in-context-fight-those-who-do-not-believe_202301&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=ofloveloneliness00fult&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=urduislambookftawapdffatawaonhaaj&lang=ar 200 in 23ms
+ GET /api/admin/books?archiveId=Snen-ibnMace-HadisKitabi&lang=ar 200 in 23ms
+ GET /api/admin/books?archiveId=bn_Fidak_niye_fatima_o_abu_bokorer_maje_birodher_haqikot.docx&lang=ar 200 in 23ms
+ GET /api/admin/books?archiveId=bn_Ghuser_voyabohota_o_ta_theke_uttoroner_upay&lang=ar 200 in 19ms
+ GET /api/admin/books?archiveId=bn_Iman_o_aqidar_mandonde_31st_night&lang=ar 200 in 18ms
+ GET /api/admin/books?archiveId=bn_sahaba_goner_naynishtota_o_uccha_morjada&lang=ar 200 in 19ms
+ GET /api/admin/books?archiveId=bn_zakaatul_fitr&lang=ar 200 in 19ms
+ GET /api/admin/books?archiveId=14-1_20250905&lang=ar 200 in 21ms
+ GET /api/admin/books?archiveId=n-7w-thqaft-islameet-aseelt-pdf-islam-translation-russian-language&lang=ar 200 in 21ms
+ GET /api/admin/books?archiveId=CanIslamObjectToEvolution&lang=ar 200 in 25ms
+ GET /api/admin/books?archiveId=kauthar0000zier&lang=ar 200 in 25ms
+ GET /api/admin/books?archiveId=muslimsinamerica0000hasa&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=berlinersbothsid00anne&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=whatshouldiwear0000lift&lang=ar 200 in 24ms
+ GET /api/admin/books?archiveId=bn_tahiatul_islam&lang=ar 200 in 23ms
+ GET /api/admin/books?archiveId=judaismchristian0000elia&lang=ar 200 in 18ms
+ GET /api/admin/books?archiveId=ur-thalathat-97744&lang=ar 200 in 18ms
+ GET /api/admin/books?archiveId=bn_noboborsho_udjapon_o_musllimder_koronio&lang=ar 200 in 18ms
+ GET /api/admin/books?archiveId=islam-muslims-quran-surah-9.29-in-context-fight-those-who-do-not-believe_202301&lang=ar 200 in 17ms

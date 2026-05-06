@@ -194,7 +194,7 @@ export default function EnglishHome() {
                     <div className="w-12 h-12 bg-primary-900 rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg group-hover:scale-110 transition-transform duration-500">
                       <BookOpen className="w-6 h-6 text-gold-200" />
                     </div>
-                    <p className="text-sm md:text-base font-bold text-gray-900 group-hover:text-primary-900 transition-colors leading-relaxed line-clamp-2">
+                    <p className="text-sm md:text-base font-bold text-gray-900 group-hover:text-primary-900 transition-colors leading-relaxed line-clamp-3">
                       {cat.title}
                     </p>
                   </div>

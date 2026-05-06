@@ -99,10 +99,10 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       />
 
       {/* Main Content Area */}
-      <div className="flex flex-col flex-1 p-5 sm:p-6">
-        <div className="flex flex-row gap-5 mb-5">
+      <div className="flex flex-col flex-1 p-4 sm:p-5">
+        <div className="flex flex-row gap-4 mb-4">
           {/* Cover Image Section */}
-          <div className="relative w-28 sm:w-32 h-40 sm:h-44 bg-primary-50/50 rounded-2xl overflow-hidden flex-shrink-0 border border-primary-900/10 shadow-sm transition-all group-hover:shadow-lg group-hover:-translate-y-1 duration-500">
+          <div className="relative w-24 sm:w-28 h-32 sm:h-36 bg-primary-50/50 rounded-xl overflow-hidden flex-shrink-0 border border-primary-900/10 shadow-sm transition-all group-hover:shadow-lg group-hover:-translate-y-1 duration-500">
             {!imageError ? (
               <Image
                 src={book.coverImage || `https://archive.org/services/img/${book.identifier}`}
@@ -114,7 +114,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
               />
             ) : (
               <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary-50 to-white">
-                <BookIcon className="w-10 sm:w-12 h-10 sm:h-12 text-primary-200" />
+                <BookIcon className="w-8 sm:w-10 h-8 sm:h-10 text-primary-200" />
               </div>
             )}
 
@@ -130,7 +130,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
 
           {/* Content Section */}
           <div className="flex flex-col flex-1 min-w-0 py-1">
-            <h3 className="font-bold text-gray-900 mb-2 line-clamp-3 leading-tight text-base sm:text-lg group-hover:text-primary-900 transition-colors" title={book.title}>
+            <h3 className="font-bold text-gray-900 mb-2 line-clamp-4 leading-snug text-sm sm:text-base group-hover:text-primary-900 transition-colors" title={book.title}>
               {book.title}
             </h3>
 
@@ -153,12 +153,12 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
         </div>
 
         {/* Action Buttons - Always at bottom */}
-        <div className="flex flex-row gap-3 relative z-10 mt-auto pt-4 border-t border-gray-50">
+        <div className="flex flex-row gap-2 relative z-10 mt-auto pt-3 border-t border-gray-50">
           <button
             onClick={handleRead}
             disabled={isLoadingFiles}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-bold text-sm transition-all duration-300",
+              "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
               "bg-primary-900 text-white hover:bg-primary-800 hover:shadow-[0_10px_20px_rgba(15,46,34,0.2)] active:scale-95 disabled:opacity-50"
             )}
           >
@@ -174,7 +174,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
             onClick={handleDownload}
             disabled={isLoadingFiles || files.length === 0}
             className={cn(
-              "px-4 py-3.5 rounded-2xl font-bold text-sm transition-all duration-300",
+              "px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
               "bg-white text-primary-900 border-2 border-primary-900/10 hover:bg-primary-50 hover:border-primary-900/20 active:scale-95 disabled:opacity-50"
             )}
             title={t.download}

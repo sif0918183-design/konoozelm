@@ -206,7 +206,7 @@ export default async function BookPage({ params }: Props) {
                           <BookIcon className="w-6 h-6 text-primary-300 group-hover:text-gold-500 transition-colors" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="font-bold text-gray-900 group-hover:text-primary-900 transition-colors line-clamp-2 break-words" title={book.title}>
+                          <h4 className="font-bold text-gray-900 group-hover:text-primary-900 transition-colors line-clamp-4 break-words leading-snug" title={book.title}>
                             {book.title}
                           </h4>
                           <p className="text-xs text-gray-500 truncate">{book.author}</p>
