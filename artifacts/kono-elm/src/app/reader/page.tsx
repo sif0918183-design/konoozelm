@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback, memo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { translations } from '@/lib/translations';
 import {
@@ -30,7 +30,7 @@ interface PageItemProps {
   onVisible: (pageNumber: number) => void;
 }
 
-function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible }: PageItemProps) {
+const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible }: PageItemProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRendered, setIsRendered] = useState(false);
@@ -42,26 +42,41 @@ function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible }: PageItemPr
       (entries) => {
         const entry = entries[0];
         if (entry.isIntersecting) {
-          // Accurate page tracking: We want to trigger when the top of the page is near the top of viewport
-          // IntersectionRatio > 0.3 AND top of entry is within upper half of viewport
-          const rect = entry.boundingClientRect;
-          if (rect.top < window.innerHeight / 2 && rect.bottom > 100) {
-             onVisible(pageNumber);
-          }
+          // Fast Page Detection: Trigger as soon as the page occupies a significant part of the viewport center
+          // We use rootMargin to create a narrow detection band in the middle of the screen
+          onVisible(pageNumber);
 
           if (!isRendered && !isRendering) {
             renderPage();
           }
         }
       },
-      { threshold: [0.1, 0.4, 0.5], rootMargin: '800px 0px' } // Pre-render when getting close
+      {
+        threshold: 0,
+        rootMargin: '-45% 0px -45% 0px' // Only trigger for pages in the middle 10% of the screen
+      }
+    );
+
+    const renderObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          if (!isRendered && !isRendering) {
+            renderPage();
+          }
+        }
+      },
+      { threshold: 0, rootMargin: '1200px 0px' } // Rendering uses a wider margin
     );
 
     if (containerRef.current) {
       observer.observe(containerRef.current);
+      renderObserver.observe(containerRef.current);
     }
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      renderObserver.disconnect();
+    };
   }, [pdf, scale, isRendered, pageNumber, onVisible]);
 
   const renderPage = async () => {
@@ -149,7 +164,7 @@ function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible }: PageItemPr
       </div>
     </div>
   );
-}
+});
 
 function ReaderContent() {
   const searchParams = useSearchParams();
@@ -280,13 +295,17 @@ function ReaderContent() {
     }
   }, [isLoading, numPages, pageNum, isInitialScrollDone]);
 
+  const lastStorageUpdate = useRef<number>(0);
   const onPageVisible = useCallback((page: number) => {
-    // Only update pageNum and storage IF we have finished the initial positioning
-    // OR if the page is different from the target initial page
     if (!isInitialScrollDone) return;
 
+    // Update UI immediately
     setPageNum(page);
-    if (pdfUrl) {
+
+    // Throttle storage updates to once every 2 seconds to keep the UI smooth
+    const now = Date.now();
+    if (pdfUrl && now - lastStorageUpdate.current > 2000) {
+      lastStorageUpdate.current = now;
       localStorage.setItem(`page_${pdfUrl}`, page.toString());
       addToRecentBooks({
         identifier: pdfUrl,
