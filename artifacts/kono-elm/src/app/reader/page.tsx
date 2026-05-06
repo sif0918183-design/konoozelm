@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { translations } from '@/lib/translations';
 import {
-  ChevronLeft,
-  ChevronRight,
   ZoomIn,
   ZoomOut,
   Moon,
@@ -24,12 +22,133 @@ import { getCachedPDF } from '@/lib/pdf-cache';
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDFJS_WORKER_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+interface PageItemProps {
+  pageNumber: number;
+  pdf: any;
+  scale: number;
+  isNightMode: boolean;
+  onVisible: (pageNumber: number) => void;
+}
+
+function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible }: PageItemProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isRendered, setIsRendered] = useState(false);
+  const [isRendering, setIsRendering] = useState(false);
+  const renderTaskRef = useRef<any>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onVisible(pageNumber);
+          if (!isRendered && !isRendering) {
+            renderPage();
+          }
+        }
+      },
+      { threshold: 0.1, rootMargin: '800px 0px' } // Pre-render when getting close
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [pdf, scale, isRendered]);
+
+  const renderPage = async () => {
+    if (!pdf || !canvasRef.current || isRendered || isRendering) return;
+
+    try {
+      setIsRendering(true);
+      const page = await pdf.getPage(pageNumber);
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d')!;
+
+      const viewport = page.getViewport({ scale });
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+      }
+
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport,
+      };
+
+      renderTaskRef.current = page.render(renderContext);
+      await renderTaskRef.current.promise;
+      setIsRendered(true);
+    } catch (err: any) {
+      if (err.name !== 'RenderingCancelledException') {
+        console.error(`Error rendering page ${pageNumber}:`, err);
+      }
+    } finally {
+      setIsRendering(false);
+    }
+  };
+
+  // Re-render on scale change
+  useEffect(() => {
+    if (isRendered || isRendering) {
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+      }
+      setIsRendered(false);
+      setIsRendering(false);
+
+      // Delay slightly to avoid rapid re-renders during scale slider movement if we had one
+      const timer = setTimeout(() => {
+        // Only re-render if still visible
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect && rect.top < window.innerHeight * 2 && rect.bottom > -window.innerHeight) {
+          renderPage();
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [scale]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex flex-col items-center mb-8 last:mb-0"
+      style={{ minHeight: '500px' }}
+    >
+      <div className={cn(
+        "shadow-2xl bg-white transition-all duration-300 relative",
+        isNightMode && "brightness-75 contrast-125",
+        !isRendered && "flex items-center justify-center bg-gray-50 border border-gray-100"
+      )}>
+        {!isRendered && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+            <Loader2 className="w-6 h-6 text-primary-200 animate-spin" />
+            <span className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">{pageNumber}</span>
+          </div>
+        )}
+        <canvas
+          ref={canvasRef}
+          className={cn(
+            "max-w-full h-auto transition-opacity duration-500",
+            isRendered ? "opacity-100" : "opacity-0"
+          )}
+        />
+      </div>
+      <div className="mt-2 text-xs text-gray-400 font-mono">
+        {pageNumber}
+      </div>
+    </div>
+  );
+}
+
 function ReaderContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Use 'lang' query param or check pathname (if it was ever moved under /en/reader)
   const langParam = searchParams.get('lang');
   const isEnglish = langParam === 'en' || pathname?.startsWith('/en');
   const lang = isEnglish ? 'en' : 'ar';
@@ -43,12 +162,11 @@ function ReaderContent() {
   const [numPages, setNumPages] = useState(0);
   const [scale, setScale] = useState(1.5);
   const [isNightMode, setIsNightMode] = useState(false);
+  const [isInitialScrollDone, setIsInitialScrollDone] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [rendering, setRendering] = useState(false);
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const renderTaskRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Initialize PDF.js and Load Document
   useEffect(() => {
@@ -63,7 +181,6 @@ function ReaderContent() {
         setIsLoading(true);
         setError(null);
 
-        // Load PDF.js script dynamically
         if (!(window as any).pdfjsLib) {
           const script = document.createElement('script');
           script.src = PDFJS_CDN;
@@ -84,7 +201,6 @@ function ReaderContent() {
         const pdfjsLib = (window as any).pdfjsLib;
         pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
 
-        // Try to get from cache first
         const cachedResponse = await getCachedPDF(url);
         let pdfSource: any;
 
@@ -93,7 +209,6 @@ function ReaderContent() {
           const arrayBuffer = await blob.arrayBuffer();
           pdfSource = { data: arrayBuffer };
         } else {
-          // Optimize URL and use the proxy to avoid CORS issues if it's from archive.org
           const optimizedUrl = optimizeArchiveUrl(url);
           pdfSource = optimizedUrl.includes('archive.org')
             ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
@@ -105,18 +220,18 @@ function ReaderContent() {
         setPdf(pdfDoc);
         setNumPages(pdfDoc.numPages);
 
-        // Restore saved page
         const savedPage = localStorage.getItem(`page_${url}`);
         if (savedPage) {
           const page = parseInt(savedPage);
           if (page > 0 && page <= pdfDoc.numPages) {
             setPageNum(page);
           }
+        } else {
+          setPageNum(1);
         }
 
-        // Add to recent books
         addToRecentBooks({
-          identifier: url, // Use URL as identifier if not provided
+          identifier: url,
           title: bookTitle,
           url: url,
           lastRead: new Date().toISOString(),
@@ -134,79 +249,46 @@ function ReaderContent() {
 
     loadPdf();
 
-    // Load Night Mode preference
     const savedNightMode = localStorage.getItem('nightMode') === 'true';
     setIsNightMode(savedNightMode);
-  }, [pdfUrl, bookTitle, t.error_no_pdf, t.error_pdf_lib, t.error_pdf_404, t.error_pdf_general]);
+  }, [pdfUrl, bookTitle]);
 
-  // Render Page
+  // Initial scroll to saved page
   useEffect(() => {
-    if (!pdf || !canvasRef.current) return;
-
-    const renderPage = async () => {
-      if (rendering) return;
-      setRendering(true);
-
-      try {
-        const page = await pdf.getPage(pageNum);
-        const canvas = canvasRef.current!;
-        const context = canvas.getContext('2d')!;
-
-        const viewport = page.getViewport({ scale });
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        // Cancel previous render task
-        if (renderTaskRef.current) {
-          renderTaskRef.current.cancel();
+    if (!isLoading && numPages > 0 && pageNum > 1 && !isInitialScrollDone) {
+      const timer = setTimeout(() => {
+        const pageElement = document.getElementById(`page-${pageNum}`);
+        if (pageElement) {
+          pageElement.scrollIntoView({ behavior: 'auto', block: 'start' });
+          setIsInitialScrollDone(true);
         }
+      }, 1000); // Give it some time to render the placeholders
+      return () => clearTimeout(timer);
+    } else if (!isLoading && numPages > 0 && pageNum === 1) {
+      setIsInitialScrollDone(true);
+    }
+  }, [isLoading, numPages, pageNum, isInitialScrollDone]);
 
-        const renderContext = {
-          canvasContext: context,
-          viewport: viewport,
-        };
-
-        renderTaskRef.current = page.render(renderContext);
-        await renderTaskRef.current.promise;
-
-        // Save current page
-        if (pdfUrl) {
-          localStorage.setItem(`page_${pdfUrl}`, pageNum.toString());
-          // Update recent books progress
-          addToRecentBooks({
-            identifier: pdfUrl,
-            title: bookTitle,
-            url: pdfUrl,
-            lastRead: new Date().toISOString(),
-            currentPage: pageNum,
-            totalPages: numPages
-          });
-        }
-      } catch (err: any) {
-        if (err.name !== 'RenderingCancelledException') {
-          console.error('Error rendering page:', err);
-        }
-      } finally {
-        setRendering(false);
-      }
-    };
-
-    renderPage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pdf, pageNum, scale, pdfUrl, bookTitle, numPages]);
+  const onPageVisible = useCallback((page: number) => {
+    if (!isInitialScrollDone) return;
+    setPageNum(page);
+    if (pdfUrl) {
+      localStorage.setItem(`page_${pdfUrl}`, page.toString());
+      addToRecentBooks({
+        identifier: pdfUrl,
+        title: bookTitle,
+        url: pdfUrl,
+        lastRead: new Date().toISOString(),
+        currentPage: page,
+        totalPages: numPages
+      });
+    }
+  }, [pdfUrl, bookTitle, numPages]);
 
   const toggleNightMode = () => {
     const newMode = !isNightMode;
     setIsNightMode(newMode);
     localStorage.setItem('nightMode', newMode.toString());
-  };
-
-  const changePage = (offset: number) => {
-    const newPage = pageNum + offset;
-    if (newPage >= 1 && newPage <= numPages) {
-      setPageNum(newPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
   };
 
   if (isLoading) {
@@ -260,47 +342,30 @@ function ReaderContent() {
           </h1>
         </div>
 
-        <div className="flex items-center gap-1 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {/* Zoom Controls */}
-          <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shadow-inner">
             <button
               onClick={() => setScale(s => Math.max(0.5, s - 0.2))}
-              className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-shadow"
-              title="تصغير"
+              className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all active:scale-90"
+              title={isEnglish ? 'Zoom Out' : 'تصغير'}
             >
               <ZoomOut className="w-4 h-4" />
             </button>
-            <span className="text-xs font-mono w-12 text-center">{Math.round(scale * 100)}%</span>
+            <span className="text-[11px] font-bold w-10 text-center">{Math.round(scale * 100)}%</span>
             <button
               onClick={() => setScale(s => Math.min(3, s + 0.2))}
-              className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-shadow"
-              title="تكبير"
+              className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all active:scale-90"
+              title={isEnglish ? 'Zoom In' : 'تكبير'}
             >
               <ZoomIn className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Navigation */}
-          <div className="flex items-center gap-1 md:gap-2 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
-            <button
-              onClick={() => changePage(isEnglish ? 1 : -1)}
-              disabled={isEnglish ? pageNum >= numPages : pageNum <= 1}
-              className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md disabled:opacity-30"
-            >
-              {isEnglish ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-            </button>
-            <div className="flex items-center gap-1 px-2 text-xs md:text-sm font-bold">
-              <span>{pageNum}</span>
-              <span className="text-slate-400">/</span>
-              <span>{numPages}</span>
-            </div>
-            <button
-              onClick={() => changePage(isEnglish ? -1 : 1)}
-              disabled={isEnglish ? pageNum <= 1 : pageNum >= numPages}
-              className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md disabled:opacity-30"
-            >
-              {isEnglish ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-            </button>
+          <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary-900 text-white rounded-xl text-xs font-black shadow-lg border border-primary-800">
+            <span className="min-w-[1.5rem] text-center">{pageNum}</span>
+            <span className="opacity-40 text-[10px]">/</span>
+            <span className="opacity-70">{numPages}</span>
           </div>
 
           <button
@@ -323,34 +388,29 @@ function ReaderContent() {
       </header>
 
       {/* Reader Body */}
-      <main className="pt-20 pb-8 flex justify-center">
-        <div className={cn(
-          "shadow-2xl",
-          isNightMode && "brightness-75 contrast-125"
-        )}>
-          <canvas
-            ref={canvasRef}
-            className="max-w-full h-auto"
-          />
+      <main className="pt-24 pb-12 px-4 flex flex-col items-center">
+        <div className="w-full max-w-5xl">
+          {Array.from({ length: numPages }, (_, i) => (
+            <div key={i + 1} id={`page-${i + 1}`}>
+              <PageItem
+                pageNumber={i + 1}
+                pdf={pdf}
+                scale={scale}
+                isNightMode={isNightMode}
+                onVisible={onPageVisible}
+              />
+            </div>
+          ))}
         </div>
       </main>
 
-      {/* Floating Navigation Controls (Mobile) */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 md:hidden">
-        <button
-          onClick={() => changePage(isEnglish ? 1 : -1)}
-          disabled={isEnglish ? pageNum >= numPages : pageNum <= 1}
-          className="bg-primary-900 text-white p-3 rounded-full shadow-lg disabled:opacity-50"
-        >
-          {isEnglish ? <ChevronLeft className="w-6 h-6" /> : <ChevronRight className="w-6 h-6" />}
-        </button>
-        <button
-          onClick={() => changePage(isEnglish ? -1 : 1)}
-          disabled={isEnglish ? pageNum <= 1 : pageNum >= numPages}
-          className="bg-primary-900 text-white p-3 rounded-full shadow-lg disabled:opacity-50"
-        >
-          {isEnglish ? <ChevronRight className="w-6 h-6" /> : <ChevronLeft className="w-6 h-6" />}
-        </button>
+      {/* Mobile Page Indicator */}
+      <div className="fixed bottom-6 right-6 sm:hidden z-50">
+        <div className="bg-primary-900 text-white px-4 py-2 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 border-2 border-white/20 backdrop-blur-sm">
+          <span>{pageNum}</span>
+          <span className="opacity-50 text-xs">/</span>
+          <span className="opacity-80 text-xs">{numPages}</span>
+        </div>
       </div>
     </div>
   );

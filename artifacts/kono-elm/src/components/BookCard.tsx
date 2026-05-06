@@ -90,7 +90,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
     : (seoSlug ? `/book/${seoSlug}` : `/book/${slugify(book.title)}--${book.identifier}`);
 
   return (
-    <div className={`group bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100 flex flex-col sm:flex-row h-full overflow-hidden relative ${lang === 'en' ? 'text-left' : 'text-right'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`group bg-white rounded-3xl shadow-md hover:shadow-2xl transition-all duration-500 border-2 border-primary-50/50 hover:border-primary-100 flex flex-col sm:flex-row h-full overflow-hidden relative ${lang === 'en' ? 'text-left' : 'text-right'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       {/* Detail Link (Internal SEO link) - Only for the card body, excluding buttons */}
       <a
         href={detailsHref}
@@ -150,37 +150,37 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2 relative z-10">
+          <div className="flex flex-wrap gap-3 relative z-10 mt-2">
             <button
               onClick={handleRead}
               disabled={isLoadingFiles}
               className={cn(
-                "flex-1 min-w-[80px] flex items-center justify-center gap-1 px-2 py-2 rounded-xl font-bold text-[9px] sm:text-xs transition-all duration-300",
-                "bg-primary-900 text-white hover:bg-primary-800 hover:shadow-lg hover:shadow-primary-900/20 active:scale-95 disabled:opacity-50"
+                "flex-1 min-w-[100px] flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold text-xs sm:text-sm transition-all duration-300",
+                "bg-primary-900 text-white hover:bg-primary-800 hover:shadow-xl hover:shadow-primary-900/30 active:scale-95 disabled:opacity-50"
               )}
             >
               {isLoadingFiles ? (
-                <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
+                <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
               ) : (
-                <BookOpen className="w-3 h-3 flex-shrink-0" />
+                <BookOpen className="w-4 h-4 flex-shrink-0" />
               )}
-              <span className="whitespace-nowrap overflow-hidden text-ellipsis">{t.read_now}</span>
+              <span className="whitespace-nowrap">{t.read_now}</span>
             </button>
 
             <button
               onClick={handleDownload}
               disabled={isLoadingFiles || files.length === 0}
               className={cn(
-                "flex-1 min-w-[80px] flex items-center justify-center gap-1 px-2 py-2 rounded-xl font-bold text-[9px] sm:text-xs transition-all duration-300",
-                "bg-gold-50 text-gold-700 border border-gold-200 hover:bg-gold-500 hover:text-white hover:border-gold-500 active:scale-95 disabled:opacity-50"
+                "flex-1 min-w-[100px] flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold text-xs sm:text-sm transition-all duration-300",
+                "bg-amber-50 text-amber-700 border-2 border-amber-200/50 hover:bg-amber-600 hover:text-white hover:border-amber-600 hover:shadow-xl hover:shadow-amber-600/20 active:scale-95 disabled:opacity-50"
               )}
             >
               {isLoadingFiles ? (
-                <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
+                <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
               ) : (
-                <Download className="w-3 h-3 flex-shrink-0" />
+                <Download className="w-4 h-4 flex-shrink-0" />
               )}
-              <span className="whitespace-nowrap overflow-hidden text-ellipsis">{t.download}</span>
+              <span className="whitespace-nowrap">{t.download}</span>
             </button>
           </div>
         </div>

@@ -18,7 +18,7 @@ const amiri = Amiri({
 });
 
 export const metadata: Metadata = {
-  title: 'Kono Elm Encyclopedia',
+  title: 'Huda Library',
   description: 'Comprehensive Electronic Library for Islamic Books - Read Online & Download from Archive.org',
   keywords: ['Islamic books', 'Library', 'Download books', 'Read books', 'Archive.org'],
   manifest: '/manifest.json?lang=en',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Islamic Library',
+    title: 'Huda Library',
   },
 };
 
