@@ -140,6 +140,7 @@ export interface TranslationKeys {
   back_to_library: string;
   completion_rate: string;
   global_digital_library: string;
+  search_header_text: string;
 }
 
 export const translations: Record<Language, TranslationKeys> = {
@@ -280,7 +281,8 @@ export const translations: Record<Language, TranslationKeys> = {
     history_resume: 'استكمال القراءة',
     back_to_library: 'العودة للمكتبة',
     completion_rate: 'نسبة الإنجاز',
-    global_digital_library: 'المكتبة الرقمية العالمية'
+    global_digital_library: 'المكتبة الرقمية العالمية',
+    search_header_text: 'ابحث عن أي كتاب إسلامي بأي لغة'
   },
   en: {
     title: 'Huda Library',
@@ -419,6 +421,7 @@ export const translations: Record<Language, TranslationKeys> = {
     history_resume: 'Continue Reading',
     back_to_library: 'Back to Library',
     completion_rate: 'Completion Rate',
-    global_digital_library: 'Global Digital Library'
+    global_digital_library: 'Global Digital Library',
+    search_header_text: 'Search for any Islamic book in any language'
   }
 };

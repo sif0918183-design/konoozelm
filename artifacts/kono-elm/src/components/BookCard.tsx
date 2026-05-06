@@ -65,8 +65,12 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
       router.push(readerUrl);
     } else {
-      // Fallback if no specific files found yet
-      window.open(book.previewLink, '_blank');
+      // If no files found, inform user if they are online, or just do nothing to avoid Archive.org redirect
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        alert(t.offline_notice);
+      } else if (files.length === 0 && !isLoadingFiles) {
+        alert(lang === 'ar' ? 'عذراً، هذا الكتاب غير متوفر حالياً للقراءة' : 'Sorry, this book is currently unavailable for reading');
+      }
     }
   };
 
@@ -137,8 +141,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
             <div className="space-y-2 mt-auto">
               {book.author && (
                 <p className="text-xs text-gray-500 flex items-start gap-1.5" title={book.author}>
-                  <span className="text-primary-900/40 font-bold whitespace-nowrap">{t.author}:</span>
-                  <span className="line-clamp-2 leading-relaxed">{book.author}</span>
+                  <span className="line-clamp-2 leading-relaxed font-medium">{book.author}</span>
                 </p>
               )}
 

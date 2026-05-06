@@ -40,14 +40,20 @@ function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible }: PageItemPr
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          onVisible(pageNumber);
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          // If the page is significantly visible in the viewport, update the current page number
+          // We use a stricter threshold for page number tracking than for rendering
+          if (entry.intersectionRatio > 0.4) {
+             onVisible(pageNumber);
+          }
+
           if (!isRendered && !isRendering) {
             renderPage();
           }
         }
       },
-      { threshold: 0.1, rootMargin: '800px 0px' } // Pre-render when getting close
+      { threshold: [0.1, 0.4, 0.5], rootMargin: '800px 0px' } // Pre-render when getting close
     );
 
     if (containerRef.current) {

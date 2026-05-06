@@ -137,6 +137,11 @@ export default function Home() {
 
         <div className="max-w-4xl mx-auto text-center relative z-10 mt-8 md:mt-4 flex flex-col items-center">
           <Logo lang="ar" className="mb-8" />
+
+          <h2 className="text-xl md:text-2xl font-bold text-gold-400 mb-6 drop-shadow-sm">
+            {t.search_header_text}
+          </h2>
+
           <div className="flex flex-col gap-3 mb-10">
             <div className="inline-flex items-center justify-center gap-2 text-[10px] md:text-xs text-gold-200/80 bg-white/5 py-1.5 px-4 rounded-full self-center border border-white/10 backdrop-blur-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-gold-400 animate-pulse" />
