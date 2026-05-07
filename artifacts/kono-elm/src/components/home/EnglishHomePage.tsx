@@ -147,9 +147,14 @@ export default function EnglishHome() {
 
           {/* Search Form */}
           <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto group w-full">
-            <h2 className="text-base md:text-lg font-bold text-white mb-3 drop-shadow-sm text-left pl-2">
-              {t.search_header_text}
-            </h2>
+            <div className="text-left pl-2 mb-4 flex flex-col gap-1">
+              <h2 className="text-2xl md:text-3xl font-inter font-bold bg-gradient-to-r from-amber-200 via-gold-500 to-amber-200 bg-clip-text text-transparent drop-shadow-sm">
+                {t.search_header_title}
+              </h2>
+              <p className="text-xs md:text-sm text-gold-100/90 font-medium leading-relaxed">
+                {t.search_header_subtitle}
+              </p>
+            </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-900/40 w-5 h-5 group-focus-within:text-primary-900 transition-colors" />
               <input
