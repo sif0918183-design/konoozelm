@@ -152,7 +152,12 @@ export default function EnglishHome() {
                 {t.search_header_title}
               </h2>
               <p className="text-xs md:text-sm text-gold-100/90 font-medium leading-relaxed">
-                {t.search_header_subtitle}
+                {t.search_header_subtitle.split('500,000').map((part, i, arr) => (
+                  <span key={i}>
+                    {part}
+                    {i < arr.length - 1 && <span className="text-gold-500 font-bold">500,000</span>}
+                  </span>
+                ))}
               </p>
             </div>
             <div className="relative">
