@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { BookOpen, ChevronLeft, Book as BookIcon, Globe } from 'lucide-react';
 import { getCategoryBySlug, getBooksByCategory } from '@/lib/seo-data';
 import SearchStateCleaner from '@/components/SearchStateCleaner';
+import BookCard from '@/components/BookCard';
 
 export const revalidate = 120;
 import { translations } from '@/lib/translations';
@@ -45,7 +46,7 @@ export default async function EnglishCategoryPage({ params }: Props) {
   const books = await getBooksByCategory(category.slug, category.title, 500, lang);
 
   return (
-    <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="ltr">
+    <div className="min-h-screen bg-transparent font-tajawal" dir="ltr">
       <SearchStateCleaner />
       <header className="bg-primary-900 text-white pt-2 pb-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -79,37 +80,20 @@ export default async function EnglishCategoryPage({ params }: Props) {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-12 -mt-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {books.map((book) => (
-            <Link
-              key={book.archiveId}
-              href={`/en/book/${book.slug}--${book.archiveId}`}
-              className="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all border border-gray-100 hover:border-gold-200 flex items-center gap-4 h-full"
-            >
-              <div className="w-20 h-28 bg-primary-50 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden relative border border-gray-100 shadow-sm group-hover:shadow-md transition-all">
-                <Image
-                  src={`https://archive.org/services/img/${book.archiveId}`}
-                  alt={book.title}
-                  fill
-                  className="object-cover transition-opacity duration-300"
-                  sizes="80px"
-                  unoptimized
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-primary-50 pointer-events-none -z-10">
-                  <BookIcon className="w-8 h-8 text-primary-200" />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="font-bold text-gray-900 mb-1 group-hover:text-primary-900 transition-colors line-clamp-2 leading-snug">
-                  {book.title}
-                </h2>
-                <p className="text-xs text-gray-500 mb-2 truncate">{book.author}</p>
-                <div className="flex items-center text-[10px] font-bold text-gold-600 group-hover:text-gold-700">
-                  {t.read_more}
-                  <ChevronLeft className="w-3 h-3 ml-1 group-hover:translate-x-[4px] transition-transform" />
-                </div>
-              </div>
-            </Link>
+            <div key={book.archiveId}>
+              <BookCard
+                lang="en"
+                book={{
+                  identifier: book.archiveId,
+                  title: book.title,
+                  author: book.author,
+                  previewLink: `https://archive.org/details/${book.archiveId}`,
+                  coverImage: `https://archive.org/services/img/${book.archiveId}`,
+                }}
+              />
+            </div>
           ))}
         </div>
 

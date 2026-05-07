@@ -37,12 +37,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title = title || generated.seoTitle;
       description = generated.description;
     } catch (e) {
-      title = title || `تحميل كتاب ${archiveDetails.title} PDF وقراءته أونلاين - موسوعة كنوز العلم`;
+      title = title || `تحميل كتاب ${archiveDetails.title} PDF وقراءته أونلاين - مكتبة الهدى`;
       description = archiveDetails.description || `قراءة وتحميل كتاب ${archiveDetails.title} للمؤلف ${archiveDetails.author || 'غير معروف'} بصيغة PDF مجاناً.`;
     }
   }
 
-  title = title || `تحميل كتاب ${archiveDetails?.title || 'كتاب'} PDF وقراءته أونلاين - موسوعة كنوز العلم`;
+  title = title || `تحميل كتاب ${archiveDetails?.title || 'كتاب'} PDF وقراءته أونلاين - مكتبة الهدى`;
   description = description || `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${archiveDetails?.author || 'غير معروف'} بصيغة PDF مجاناً.`;
 
   return {
@@ -205,9 +205,11 @@ export default async function BookPage({ params }: Props) {
                         <div className="w-12 h-16 bg-white rounded-lg flex items-center justify-center border border-gray-100 flex-shrink-0">
                           <BookIcon className="w-6 h-6 text-primary-300 group-hover:text-gold-500 transition-colors" />
                         </div>
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-gray-900 group-hover:text-primary-900 transition-colors">{book.title}</h4>
-                          <p className="text-xs text-gray-500">{book.author}</p>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-gray-900 group-hover:text-primary-900 transition-colors line-clamp-4 break-words leading-snug" title={book.title}>
+                            {book.title}
+                          </h4>
+                          <p className="text-xs text-gray-500 truncate">{book.author}</p>
                         </div>
                       </Link>
                     ))}

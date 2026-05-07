@@ -18,7 +18,7 @@ const amiri = Amiri({
 });
 
 export const metadata: Metadata = {
-  title: 'Kono Elm Encyclopedia',
+  title: 'Huda Library',
   description: 'Comprehensive Electronic Library for Islamic Books - Read Online & Download from Archive.org',
   keywords: ['Islamic books', 'Library', 'Download books', 'Read books', 'Archive.org'],
   manifest: '/manifest.json?lang=en',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Islamic Library',
+    title: 'Huda Library',
   },
 };
 
@@ -44,7 +44,7 @@ export default function EnglishLayout({
 }) {
   return (
     <html className={`${tajawal.variable} ${amiri.variable}`}>
-      <body className="min-h-screen bg-gradient-to-b from-[#fafaf5] to-[#f0f5eb] font-tajawal overflow-x-hidden">
+      <body className="min-h-screen bg-[#f8f9fa] font-tajawal overflow-x-hidden">
         <LanguageRedirector />
         <DocumentLanguageSetter />
         {children}

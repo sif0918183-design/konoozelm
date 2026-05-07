@@ -5,8 +5,8 @@ export async function GET(request: NextRequest) {
   const lang = searchParams.get('lang') || 'ar';
 
   const manifest = {
-    name: lang === 'en' ? "The Ultimate Islamic Library" : "موسوعة المكتبات الإسلامية",
-    short_name: lang === 'en' ? "Islamic Library" : "الموسوعة الإسلامية",
+    name: lang === 'en' ? "Huda Library" : "مكتبة الهدى",
+    short_name: lang === 'en' ? "Huda Library" : "مكتبة الهدى",
     description: lang === 'en'
       ? "Comprehensive Electronic Library for Islamic Books - Read Online & Download"
       : "موسوعة شاملة للكتب الإسلامية - قراءة مباشرة وتحميل",

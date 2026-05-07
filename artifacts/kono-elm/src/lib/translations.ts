@@ -140,11 +140,13 @@ export interface TranslationKeys {
   back_to_library: string;
   completion_rate: string;
   global_digital_library: string;
+  search_header_text: string;
+  pin_offline_hint: string;
 }
 
 export const translations: Record<Language, TranslationKeys> = {
   ar: {
-    title: 'مَوْسُوعَةُ المَكْتَبَاتِ الإِسْلَامِيَّةِ',
+    title: 'مكتبة الهدى',
     subtitle: 'الموسوعة الإلكترونية الشاملة للكتب والرسائل والمخطوطات الإسلامية',
     search_placeholder: 'ابحث بالعنوان، المؤلف، أو الموضوع...',
     search_button: 'بحث',
@@ -157,7 +159,7 @@ export const translations: Record<Language, TranslationKeys> = {
     read_more: 'اقرأ المزيد',
     offline_notice: '📚 يتم حفظ موضع قراءتك تلقائيًا لتيسير استكمال المطالعة من حيث توقفت',
     footer_text: 'مشروع غير ربحي يهدف لتيسير الوصول للكتب الإسلامية القيمة والمخطوطات النادرة من أرشيف المكتبات العالمية.',
-    rights_reserved: 'جميع الحقوق محفوظة © {year} - موسوعة المكتبات الإسلامية',
+    rights_reserved: 'جميع الحقوق محفوظة © {year} - مكتبة الهدى',
     load_more: 'تحميل المزيد',
     continue_reading: 'تابع القراءة',
     recent_books: 'الكتب الأخيرة',
@@ -194,7 +196,7 @@ export const translations: Record<Language, TranslationKeys> = {
     preparing_download: 'اكتمل التحضير، سيبدأ التحميل الآن...',
     dont_close_page: 'يرجى عدم إغلاق هذه الصفحة حتى يكتمل الشريط',
     book_label: 'الكتاب',
-    admin_title: 'لوحة تحكم موسوعة كنوز العلم',
+    admin_title: 'لوحة تحكم مكتبة الهدى',
     admin_main_site: 'الموقع الرئيسي',
     admin_search_archive: 'البحث في المكتبة العالمية (Archive)',
     admin_categories_suggestions: 'إدارة التصنيفات والاقتراحات الذكية',
@@ -260,7 +262,7 @@ export const translations: Record<Language, TranslationKeys> = {
     edu_quote: 'قيّد صيودك بالحبال الواثقة.. إن من الحماقة أن تصيد غزالة وتتركها بين الخلائق طالقة.',
     edu_desc: 'ندعوك لاستثمار هذا الوقت في تأمل فضل العلم، ونشجعك على تدوين فوائد هذا الكتاب ونشرها لتعم المنفعة.',
     did_you_know: 'هل تعلم؟',
-    did_you_know_desc: 'موسوعة كنوز العلم تخدم آلاف الباحثين شهرياً، مساهمتك في نشر رابط الموقع تدعم استمرار هذا العطاء العلمي.',
+    did_you_know_desc: 'مكتبة الهدى تخدم آلاف الباحثين شهرياً، مساهمتك في نشر رابط الموقع تدعم استمرار هذا العطاء العلمي.',
     cancel_and_return: 'إلغاء العملية والعودة',
     back: 'رجوع',
     night_mode: 'الوضع الليلي',
@@ -280,10 +282,12 @@ export const translations: Record<Language, TranslationKeys> = {
     history_resume: 'استكمال القراءة',
     back_to_library: 'العودة للمكتبة',
     completion_rate: 'نسبة الإنجاز',
-    global_digital_library: 'المكتبة الرقمية العالمية'
+    global_digital_library: 'المكتبة الرقمية العالمية',
+    search_header_text: 'ابحث عن أي كتاب إسلامي بأي لغة',
+    pin_offline_hint: '📍 اضغط علامة التثبيت لتتمكن من قراءة الكتاب في أي وقت بدون انترنت'
   },
   en: {
-    title: 'The Ultimate Islamic Library',
+    title: 'Huda Library',
     subtitle: 'Comprehensive Electronic Library for Islamic Books, Papers, and Manuscripts',
     search_placeholder: 'Search by title, author, or subject...',
     search_button: 'Search',
@@ -296,7 +300,7 @@ export const translations: Record<Language, TranslationKeys> = {
     read_more: 'Read More',
     offline_notice: '📚 Your reading position is automatically saved for easy continuation.',
     footer_text: 'A non-profit project aimed at facilitating access to valuable Islamic books and rare manuscripts from global library archives.',
-    rights_reserved: 'All Rights Reserved © {year} - The Ultimate Islamic Library',
+    rights_reserved: 'All Rights Reserved © {year} - Huda Library',
     load_more: 'Load More',
     continue_reading: 'Continue Reading',
     recent_books: 'Recent Books',
@@ -333,7 +337,7 @@ export const translations: Record<Language, TranslationKeys> = {
     preparing_download: 'Preparation complete, downloading now...',
     dont_close_page: 'Please do not close this page until the bar is complete',
     book_label: 'Book',
-    admin_title: 'Kono Elm Control Panel',
+    admin_title: 'Huda Library Control Panel',
     admin_main_site: 'Main Site',
     admin_search_archive: 'Search Global Library (Archive)',
     admin_categories_suggestions: 'Category Management & Smart Suggestions',
@@ -399,7 +403,7 @@ export const translations: Record<Language, TranslationKeys> = {
     edu_quote: '"Tether your prey with strong ropes.. for it is foolish to hunt a gazelle and leave it untethered among the creatures."',
     edu_desc: 'We invite you to use this time to reflect on the virtue of knowledge, and we encourage you to record the benefits of this book and share them for common good.',
     did_you_know: 'Did you know?',
-    did_you_know_desc: 'Kono Elm Encyclopedia serves thousands of researchers monthly; your contribution in sharing the site link supports the continuation of this scientific gift.',
+    did_you_know_desc: 'Huda Library serves thousands of researchers monthly; your contribution in sharing the site link supports the continuation of this scientific gift.',
     cancel_and_return: 'Cancel Process',
     back: 'Back',
     night_mode: 'Night Mode',
@@ -419,6 +423,8 @@ export const translations: Record<Language, TranslationKeys> = {
     history_resume: 'Continue Reading',
     back_to_library: 'Back to Library',
     completion_rate: 'Completion Rate',
-    global_digital_library: 'Global Digital Library'
+    global_digital_library: 'Global Digital Library',
+    search_header_text: 'Search for any Islamic book in any language',
+    pin_offline_hint: '📍 Click the pin icon to read the book anytime without internet'
   }
 };

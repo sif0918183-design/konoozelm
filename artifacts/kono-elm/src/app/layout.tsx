@@ -30,9 +30,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'مَوْسُوعَةُ المَكْتَبَاتِ الإِسْلَامِيَّةِ',
+  title: 'مكتبة الهدى',
   description: 'موسوعة شاملة للكتب والرسائل والمخطوطات الإسلامية - قراءة مباشرة وتحميل من Archive.org',
-  keywords: ['كتب إسلامية', 'مكتبة', 'تحميل كتب', 'قراءة كتب', 'Archive.org', 'موسوعة المكتبات الإسلامية'],
+  keywords: ['كتب إسلامية', 'مكتبة', 'تحميل كتب', 'قراءة كتب', 'Archive.org', 'مكتبة الهدى'],
   manifest: '/manifest.json?lang=ar',
   icons: {
     icon: '/favicon.png',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'الموسوعة الإسلامية',
+    title: 'مكتبة الهدى',
   },
 };
 
@@ -56,7 +56,7 @@ export default function RootLayout({
 }) {
   return (
     <html className={`${tajawal.variable} ${amiri.variable} ${inter.variable} ${playfair.variable}`}>
-      <body className="min-h-screen bg-gradient-to-b from-[#fafaf5] to-[#f0f5eb] font-tajawal overflow-x-hidden">
+      <body className="min-h-screen bg-[#f8f9fa] font-tajawal overflow-x-hidden">
         <LanguageRedirector />
         <DocumentLanguageSetter />
         {children}

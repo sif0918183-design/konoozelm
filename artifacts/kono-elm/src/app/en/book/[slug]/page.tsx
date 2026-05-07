@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   let title = seoBook?.seoTitle;
   let description = seoBook?.description;
 
-  title = title || `Download ${archiveDetails?.title || 'Book'} PDF - Read Online - Kono Elm Encyclopedia`;
+  title = title || `Download ${archiveDetails?.title || 'Book'} PDF - Read Online - Huda Library`;
   description = description || `Read and download ${archiveDetails?.title} by ${archiveDetails?.author || 'Unknown'} in PDF format for free.`;
 
   return {
@@ -181,9 +181,11 @@ export default async function EnglishBookPage({ params }: Props) {
                         <div className="w-12 h-16 bg-white rounded-lg flex items-center justify-center border border-gray-100 flex-shrink-0">
                           <BookIcon className="w-6 h-6 text-primary-300 group-hover:text-gold-500 transition-colors" />
                         </div>
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-gray-900 group-hover:text-primary-900 transition-colors">{book.title}</h4>
-                          <p className="text-xs text-gray-500">{book.author}</p>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-gray-900 group-hover:text-primary-900 transition-colors line-clamp-4 break-words leading-snug" title={book.title}>
+                            {book.title}
+                          </h4>
+                          <p className="text-xs text-gray-500 truncate">{book.author}</p>
                         </div>
                       </Link>
                     ))}

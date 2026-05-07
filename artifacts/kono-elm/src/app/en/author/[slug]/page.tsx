@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!author) return { title: 'Author not found' };
 
   return {
-    title: `${author.name} - Books and Biography - Kono Elm Encyclopedia`,
+    title: `${author.name} - Books and Biography - Huda Library`,
     description: author.bio?.substring(0, 160) || `Books and biography of ${author.name}`,
     alternates: {
       canonical: `https://kono-elm.vercel.app/en/author/${params.slug}`,

@@ -65,8 +65,12 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
       router.push(readerUrl);
     } else {
-      // Fallback if no specific files found yet
-      window.open(book.previewLink, '_blank');
+      // If no files found, inform user if they are online, or just do nothing to avoid Archive.org redirect
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        alert(t.offline_notice);
+      } else if (files.length === 0 && !isLoadingFiles) {
+        alert(lang === 'ar' ? 'عذراً، هذا الكتاب غير متوفر حالياً للقراءة' : 'Sorry, this book is currently unavailable for reading');
+      }
     }
   };
 
@@ -90,7 +94,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
     : (seoSlug ? `/book/${seoSlug}` : `/book/${slugify(book.title)}--${book.identifier}`);
 
   return (
-    <div className={`group bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100 flex flex-col sm:flex-row h-full overflow-hidden relative ${lang === 'en' ? 'text-left' : 'text-right'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`group bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(15,46,34,0.12)] transition-all duration-500 border border-primary-900/5 hover:border-primary-900/20 flex flex-col h-full overflow-hidden relative ${lang === 'en' ? 'text-left' : 'text-right'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       {/* Detail Link (Internal SEO link) - Only for the card body, excluding buttons */}
       <a
         href={detailsHref}
@@ -98,91 +102,92 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
         aria-label="View Details"
       />
 
-      {/* Horizontal Layout for Mobile and Tablet/Desktop */}
-      <div className="flex flex-row flex-1 p-4 gap-4">
-        {/* Cover Image Section */}
-        <div className="relative w-24 sm:w-32 h-36 sm:h-44 bg-primary-50 rounded-2xl overflow-hidden flex-shrink-0 border border-gray-100 shadow-sm transition-all group-hover:shadow-md">
-          {!imageError ? (
-            <Image
-              src={book.coverImage || `https://archive.org/services/img/${book.identifier}`}
-              alt={book.title}
-              fill
-              className="object-cover"
-              onError={() => setImageError(true)}
-              unoptimized
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full bg-primary-50">
-              <BookIcon className="w-10 sm:w-12 h-10 sm:h-12 text-primary-200" />
-            </div>
-          )}
-
-          {/* Badges Overlay */}
-          <div className="absolute top-2 right-2 flex flex-col gap-1 z-10 pointer-events-none">
-            {book.year && (
-              <span className="bg-white/90 backdrop-blur-sm text-primary-900 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-sm border border-gray-100">
-                {book.year}
-              </span>
+      {/* Main Content Area */}
+      <div className="flex flex-col flex-1 p-4 sm:p-5">
+        <div className="flex flex-row gap-4 mb-4">
+          {/* Cover Image Section */}
+          <div className="relative w-24 sm:w-28 h-32 sm:h-36 bg-primary-50/50 rounded-xl overflow-hidden flex-shrink-0 border border-primary-900/10 shadow-sm transition-all group-hover:shadow-lg group-hover:-translate-y-1 duration-500">
+            {!imageError ? (
+              <Image
+                src={book.coverImage || `https://archive.org/services/img/${book.identifier}`}
+                alt={book.title}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                onError={() => setImageError(true)}
+                unoptimized
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary-50 to-white">
+                <BookIcon className="w-8 sm:w-10 h-8 sm:h-10 text-primary-200" />
+              </div>
             )}
+
+            {/* Badges Overlay */}
+            <div className="absolute top-2 right-2 flex flex-col gap-1 z-10 pointer-events-none">
+              {book.year && (
+                <span className="bg-primary-900/90 backdrop-blur-sm text-gold-100 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm border border-white/10">
+                  {book.year}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Content Section */}
+          <div className="flex flex-col flex-1 min-w-0 py-1">
+            <h3 className="font-bold text-gray-900 mb-2 line-clamp-4 leading-snug text-sm sm:text-base group-hover:text-primary-900 transition-colors" title={book.title}>
+              {book.title}
+            </h3>
+
+            <div className="space-y-2 mt-auto">
+              {book.author && (
+                <p className="text-xs text-gray-500 flex items-start gap-1.5" title={book.author}>
+                  <span className="line-clamp-2 leading-relaxed font-medium">{book.author}</span>
+                </p>
+              )}
+
+              {files.length > 1 && (
+                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gold-50 text-gold-700 text-[10px] font-bold border border-gold-100">
+                  <Layers className="w-3 h-3" />
+                  <span>{lang === 'ar' ? `متعدد الأجزاء (${files.length})` : `Multi-part (${files.length})`}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Content Section */}
-        <div className="flex flex-col flex-1 min-w-0">
-          <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 leading-snug text-sm sm:text-base group-hover:text-primary-900 transition-colors" title={book.title}>
-            {book.title}
-          </h3>
-          
-          <div className="space-y-1 mb-3 flex-1">
-            {book.author && (
-              <p className="text-xs text-gray-600 flex items-center gap-1.5" title={book.author}>
-                <span className="text-gray-400 font-medium whitespace-nowrap">{t.author}:</span>
-                <span className="truncate">{book.author}</span>
-              </p>
+        {/* Action Buttons - Always at bottom */}
+        <div className="flex flex-row gap-2 relative z-10 mt-auto pt-3 border-t border-gray-50">
+          <button
+            onClick={handleRead}
+            disabled={isLoadingFiles}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
+              "bg-primary-900 text-white hover:bg-primary-800 hover:shadow-[0_10px_20px_rgba(15,46,34,0.2)] active:scale-95 disabled:opacity-50"
             )}
-
-            {files.length > 1 && (
-              <div className="flex items-center gap-1.5 text-gold-600 text-[10px] font-bold">
-                <Layers className="w-3 h-3" />
-                <span>{lang === 'ar' ? `متعدد الأجزاء (${files.length})` : `Multi-part (${files.length})`}</span>
-              </div>
+          >
+            {isLoadingFiles ? (
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+            ) : (
+              <BookOpen className="w-4 h-4 flex-shrink-0" />
             )}
-          </div>
+            <span className="whitespace-nowrap">{t.read_now}</span>
+          </button>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2 relative z-10">
-            <button
-              onClick={handleRead}
-              disabled={isLoadingFiles}
-              className={cn(
-                "flex-1 min-w-[80px] flex items-center justify-center gap-1 px-2 py-2 rounded-xl font-bold text-[9px] sm:text-xs transition-all duration-300",
-                "bg-primary-900 text-white hover:bg-primary-800 hover:shadow-lg hover:shadow-primary-900/20 active:scale-95 disabled:opacity-50"
-              )}
-            >
-              {isLoadingFiles ? (
-                <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
-              ) : (
-                <BookOpen className="w-3 h-3 flex-shrink-0" />
-              )}
-              <span className="whitespace-nowrap overflow-hidden text-ellipsis">{t.read_now}</span>
-            </button>
-
-            <button
-              onClick={handleDownload}
-              disabled={isLoadingFiles || files.length === 0}
-              className={cn(
-                "flex-1 min-w-[80px] flex items-center justify-center gap-1 px-2 py-2 rounded-xl font-bold text-[9px] sm:text-xs transition-all duration-300",
-                "bg-gold-50 text-gold-700 border border-gold-200 hover:bg-gold-500 hover:text-white hover:border-gold-500 active:scale-95 disabled:opacity-50"
-              )}
-            >
-              {isLoadingFiles ? (
-                <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
-              ) : (
-                <Download className="w-3 h-3 flex-shrink-0" />
-              )}
-              <span className="whitespace-nowrap overflow-hidden text-ellipsis">{t.download}</span>
-            </button>
-          </div>
+          <button
+            onClick={handleDownload}
+            disabled={isLoadingFiles || files.length === 0}
+            className={cn(
+              "px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
+              "bg-white text-primary-900 border-2 border-primary-900/10 hover:bg-primary-50 hover:border-primary-900/20 active:scale-95 disabled:opacity-50"
+            )}
+            title={t.download}
+          >
+            {isLoadingFiles ? (
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+            ) : (
+              <Download className="w-4 h-4 flex-shrink-0" />
+            )}
+          </button>
         </div>
       </div>
 
