@@ -147,9 +147,19 @@ export default function Home() {
 
           {/* Search Form */}
           <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto group w-full">
-            <h2 className="text-base md:text-lg font-bold text-white mb-3 drop-shadow-sm text-right pr-2">
-              {t.search_header_text}
-            </h2>
+            <div className="text-right pr-2 mb-4 flex flex-col gap-1">
+              <h2 className="text-2xl md:text-3xl font-tajawal font-bold bg-gradient-to-r from-amber-200 via-gold-500 to-amber-200 bg-clip-text text-transparent drop-shadow-sm">
+                {t.search_header_title}
+              </h2>
+              <p className="text-xs md:text-sm text-gold-100/90 font-medium leading-relaxed">
+                {t.search_header_subtitle.split('500,000').map((part, i, arr) => (
+                  <span key={i}>
+                    {part}
+                    {i < arr.length - 1 && <span className="text-gold-500 font-bold">500,000</span>}
+                  </span>
+                ))}
+              </p>
+            </div>
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/40 w-5 h-5 group-focus-within:text-primary-900 transition-colors" />
               <input

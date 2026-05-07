@@ -140,7 +140,8 @@ export interface TranslationKeys {
   back_to_library: string;
   completion_rate: string;
   global_digital_library: string;
-  search_header_text: string;
+  search_header_title: string;
+  search_header_subtitle: string;
   pin_offline_hint: string;
 }
 
@@ -283,7 +284,8 @@ export const translations: Record<Language, TranslationKeys> = {
     back_to_library: 'العودة للمكتبة',
     completion_rate: 'نسبة الإنجاز',
     global_digital_library: 'المكتبة الرقمية العالمية',
-    search_header_text: 'ابحث عن أي كتاب إسلامي بأي لغة',
+    search_header_title: 'ابحث في الموسوعة',
+    search_header_subtitle: 'استكشف أكثر من 500,000 كتاب ومخطوط إسلامي، وابحث عن أي كتاب إسلامي بأي لغة بسهولة وسرعة',
     pin_offline_hint: '📍 اضغط علامة التثبيت لتتمكن من قراءة الكتاب في أي وقت بدون انترنت'
   },
   en: {
@@ -424,7 +426,8 @@ export const translations: Record<Language, TranslationKeys> = {
     back_to_library: 'Back to Library',
     completion_rate: 'Completion Rate',
     global_digital_library: 'Global Digital Library',
-    search_header_text: 'Search for any Islamic book in any language',
+    search_header_title: 'Search the Encyclopedia',
+    search_header_subtitle: 'Explore over 500,000 Islamic books and manuscripts, and find any Islamic book in any language easily and quickly',
     pin_offline_hint: '📍 Click the pin icon to read the book anytime without internet'
   }
 };
