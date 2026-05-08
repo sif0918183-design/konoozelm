@@ -35,7 +35,10 @@ export const metadata: Metadata = {
   keywords: ['كتب إسلامية', 'مكتبة', 'تحميل كتب', 'قراءة كتب', 'Archive.org', 'مكتبة الهدى'],
   manifest: '/manifest.json?lang=ar',
   icons: {
-    icon: '/favicon.png',
+    icon: [
+      { url: '/favicon.png' },
+      { url: '/icon.png', sizes: '1024x1024', type: 'image/png' },
+    ],
     apple: '/apple-icon.png',
   },
   appleWebApp: {
