@@ -23,7 +23,10 @@ export const metadata: Metadata = {
   keywords: ['Islamic books', 'Library', 'Download books', 'Read books', 'Archive.org'],
   manifest: '/manifest.json?lang=en',
   icons: {
-    icon: '/favicon.png',
+    icon: [
+      { url: '/favicon.png' },
+      { url: '/icon.png', sizes: '1024x1024', type: 'image/png' },
+    ],
     apple: '/apple-icon.png',
   },
   appleWebApp: {

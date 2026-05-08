@@ -4,7 +4,7 @@ import EnglishHomePage from '@/components/home/EnglishHomePage';
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Huda Library - Comprehensive Islamic Library',
+  title: 'Huda Library - Comprehensive Encyclopedia of Islamic Books',
   description: 'A comprehensive encyclopedia of Islamic books, allowing you to read and download thousands of books in PDF format for free with direct links from Archive.org.',
   alternates: {
     canonical: 'https://kono-elm.vercel.app/en',
