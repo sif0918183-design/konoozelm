@@ -4,6 +4,7 @@ import './globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import LanguageRedirector from '@/components/LanguageRedirector';
 import DocumentLanguageSetter from '@/components/DocumentLanguageSetter';
+import { Analytics } from "@vercel/analytics/react";
 
 const tajawal = Tajawal({
   subsets: ['arabic'],
@@ -64,6 +65,7 @@ export default function RootLayout({
         <DocumentLanguageSetter />
         {children}
         <PWAInstallPrompt />
+        <Analytics />
         <script
           dangerouslySetInnerHTML={{
             __html: `
