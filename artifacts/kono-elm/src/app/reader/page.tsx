@@ -15,7 +15,8 @@ import {
   Search as SearchIcon,
   ChevronUp,
   ChevronDown,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addToRecentBooks } from '@/lib/recent-books';
@@ -49,10 +50,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
       (entries) => {
         const entry = entries[0];
         if (entry.isIntersecting) {
-          // Fast Page Detection: Trigger as soon as the page occupies a significant part of the viewport center
-          // We use rootMargin to create a narrow detection band in the middle of the screen
           onVisible(pageNumber);
-
           if (!isRendered && !isRendering) {
             renderPage();
           }
@@ -60,7 +58,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
       },
       {
         threshold: 0,
-        rootMargin: '-45% 0px -45% 0px' // Only trigger for pages in the middle 10% of the screen
+        rootMargin: '-45% 0px -45% 0px'
       }
     );
 
@@ -72,7 +70,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
           }
         }
       },
-      { threshold: 0, rootMargin: '1200px 0px' } // Rendering uses a wider margin
+      { threshold: 0, rootMargin: '1200px 0px' }
     );
 
     if (containerRef.current) {
@@ -104,7 +102,6 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
         renderTaskRef.current.cancel();
       }
 
-      // Render Canvas
       const renderContext = {
         canvasContext: context,
         viewport: viewport,
@@ -113,7 +110,6 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
       renderTaskRef.current = page.render(renderContext);
       await renderTaskRef.current.promise;
 
-      // Render Text Layer for Arabic Support and Selection
       if (textLayerDiv) {
         textLayerDiv.innerHTML = '';
         textLayerDiv.style.width = `${viewport.width}px`;
@@ -131,13 +127,11 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
 
         if (searchQuery && searchQuery.trim()) {
           const spans = textLayerDiv.querySelectorAll('span');
-          // Escape special characters for regex
           const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           const regex = new RegExp(`(${escapedQuery})`, 'gi');
           spans.forEach(span => {
             const text = span.textContent || "";
             if (regex.test(text)) {
-              // Create temporary container to safely build the highlighted HTML
               const temp = document.createElement('div');
               temp.innerHTML = text.replace(regex, '<mark class="highlight">$1</mark>');
               span.innerHTML = temp.innerHTML;
@@ -156,7 +150,6 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
     }
   };
 
-  // Re-render on scale change
   useEffect(() => {
     if (isRendered || isRendering) {
       if (renderTaskRef.current) {
@@ -165,9 +158,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
       setIsRendered(false);
       setIsRendering(false);
 
-      // Delay slightly to avoid rapid re-renders during scale slider movement if we had one
       const timer = setTimeout(() => {
-        // Only re-render if still visible
         const rect = containerRef.current?.getBoundingClientRect();
         if (rect && rect.top < window.innerHeight * 2 && rect.bottom > -window.innerHeight) {
           renderPage();
@@ -204,9 +195,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
         <div
           ref={textLayerRef}
           className="textLayer absolute inset-0 opacity-100 pointer-events-none"
-          style={{
-            lineHeight: 1.0,
-          }}
+          style={{ lineHeight: 1.0 }}
         />
         <style jsx global>{`
           .textLayer {
@@ -263,8 +252,6 @@ function ReaderContent() {
   const [isInitialScrollDone, setIsInitialScrollDone] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [useArchiveFallback, setUseArchiveFallback] = useState(false);
-  const [archiveId, setArchiveId] = useState<string | null>(null);
   const [pagesText, setPagesText] = useState<string[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -274,7 +261,6 @@ function ReaderContent() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize PDF.js and Load Document
   useEffect(() => {
     if (!pdfUrl) {
       setError(t.error_no_pdf);
@@ -303,77 +289,70 @@ function ReaderContent() {
     };
 
     const initPdf = async (url: string) => {
-      try {
-        const pdfjsLib = (window as any).pdfjsLib;
-        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
+      let attempts = 0;
+      const maxAttempts = 3;
 
-        // Extract Archive ID for fallback
-        if (url.includes('archive.org')) {
-          const match = url.match(/details\/([^\/]+)/) || url.match(/download\/([^\/]+)/);
-          if (match && match[1]) {
-            setArchiveId(match[1]);
+      while (attempts < maxAttempts) {
+        try {
+          const pdfjsLib = (window as any).pdfjsLib;
+          pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
+
+          const cachedResponse = await getCachedPDF(url);
+          let pdfSource: any;
+
+          if (cachedResponse) {
+            const blob = await cachedResponse.blob();
+            const arrayBuffer = await blob.arrayBuffer();
+            pdfSource = { data: arrayBuffer };
+          } else {
+            const optimizedUrl = optimizeArchiveUrl(url);
+            pdfSource = optimizedUrl.includes('archive.org')
+              ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
+              : optimizedUrl;
           }
-        }
 
-        const cachedResponse = await getCachedPDF(url);
-        let pdfSource: any;
+          const loadingTask = pdfjsLib.getDocument({
+            ...(typeof pdfSource === 'string' ? { url: pdfSource } : pdfSource),
+            cMapUrl: PDFJS_CMAP_URL,
+            cMapPacked: true,
+          });
+          const pdfDoc = await loadingTask.promise;
 
-        if (cachedResponse) {
-          const blob = await cachedResponse.blob();
-          const arrayBuffer = await blob.arrayBuffer();
-          pdfSource = { data: arrayBuffer };
-        } else {
-          const optimizedUrl = optimizeArchiveUrl(url);
-          pdfSource = optimizedUrl.includes('archive.org')
-            ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
-            : optimizedUrl;
-        }
+          setPdf(pdfDoc);
+          setNumPages(pdfDoc.numPages);
 
-        const loadingTask = pdfjsLib.getDocument({
-          ...pdfSource,
-          cMapUrl: PDFJS_CMAP_URL,
-          cMapPacked: true,
-        });
-        const pdfDoc = await loadingTask.promise;
-        setPdf(pdfDoc);
-        setNumPages(pdfDoc.numPages);
-
-        const savedPage = localStorage.getItem(`page_${url}`);
-        if (savedPage) {
-          const page = parseInt(savedPage);
-          if (page > 0 && page <= pdfDoc.numPages) {
-            setPageNum(page);
+          const savedPage = localStorage.getItem(`page_${url}`);
+          if (savedPage) {
+            const page = parseInt(savedPage);
+            if (page > 0 && page <= pdfDoc.numPages) {
+              setPageNum(page);
+            }
+          } else {
+            setPageNum(1);
           }
-        } else {
-          setPageNum(1);
-        }
 
-        addToRecentBooks({
-          identifier: url,
-          title: bookTitle,
-          url: url,
-          lastRead: new Date().toISOString(),
-          currentPage: parseInt(savedPage || '1'),
-          totalPages: pdfDoc.numPages
-        });
+          addToRecentBooks({
+            identifier: url,
+            title: bookTitle,
+            url: url,
+            lastRead: new Date().toISOString(),
+            currentPage: parseInt(savedPage || '1'),
+            totalPages: pdfDoc.numPages
+          });
 
-        setIsLoading(false);
-      } catch (err: any) {
-        console.error('Error initializing PDF:', err);
+          setIsLoading(false);
+          return;
+        } catch (err: any) {
+          attempts++;
+          console.error(`Attempt ${attempts} failed to initialize PDF:`, err);
 
-        // Check if we can fallback to Archive.org Viewer
-        if (url.includes('archive.org')) {
-          const match = url.match(/details\/([^\/]+)/) || url.match(/download\/([^\/]+)/);
-          if (match && match[1]) {
-            setArchiveId(match[1]);
-            setUseArchiveFallback(true);
+          if (attempts >= maxAttempts) {
+            setError(err.message?.includes('404') ? t.error_pdf_404 : t.error_internet_weak);
             setIsLoading(false);
-            return;
+          } else {
+            await new Promise(resolve => setTimeout(resolve, attempts * 1000));
           }
         }
-
-        setError(err.message?.includes('404') ? t.error_pdf_404 : t.error_pdf_general);
-        setIsLoading(false);
       }
     };
 
@@ -383,22 +362,17 @@ function ReaderContent() {
     setIsNightMode(savedNightMode);
   }, [pdfUrl, bookTitle]);
 
-  // Background Text Extraction
   useEffect(() => {
     if (pdf && numPages > 0 && !isExtracting && pagesText.length === 0) {
       const extractText = async () => {
         setIsExtracting(true);
         const extracted: string[] = new Array(numPages).fill("");
-
-        // Extract sequentially to avoid overwhelming the browser
         for (let i = 1; i <= numPages; i++) {
           try {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
             const text = textContent.items.map((item: any) => item.str).join(" ");
             extracted[i-1] = text;
-
-            // Periodically update state to show progress or enable search early
             if (i % 20 === 0 || i === numPages) {
               setPagesText([...extracted]);
             }
@@ -412,18 +386,13 @@ function ReaderContent() {
     }
   }, [pdf, numPages, isExtracting, pagesText.length]);
 
-  // Initial scroll to saved page
   useEffect(() => {
     if (!isLoading && numPages > 0 && pageNum > 1 && !isInitialScrollDone) {
       const timer = setTimeout(() => {
         const pageElement = document.getElementById(`page-${pageNum}`);
         if (pageElement) {
           pageElement.scrollIntoView({ behavior: 'auto', block: 'start' });
-          // Use a longer timeout or multiple checks to ensure it actually scrolled
-          // Before marking initial scroll as done
           setTimeout(() => setIsInitialScrollDone(true), 500);
-        } else {
-          // If element not found yet, don't mark as done, it will retry
         }
       }, 800);
       return () => clearTimeout(timer);
@@ -435,11 +404,7 @@ function ReaderContent() {
   const lastStorageUpdate = useRef<number>(0);
   const onPageVisible = useCallback((page: number) => {
     if (!isInitialScrollDone) return;
-
-    // Update UI immediately
     setPageNum(page);
-
-    // Throttle storage updates to once every 2 seconds to keep the UI smooth
     const now = Date.now();
     if (pdfUrl && now - lastStorageUpdate.current > 2000) {
       lastStorageUpdate.current = now;
@@ -468,14 +433,12 @@ function ReaderContent() {
       setCurrentSearchIndex(-1);
       return;
     }
-
     const results: {page: number, index: number}[] = [];
     pagesText.forEach((text, pageIndex) => {
       if (text.toLowerCase().includes(query.toLowerCase())) {
         results.push({ page: pageIndex + 1, index: results.length });
       }
     });
-
     setSearchResults(results);
     if (results.length > 0) {
       setCurrentSearchIndex(0);
@@ -516,62 +479,43 @@ function ReaderContent() {
   }
 
   if (error) {
-    // If error occurs but we have an archiveId, we should have already set useArchiveFallback
-    // but just in case of unexpected errors after init
-    if (archiveId && !useArchiveFallback) {
-      setUseArchiveFallback(true);
-      return null; // Next render will show fallback
-    }
-
+    const isWeakInternet = error === t.error_internet_weak;
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50 p-4 text-center" dir={isEnglish ? 'ltr' : 'rtl'}>
-        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md border border-red-100">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">{isEnglish ? 'Sorry, an error occurred' : 'عذراً، حدث خطأ أثناء تحميل الكتاب'}</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => router.back()}
-            className="w-full bg-primary-900 text-white font-bold py-3 rounded-xl hover:bg-primary-800 transition-colors"
-          >
-            {t.back_to_home}
-          </button>
-          <p className="mt-4 text-xs text-gray-400">{isEnglish ? 'This might be due to security restrictions (CORS) or an invalid link.' : 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.'}</p>
-        </div>
-      </div>
-    );
-  }
+        <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-lg border border-red-50 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-2 bg-red-500/20" />
 
-  if (useArchiveFallback && archiveId) {
-    return (
-      <div className="flex flex-col h-screen bg-slate-900">
-        <header className="h-16 flex items-center justify-between px-4 bg-slate-900 text-white shadow-md z-50">
-          <div className="flex items-center gap-4">
+          <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-10 h-10 text-red-500" />
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            {isWeakInternet
+              ? (isEnglish ? 'Connection Error' : 'عذراً، ضعف في الاتصال')
+              : (isEnglish ? 'Error Loading Book' : 'خطأ في تحميل الكتاب')
+            }
+          </h2>
+
+          <p className="text-gray-600 mb-8 leading-relaxed text-lg font-tajawal">
+            {error}
+          </p>
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-primary-900 text-white font-bold py-4 rounded-2xl hover:bg-primary-800 transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <RefreshCw className="w-5 h-5" />
+              {isEnglish ? 'Refresh Page' : 'تحديث الصفحة'}
+            </button>
+
             <button
               onClick={() => router.back()}
-              className="p-2 hover:bg-slate-800 rounded-full transition-colors"
-              title={t.back}
+              className="w-full bg-gray-100 text-gray-700 font-bold py-4 rounded-2xl hover:bg-gray-200 transition-all"
             >
-              <ArrowRight className={`w-5 h-5 ${isEnglish ? 'rotate-180' : ''}`} />
+              {t.back}
             </button>
-            <h1 className="font-bold text-sm md:text-base truncate max-w-[200px] md:max-w-md">
-              {bookTitle}
-            </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] bg-gold-500/20 text-gold-400 px-2 py-1 rounded-full font-bold border border-gold-500/30">
-              {isEnglish ? 'Archive.org Viewer' : 'مشاهد Archive.org'}
-            </span>
-          </div>
-        </header>
-        <div className="flex-1 w-full bg-slate-800">
-          <iframe
-            src={`https://archive.org/embed/${archiveId}?ui=full`}
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            allowFullScreen
-            title={bookTitle}
-          />
         </div>
       </div>
     );
@@ -582,7 +526,6 @@ function ReaderContent() {
       "min-h-screen transition-colors duration-300",
       isNightMode ? "bg-slate-950 text-slate-200" : "bg-creamy-100 text-slate-900"
     )}>
-      {/* Toolbar */}
       <header className={cn(
         "fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4 shadow-md backdrop-blur-md",
         isNightMode ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-slate-200"
@@ -601,7 +544,6 @@ function ReaderContent() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          {/* Search Toggle */}
           <button
             onClick={() => setShowSearch(!showSearch)}
             className={cn(
@@ -613,7 +555,6 @@ function ReaderContent() {
             <SearchIcon className="w-5 h-5" />
           </button>
 
-          {/* Zoom Controls */}
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shadow-inner">
             <button
               onClick={() => setScale(s => Math.max(0.5, s - 0.2))}
@@ -657,7 +598,6 @@ function ReaderContent() {
         </div>
       </header>
 
-      {/* Search Bar */}
       {showSearch && (
         <div className={cn(
           "fixed top-16 left-0 right-0 z-40 h-14 flex items-center justify-between px-4 shadow-sm backdrop-blur-md border-t",
@@ -679,7 +619,6 @@ function ReaderContent() {
                 dir={isEnglish ? 'ltr' : 'rtl'}
               />
             </div>
-
             {searchResults.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-500 min-w-[60px] text-center">
@@ -695,7 +634,6 @@ function ReaderContent() {
                 </div>
               </div>
             )}
-
             <button
               onClick={() => {
                 setShowSearch(false);
@@ -710,7 +648,6 @@ function ReaderContent() {
         </div>
       )}
 
-      {/* Reader Body */}
       <main className="pt-24 pb-12 px-4 flex flex-col items-center">
         <div className="w-full max-w-5xl">
           {Array.from({ length: numPages }, (_, i) => (
@@ -728,7 +665,6 @@ function ReaderContent() {
         </div>
       </main>
 
-      {/* Mobile Page Indicator */}
       <div className="fixed bottom-6 right-6 sm:hidden z-50">
         <div className="bg-primary-900 text-white px-4 py-2 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 border-2 border-white/20 backdrop-blur-sm">
           <span>{pageNum}</span>

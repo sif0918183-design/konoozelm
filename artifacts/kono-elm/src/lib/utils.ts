@@ -125,18 +125,17 @@ export function normalizeYear(date: any): string | undefined {
 }
 
 /**
- * Generic fetch with retry logic, exponential backoff, and per-attempt timeout
+ * Fetch with retry, timeout and exponential backoff
  */
 export async function fetchWithRetry(
   url: string,
   options: RequestInit = {},
-  retries = 3,
-  baseDelay = 300,
+  maxAttempts = 3,
   timeout = 8000
-): Promise<Response> {
-  let lastError: any;
+): Promise<Response | null> {
+  let attempts = 0;
 
-  for (let attempt = 0; attempt < retries; attempt++) {
+  while (attempts < maxAttempts) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
 
@@ -145,40 +144,37 @@ export async function fetchWithRetry(
         ...options,
         signal: controller.signal
       });
-
       clearTimeout(id);
 
-      // If successful or client error (4xx) that we shouldn't retry
-      if (response.ok || (response.status >= 400 && response.status < 500)) {
-        return response;
+      if (response.ok) return response;
+
+      // If server error, retry
+      if (response.status >= 500) {
+        throw new Error(`Server error: ${response.status}`);
       }
 
-      // If server error (5xx), it's worth retrying
-      throw new Error(`Server error: ${response.status}`);
+      return response; // Return non-retryable error responses (4xx)
     } catch (error: any) {
       clearTimeout(id);
-      lastError = error;
+      attempts++;
 
-      // Don't wait on the last attempt
-      if (attempt < retries - 1) {
-        const delay = baseDelay * Math.pow(2, attempt);
-        await new Promise(resolve => setTimeout(resolve, delay));
+      if (attempts >= maxAttempts) {
+        console.error(`Fetch failed after ${maxAttempts} attempts for ${url}:`, error);
+        return null;
       }
+
+      // Exponential backoff: 1s, 2s
+      const delay = attempts * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
 
-  throw lastError;
+  return null;
 }
 
 /**
- * Fetch with retry resilience and automated timeout management
+ * Fetch with timeout and error handling (uses fetchWithRetry)
  */
 export async function safeFetch(url: string, options: RequestInit = {}, timeout = 8000): Promise<Response | null> {
-  try {
-    const response = await fetchWithRetry(url, options, 3, 300, timeout);
-    return response;
-  } catch (error) {
-    console.error(`Fetch failed for ${url} after retries:`, error);
-    return null;
-  }
+  return fetchWithRetry(url, options, 3, timeout);
 }

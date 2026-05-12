@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Book as BookIcon, Download, Loader2, Layers, BookOpen } from 'lucide-react';
@@ -70,7 +70,6 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
   const handleRead = async () => {
     let currentFiles = files;
 
-    // If files not loaded or background fetch is still in progress, wait for it
     if (currentFiles.length === 0 || pendingFilesFetchRef.current) {
       currentFiles = await loadFiles();
     }
@@ -82,12 +81,10 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       const readerUrl = `/reader?pdf=${encodeURIComponent(currentFiles[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
       router.push(readerUrl);
     } else {
-      // If no files found, inform user if they are online
       if (typeof window !== 'undefined' && !navigator.onLine) {
         alert(t.offline_notice);
       } else {
-        // Only show alert if it's still 0 after load attempt
-        alert(lang === 'ar' ? 'عذراً، هذا الكتاب غير متوفر حالياً للقراءة' : 'Sorry, this book is currently unavailable for reading');
+        alert(t.error_internet_weak);
       }
     }
   };
@@ -106,7 +103,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       setSelectedFile(currentFiles[0]);
       setShowDownloadModal(true);
     } else {
-      alert(lang === 'ar' ? 'عذراً، هذا الكتاب غير متوفر حالياً للتحميل' : 'Sorry, this book is currently unavailable for download');
+      alert(t.error_internet_weak);
     }
   };
 
@@ -201,7 +198,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
 
           <button
             onClick={handleDownload}
-            disabled={isLoadingFiles}
+            disabled={isLoadingFiles || files.length === 0}
             className={cn(
               "px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
               "bg-white text-primary-900 border-2 border-primary-900/10 hover:bg-primary-50 hover:border-primary-900/20 active:scale-95 disabled:opacity-50"
