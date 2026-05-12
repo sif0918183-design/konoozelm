@@ -23,6 +23,7 @@ export interface Book {
   ocrUrl?: string;
   guessedOcrUrl?: string;
   firstPageImageUrl?: string;
+  totalPages?: number;
 }
 
 export interface SearchResult {
@@ -95,6 +96,7 @@ export async function searchBooks(
     previewLink: `https://archive.org/details/${doc.identifier}`,
     firstPageImageUrl: `https://archive.org/download/${doc.identifier}/page/n0.jpg`,
     guessedOcrUrl: `https://archive.org/download/${doc.identifier}/${doc.identifier}_djvu.txt`,
+    totalPages: doc.imagecount ? parseInt(normalizeField(doc.imagecount)) : undefined,
   }));
 
   const totalResults = data.response?.numFound || 0;
@@ -154,6 +156,8 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
     const language = normalizeField(data.metadata?.language);
     const publisher = normalizeField(data.metadata?.publisher);
     const description = normalizeField(data.metadata?.description);
+    const totalPages = data.metadata?.imagecount ? parseInt(normalizeField(data.metadata.imagecount)) :
+                      (data.metadata?.pages ? parseInt(normalizeField(data.metadata.pages)) : undefined);
 
     const files = data.files || [];
     const ocrFile = files.find((f: any) => f.name && f.name.toLowerCase().endsWith('_djvu.txt'));
@@ -186,7 +190,8 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
       firstPageImageUrl: `https://archive.org/download/${identifier}/page/n0.jpg`,
       downloadLink: bookFiles.length > 0 ? bookFiles[0].url : undefined,
       files: bookFiles,
-      ocrUrl
+      ocrUrl,
+      totalPages
     };
   } catch (error) {
     console.error('Error getting book details:', error);

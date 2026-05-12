@@ -11,7 +11,8 @@ import {
   ArrowRight,
   Download,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Save
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addToRecentBooks } from '@/lib/recent-books';
@@ -207,13 +208,19 @@ function ReaderContent() {
         let currentFileName = fileName;
 
         // If we have an ID but no PDF URL/Filename, fetch them first for proper persistence and download
-        if (bookId && (!currentPdfUrl || !currentFileName)) {
-          const details = await getBookDetails(bookId);
-          if (details && details.files && details.files.length > 0) {
-            currentPdfUrl = details.files[0].url;
-            currentFileName = details.files[0].filename;
-            setPdfUrl(currentPdfUrl);
-            setFileName(currentFileName);
+        let details = null;
+        if (bookId) {
+          details = await getBookDetails(bookId);
+          if (details) {
+            if (details.files && details.files.length > 0 && (!currentPdfUrl || !currentFileName)) {
+              currentPdfUrl = details.files[0].url;
+              currentFileName = details.files[0].filename;
+              setPdfUrl(currentPdfUrl);
+              setFileName(currentFileName);
+            }
+            if (details.totalPages) {
+              setNumPages(details.totalPages);
+            }
           }
         }
 
@@ -226,15 +233,22 @@ function ReaderContent() {
         } else if (bookId) {
           // 2. Use Archive.org Embed directly for better availability
           setIsUsingEmbed(true);
-          // Progress tracking for embed (basic entry)
+
+          // Restore saved page
           if (currentPdfUrl) {
+            const savedPage = localStorage.getItem(`page_${currentPdfUrl}`);
+            if (savedPage) {
+              setPageNum(parseInt(savedPage));
+            }
+
+            // Progress tracking for embed (basic entry)
             addToRecentBooks({
               identifier: currentPdfUrl,
               title: bookTitle,
               url: currentPdfUrl,
               lastRead: new Date().toISOString(),
-              currentPage: 1,
-              totalPages: 1
+              currentPage: parseInt(savedPage || '1'),
+              totalPages: (details && details.totalPages) || numPages || 1
             });
           }
           setIsLoading(false);
@@ -407,7 +421,7 @@ function ReaderContent() {
     );
   }
 
-  const embedUrl = `https://archive.org/embed/${bookId}${fileName ? `?file=${encodeURIComponent(fileName)}` : ''}`;
+  const embedUrl = `https://archive.org/embed/${bookId}${fileName ? `?file=${encodeURIComponent(fileName)}` : ''}${pageNum > 1 ? `&page=${pageNum}` : ''}`;
 
   return (
     <div className={cn(
@@ -427,12 +441,51 @@ function ReaderContent() {
           >
             <ArrowRight className={`w-5 h-5 ${isEnglish ? 'rotate-180' : ''}`} />
           </button>
-          <h1 className="font-bold text-sm md:text-base truncate max-w-[150px] md:max-w-md" title={bookTitle}>
+          <h1 className="font-bold text-sm md:text-base truncate max-w-[150px] md:max-w-sm" title={bookTitle}>
             {bookTitle}
           </h1>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
+          {isUsingEmbed && (
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl px-2 py-1 border border-slate-200 dark:border-slate-700">
+              <span className="text-[10px] font-bold text-gray-500 uppercase hidden sm:inline">Page</span>
+              <input
+                type="number"
+                min="1"
+                max={numPages || 9999}
+                value={pageNum}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val)) setPageNum(val);
+                }}
+                className="w-12 bg-white dark:bg-slate-900 border-none rounded-lg text-center font-bold text-xs p-1 focus:ring-2 focus:ring-primary-500"
+              />
+              <span className="text-gray-400 text-[10px]">/ {numPages || '?'}</span>
+              <button
+                onClick={() => {
+                  if (pdfUrl) {
+                    localStorage.setItem(`page_${pdfUrl}`, pageNum.toString());
+                    addToRecentBooks({
+                      identifier: pdfUrl,
+                      title: bookTitle,
+                      url: pdfUrl,
+                      lastRead: new Date().toISOString(),
+                      currentPage: pageNum,
+                      totalPages: numPages || 1
+                    });
+                    // Refresh the iframe to jump to new page
+                    setRetryKey(k => k + 1);
+                  }
+                }}
+                className="p-1.5 bg-primary-900 text-white rounded-lg hover:bg-primary-800 transition-colors"
+                title={isEnglish ? 'Save & Sync' : 'حفظ ومزامنة'}
+              >
+                <Save className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {!isUsingEmbed && (
             <>
               {/* Zoom Controls */}
