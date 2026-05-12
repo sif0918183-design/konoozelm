@@ -177,6 +177,8 @@ function ReaderContent() {
   const t = translations[lang];
 
   const pdfUrl = searchParams.get('pdf');
+  const bookId = searchParams.get('id');
+  const fileName = searchParams.get('file');
   const bookTitle = searchParams.get('title') || t.loading;
 
   const [pdf, setPdf] = useState<any>(null);
@@ -187,34 +189,62 @@ function ReaderContent() {
   const [isInitialScrollDone, setIsInitialScrollDone] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isUsingEmbed, setIsUsingEmbed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize PDF.js and Load Document
+  // Initialize PDF.js or Iframe Embed
   useEffect(() => {
-    if (!pdfUrl) {
-      setError(t.error_no_pdf);
-      setIsLoading(false);
-      return;
-    }
-
-    const loadPdf = async () => {
+    const initReader = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        if (!(window as any).pdfjsLib) {
-          const script = document.createElement('script');
-          script.src = PDFJS_CDN;
-          script.onload = () => initPdf(pdfUrl);
-          document.head.appendChild(script);
+        // 1. Check if we should use PDF.js (Offline/Pinned check)
+        const isPinned = pdfUrl ? await getCachedPDF(pdfUrl) : false;
+
+        if (isPinned && pdfUrl) {
+          setIsUsingEmbed(false);
+          await loadWithPdfJs(pdfUrl);
+        } else if (bookId) {
+          // 2. Use Archive.org Embed directly for better availability
+          setIsUsingEmbed(true);
+          // Progress tracking for embed (basic entry)
+          if (pdfUrl) {
+            addToRecentBooks({
+              identifier: pdfUrl,
+              title: bookTitle,
+              url: pdfUrl,
+              lastRead: new Date().toISOString(),
+              currentPage: 1,
+              totalPages: 1
+            });
+          }
+          setIsLoading(false);
+        } else if (pdfUrl) {
+          // 3. Fallback to PDF.js if no ID is available
+          setIsUsingEmbed(false);
+          await loadWithPdfJs(pdfUrl);
         } else {
-          initPdf(pdfUrl);
+          setError(t.error_no_pdf);
+          setIsLoading(false);
         }
       } catch (err) {
-        console.error('Error loading PDF.js:', err);
-        setError(t.error_pdf_lib);
+        console.error('Error initializing reader:', err);
+        setError(t.error_pdf_general);
         setIsLoading(false);
+      }
+    };
+
+    const loadWithPdfJs = async (url: string) => {
+      if (!(window as any).pdfjsLib) {
+        const script = document.createElement('script');
+        script.src = PDFJS_CDN;
+        script.onload = () => initPdf(url);
+        document.head.appendChild(script);
+      } else {
+        await initPdf(url);
       }
     };
 
@@ -269,15 +299,15 @@ function ReaderContent() {
       }
     };
 
-    loadPdf();
+    initReader();
 
     const savedNightMode = localStorage.getItem('nightMode') === 'true';
     setIsNightMode(savedNightMode);
-  }, [pdfUrl, bookTitle]);
+  }, [pdfUrl, bookId, bookTitle, retryKey]);
 
-  // Initial scroll to saved page
+  // Initial scroll to saved page (only for PDF.js)
   useEffect(() => {
-    if (!isLoading && numPages > 0 && pageNum > 1 && !isInitialScrollDone) {
+    if (!isUsingEmbed && !isLoading && numPages > 0 && pageNum > 1 && !isInitialScrollDone) {
       const timer = setTimeout(() => {
         const pageElement = document.getElementById(`page-${pageNum}`);
         if (pageElement) {
@@ -328,7 +358,7 @@ function ReaderContent() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50" dir={isEnglish ? 'ltr' : 'rtl'}>
         <Loader2 className="w-12 h-12 text-primary-900 animate-spin mb-4" />
-        <p className="text-primary-900 font-bold text-lg animate-pulse">{t.loading_book}</p>
+        <p className="text-primary-900 font-bold text-lg animate-pulse">{t.loading_wait}</p>
       </div>
     );
   }
@@ -340,17 +370,27 @@ function ReaderContent() {
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2">{isEnglish ? 'Sorry, an error occurred' : 'عذراً، حدث خطأ أثناء تحميل الكتاب'}</h2>
           <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => router.back()}
-            className="w-full bg-primary-900 text-white font-bold py-3 rounded-xl hover:bg-primary-800 transition-colors"
-          >
-            {t.back_to_home}
-          </button>
-          <p className="mt-4 text-xs text-gray-400">{isEnglish ? 'This might be due to security restrictions (CORS) or an invalid link.' : 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.'}</p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => setRetryKey(k => k + 1)}
+              className="w-full bg-primary-900 text-white font-bold py-3 rounded-xl hover:bg-primary-800 transition-colors"
+            >
+              {t.retry_loading}
+            </button>
+            <button
+              onClick={() => router.back()}
+              className="w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors"
+            >
+              {t.back_to_home}
+            </button>
+          </div>
+          <p className="mt-4 text-xs text-gray-400">{isEnglish ? 'This might be due to server load or an invalid link. Try again.' : 'قد يكون ذلك بسبب ضغط السيرفر أو رابط غير صالح. حاول مرة أخرى.'}</p>
         </div>
       </div>
     );
   }
+
+  const embedUrl = `https://archive.org/embed/${bookId}${fileName ? `?file=${encodeURIComponent(fileName)}` : ''}`;
 
   return (
     <div className={cn(
@@ -376,30 +416,34 @@ function ReaderContent() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          {/* Zoom Controls */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shadow-inner">
-            <button
-              onClick={() => setScale(s => Math.max(0.5, s - 0.2))}
-              className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all active:scale-90"
-              title={isEnglish ? 'Zoom Out' : 'تصغير'}
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <span className="text-[11px] font-bold w-10 text-center">{Math.round(scale * 100)}%</span>
-            <button
-              onClick={() => setScale(s => Math.min(3, s + 0.2))}
-              className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all active:scale-90"
-              title={isEnglish ? 'Zoom In' : 'تكبير'}
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-          </div>
+          {!isUsingEmbed && (
+            <>
+              {/* Zoom Controls */}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shadow-inner">
+                <button
+                  onClick={() => setScale(s => Math.max(0.5, s - 0.2))}
+                  className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all active:scale-90"
+                  title={isEnglish ? 'Zoom Out' : 'تصغير'}
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <span className="text-[11px] font-bold w-10 text-center">{Math.round(scale * 100)}%</span>
+                <button
+                  onClick={() => setScale(s => Math.min(3, s + 0.2))}
+                  className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all active:scale-90"
+                  title={isEnglish ? 'Zoom In' : 'تكبير'}
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+              </div>
 
-          <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary-900 text-white rounded-xl text-xs font-black shadow-lg border border-primary-800">
-            <span className="min-w-[1.5rem] text-center">{pageNum}</span>
-            <span className="opacity-40 text-[10px]">/</span>
-            <span className="opacity-70">{numPages}</span>
-          </div>
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary-900 text-white rounded-xl text-xs font-black shadow-lg border border-primary-800">
+                <span className="min-w-[1.5rem] text-center">{pageNum}</span>
+                <span className="opacity-40 text-[10px]">/</span>
+                <span className="opacity-70">{numPages}</span>
+              </div>
+            </>
+          )}
 
           <button
             onClick={toggleNightMode}
@@ -409,42 +453,63 @@ function ReaderContent() {
             {isNightMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
           </button>
 
-          <a
-            href={pdfUrl!}
-            download
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-            title={t.download_pdf}
-          >
-            <Download className="w-5 h-5" />
-          </a>
+          {pdfUrl && (
+            <a
+              href={pdfUrl}
+              download
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+              title={t.download_pdf}
+            >
+              <Download className="w-5 h-5" />
+            </a>
+          )}
         </div>
       </header>
 
       {/* Reader Body */}
-      <main className="pt-24 pb-12 px-4 flex flex-col items-center">
-        <div className="w-full max-w-5xl">
-          {Array.from({ length: numPages }, (_, i) => (
-            <div key={i + 1} id={`page-${i + 1}`}>
-              <PageItem
-                pageNumber={i + 1}
-                pdf={pdf}
-                scale={scale}
-                isNightMode={isNightMode}
-                onVisible={onPageVisible}
-              />
-            </div>
-          ))}
-        </div>
+      <main className={cn(
+        "pt-16",
+        isUsingEmbed ? "h-[100dvh] pb-0 px-0 overflow-hidden" : "min-h-screen pb-12 px-4 flex flex-col items-center pt-24"
+      )}>
+        {isUsingEmbed ? (
+          <iframe
+            src={embedUrl}
+            width="100%"
+            height="100%"
+            frameBorder="0"
+            allowFullScreen
+            className={cn(
+              "w-full h-full",
+              isNightMode && "invert brightness-90 hue-rotate-180"
+            )}
+          />
+        ) : (
+          <div className="w-full max-w-5xl">
+            {Array.from({ length: numPages }, (_, i) => (
+              <div key={i + 1} id={`page-${i + 1}`}>
+                <PageItem
+                  pageNumber={i + 1}
+                  pdf={pdf}
+                  scale={scale}
+                  isNightMode={isNightMode}
+                  onVisible={onPageVisible}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </main>
 
       {/* Mobile Page Indicator */}
-      <div className="fixed bottom-6 right-6 sm:hidden z-50">
-        <div className="bg-primary-900 text-white px-4 py-2 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 border-2 border-white/20 backdrop-blur-sm">
-          <span>{pageNum}</span>
-          <span className="opacity-50 text-xs">/</span>
-          <span className="opacity-80 text-xs">{numPages}</span>
+      {!isUsingEmbed && (
+        <div className="fixed bottom-6 right-6 sm:hidden z-50">
+          <div className="bg-primary-900 text-white px-4 py-2 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 border-2 border-white/20 backdrop-blur-sm">
+            <span>{pageNum}</span>
+            <span className="opacity-50 text-xs">/</span>
+            <span className="opacity-80 text-xs">{numPages}</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

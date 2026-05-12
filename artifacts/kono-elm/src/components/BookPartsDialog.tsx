@@ -26,7 +26,7 @@ export default function BookPartsDialog({ book, files, onClose, mode, onDownload
     if (mode === 'download' && onDownload) {
       onDownload(file);
     } else {
-      const readerUrl = `/reader?pdf=${encodeURIComponent(file.url)}&title=${encodeURIComponent(book.title)} - ${file.name}`;
+      const readerUrl = `/reader?id=${book.identifier}&file=${encodeURIComponent(file.filename)}&pdf=${encodeURIComponent(file.url)}&title=${encodeURIComponent(book.title)} - ${file.name}&lang=${lang}`;
       router.push(readerUrl);
     }
     onClose();

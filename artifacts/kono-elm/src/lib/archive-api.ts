@@ -1,7 +1,8 @@
-import { normalizeYear, safeFetch } from './utils';
+import { normalizeYear, safeFetch, fetchWithRetry } from './utils';
 
 export interface BookFile {
   name: string;
+  filename: string;
   url: string;
   format?: string;
   size?: string;
@@ -68,7 +69,7 @@ export async function searchBooks(
     // We don't specify sort to use Archive.org's default relevance ranking
   });
 
-  const response = await safeFetch(`${ARCHIVE_API_BASE}?${params.toString()}`);
+  const response = await fetchWithRetry(`${ARCHIVE_API_BASE}?${params.toString()}`);
 
   if (!response || !response.ok) {
     return { books: [], totalResults: 0, page, hasMore: false };
@@ -112,7 +113,7 @@ export async function searchBooks(
  */
 export async function getBookFiles(identifier: string): Promise<BookFile[]> {
   try {
-    const response = await safeFetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
+    const response = await fetchWithRetry(`${ARCHIVE_METADATA_BASE}${identifier}`);
     if (!response || !response.ok) return [];
 
     const data = await response.json();
@@ -126,6 +127,7 @@ export async function getBookFiles(identifier: string): Promise<BookFile[]> {
       )
       .map((file: any) => ({
         name: file.title || file.name.replace('.pdf', '').replace(/_/g, ' '),
+        filename: file.name,
         url: `https://archive.org/download/${identifier}/${encodeURIComponent(file.name)}`,
         format: file.format,
         size: file.size
@@ -141,7 +143,7 @@ export async function getBookFiles(identifier: string): Promise<BookFile[]> {
  */
 export async function getBookDetails(identifier: string): Promise<Book | null> {
   try {
-    const response = await safeFetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
+    const response = await fetchWithRetry(`${ARCHIVE_METADATA_BASE}${identifier}`);
     if (!response || !response.ok) return null;
 
     const data = await response.json();
@@ -165,6 +167,7 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
       )
       .map((file: any) => ({
         name: file.title || file.name.replace('.pdf', '').replace(/_/g, ' '),
+        filename: file.name,
         url: `https://archive.org/download/${identifier}/${encodeURIComponent(file.name)}`,
         format: file.format,
         size: file.size

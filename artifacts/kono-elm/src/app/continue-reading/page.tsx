@@ -140,7 +140,7 @@ export default function ContinueReadingPage() {
                       <div className="flex flex-col gap-2 min-w-0 flex-1">
                         <div className="flex items-center gap-3">
                           <Link
-                            href={`/reader?pdf=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`}
+                            href={`/reader?pdf=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}&lang=${lang}${book.url.includes('archive.org/download/') ? `&id=${book.url.split('archive.org/download/')[1].split('/')[0]}&file=${book.url.split('/').pop()}` : ''}`}
                             className="group min-w-0"
                           >
                             <h2 className="text-lg md:text-xl font-bold text-gray-800 group-hover:text-primary-900 transition-colors truncate">
@@ -218,7 +218,7 @@ export default function ContinueReadingPage() {
 
                   <div className="flex-shrink-0">
                     <Link
-                      href={`/reader?pdf=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`}
+                      href={`/reader?pdf=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}&lang=${lang}${book.url.includes('archive.org/download/') ? `&id=${book.url.split('archive.org/download/')[1].split('/')[0]}&file=${book.url.split('/').pop()}` : ''}`}
                       className="inline-flex items-center justify-center gap-2 bg-primary-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-primary-800 transition-all shadow-md active:scale-95 w-full md:w-auto"
                     >
                       {t.history_resume}

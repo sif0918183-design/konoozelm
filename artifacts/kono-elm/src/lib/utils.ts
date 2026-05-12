@@ -144,3 +144,34 @@ export async function safeFetch(url: string, options: RequestInit = {}, timeout 
     return null;
   }
 }
+
+/**
+ * Fetch with retry mechanism and exponential backoff
+ */
+export async function fetchWithRetry(
+  url: string,
+  options: RequestInit = {},
+  retries = 3,
+  delay = 1000,
+  timeout = 10000
+): Promise<Response | null> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await safeFetch(url, options, timeout);
+      if (response && response.ok) {
+        return response;
+      }
+
+      // If we're here, it failed but didn't throw (e.g. 500 or 404)
+      console.warn(`Attempt ${i + 1} failed for ${url}: ${response?.status}`);
+    } catch (error) {
+      console.error(`Attempt ${i + 1} error for ${url}:`, error);
+    }
+
+    if (i < retries - 1) {
+      const backoffDelay = delay * Math.pow(2, i);
+      await new Promise(resolve => setTimeout(resolve, backoffDelay));
+    }
+  }
+  return null;
+}
