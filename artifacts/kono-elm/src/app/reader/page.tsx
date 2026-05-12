@@ -90,17 +90,27 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d')!;
 
+      // Support High-DPI screens
+      const outputScale = window.devicePixelRatio || 1;
       const viewport = page.getViewport({ scale });
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
+
+      canvas.width = Math.floor(viewport.width * outputScale);
+      canvas.height = Math.floor(viewport.height * outputScale);
+      canvas.style.width = Math.floor(viewport.width) + "px";
+      canvas.style.height = Math.floor(viewport.height) + "px";
 
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
       }
 
+      const transform = outputScale !== 1
+        ? [outputScale, 0, 0, outputScale, 0, 0]
+        : null;
+
       const renderContext = {
         canvasContext: context,
         viewport: viewport,
+        transform: transform
       };
 
       renderTaskRef.current = page.render(renderContext);
@@ -143,9 +153,10 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
       style={{ minHeight: '500px' }}
     >
       <div className={cn(
-        "shadow-2xl bg-white transition-all duration-300 relative",
+        "shadow-2xl bg-white transition-all duration-500 relative",
         isNightMode && "brightness-75 contrast-125",
-        !isRendered && "flex items-center justify-center bg-gray-50 border border-gray-100"
+        !isRendered && "flex items-center justify-center bg-gray-50 border border-gray-100",
+        isRendered ? "opacity-100 scale-100" : "opacity-0 scale-95"
       )}>
         {!isRendered && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
@@ -235,17 +246,18 @@ function ReaderContent() {
           setIsUsingEmbed(true);
 
           // Restore saved page
-          if (currentPdfUrl) {
-            const savedPage = localStorage.getItem(`page_${currentPdfUrl}`);
+        const storageKey = bookId || currentPdfUrl;
+        if (storageKey) {
+          const savedPage = localStorage.getItem(`page_${storageKey}`);
             if (savedPage) {
               setPageNum(parseInt(savedPage));
             }
 
             // Progress tracking for embed (basic entry)
             addToRecentBooks({
-              identifier: currentPdfUrl,
+            identifier: currentPdfUrl || bookId || 'unknown',
               title: bookTitle,
-              url: currentPdfUrl,
+            url: currentPdfUrl || `https://archive.org/details/${bookId}`,
               lastRead: new Date().toISOString(),
               currentPage: parseInt(savedPage || '1'),
               totalPages: (details && details.totalPages) || numPages || 1
@@ -302,7 +314,8 @@ function ReaderContent() {
         setPdf(pdfDoc);
         setNumPages(pdfDoc.numPages);
 
-        const savedPage = localStorage.getItem(`page_${url}`);
+        const storageKey = bookId || url;
+        const savedPage = localStorage.getItem(`page_${storageKey}`);
         if (savedPage) {
           const page = parseInt(savedPage);
           if (page > 0 && page <= pdfDoc.numPages) {
@@ -313,7 +326,7 @@ function ReaderContent() {
         }
 
         addToRecentBooks({
-          identifier: url,
+          identifier: bookId || url,
           title: bookTitle,
           url: url,
           lastRead: new Date().toISOString(),
@@ -356,6 +369,22 @@ function ReaderContent() {
   }, [isLoading, numPages, pageNum, isInitialScrollDone]);
 
   const lastStorageUpdate = useRef<number>(0);
+
+  const saveProgress = useCallback((page: number) => {
+    const storageKey = bookId || pdfUrl;
+    if (!storageKey) return;
+
+    localStorage.setItem(`page_${storageKey}`, page.toString());
+    addToRecentBooks({
+      identifier: pdfUrl || bookId || 'unknown',
+      title: bookTitle,
+      url: pdfUrl || `https://archive.org/details/${bookId}`,
+      lastRead: new Date().toISOString(),
+      currentPage: page,
+      totalPages: numPages || 1
+    });
+  }, [bookId, pdfUrl, bookTitle, numPages]);
+
   const onPageVisible = useCallback((page: number) => {
     if (!isInitialScrollDone) return;
 
@@ -364,19 +393,24 @@ function ReaderContent() {
 
     // Throttle storage updates to once every 2 seconds to keep the UI smooth
     const now = Date.now();
-    if (pdfUrl && now - lastStorageUpdate.current > 2000) {
+    if (now - lastStorageUpdate.current > 2000) {
       lastStorageUpdate.current = now;
-      localStorage.setItem(`page_${pdfUrl}`, page.toString());
-      addToRecentBooks({
-        identifier: pdfUrl,
-        title: bookTitle,
-        url: pdfUrl,
-        lastRead: new Date().toISOString(),
-        currentPage: page,
-        totalPages: numPages
-      });
+      saveProgress(page);
     }
-  }, [pdfUrl, bookTitle, numPages, isInitialScrollDone]);
+  }, [saveProgress, isInitialScrollDone]);
+
+  // Robust saving on navigation or exit
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      saveProgress(pageNum);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      saveProgress(pageNum);
+    };
+  }, [pageNum, saveProgress]);
 
   const toggleNightMode = () => {
     const newMode = !isNightMode;
@@ -430,20 +464,33 @@ function ReaderContent() {
     )}>
       {/* Toolbar */}
       <header className={cn(
-        "fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4 shadow-md backdrop-blur-md",
+        "fixed top-0 left-0 right-0 z-50 h-16 flex flex-col shadow-md backdrop-blur-md",
         isNightMode ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-slate-200"
       )}>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-            title={t.back}
-          >
-            <ArrowRight className={`w-5 h-5 ${isEnglish ? 'rotate-180' : ''}`} />
-          </button>
-          <h1 className="font-bold text-sm md:text-base truncate max-w-[150px] md:max-w-sm" title={bookTitle}>
-            {bookTitle}
-          </h1>
+        {/* Progress Bar */}
+        <div className="w-full h-1 bg-gray-100 dark:bg-gray-800">
+          <div
+            className="h-full bg-primary-600 transition-all duration-500 ease-out"
+            style={{ width: `${numPages > 0 ? (pageNum / numPages) * 100 : 0}%` }}
+          />
+        </div>
+
+        <div className="flex-1 flex items-center justify-between px-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                saveProgress(pageNum);
+                router.back();
+              }}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+              title={t.back}
+            >
+              <ArrowRight className={`w-5 h-5 ${isEnglish ? 'rotate-180' : ''}`} />
+            </button>
+            <h1 className="font-bold text-sm md:text-base truncate max-w-[150px] md:max-w-sm" title={bookTitle}>
+              {bookTitle}
+            </h1>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
