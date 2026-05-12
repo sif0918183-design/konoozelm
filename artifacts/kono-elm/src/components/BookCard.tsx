@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Book as BookIcon, Download, Loader2, Layers, BookOpen } from 'lucide-react';
@@ -27,6 +27,28 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
   const [dialogMode, setDialogMode] = useState<'read' | 'download'>('read');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<BookFile | null>(null);
+  const pendingFilesFetchRef = useRef<Promise<BookFile[]> | null>(null);
+
+  const loadFiles = useCallback(async () => {
+    if (pendingFilesFetchRef.current) return pendingFilesFetchRef.current;
+
+    pendingFilesFetchRef.current = (async () => {
+      setIsLoadingFiles(true);
+      try {
+        const bookFiles = await getBookFiles(book.identifier);
+        setFiles(bookFiles);
+        return bookFiles;
+      } catch (error) {
+        console.error('Error fetching book files:', error);
+        return [];
+      } finally {
+        setIsLoadingFiles(false);
+        pendingFilesFetchRef.current = null;
+      }
+    })();
+
+    return pendingFilesFetchRef.current;
+  }, [book.identifier]);
 
   useEffect(() => {
     const fetchSeoData = async () => {
@@ -41,46 +63,47 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       } catch (e) {}
     };
 
-    const fetchFiles = async () => {
-      setIsLoadingFiles(true);
-      try {
-        const bookFiles = await getBookFiles(book.identifier);
-        setFiles(bookFiles);
-      } catch (error) {
-        console.error('Error fetching book files:', error);
-      } finally {
-        setIsLoadingFiles(false);
-      }
-    };
-
     fetchSeoData();
-    fetchFiles();
-  }, [book.identifier, lang]);
+    loadFiles();
+  }, [book.identifier, lang, loadFiles]);
 
-  const handleRead = () => {
-    if (files.length > 1) {
+  const handleRead = async () => {
+    let currentFiles = files;
+
+    if (currentFiles.length === 0 || pendingFilesFetchRef.current) {
+      currentFiles = await loadFiles();
+    }
+
+    if (currentFiles.length > 1) {
       setDialogMode('read');
       setShowPartsDialog(true);
-    } else if (files.length === 1) {
-      const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
+    } else if (currentFiles.length === 1) {
+      const readerUrl = `/reader?pdf=${encodeURIComponent(currentFiles[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
       router.push(readerUrl);
     } else {
-      // If no files found, inform user if they are online, or just do nothing to avoid Archive.org redirect
       if (typeof window !== 'undefined' && !navigator.onLine) {
         alert(t.offline_notice);
-      } else if (files.length === 0 && !isLoadingFiles) {
-        alert(lang === 'ar' ? 'عذراً، هذا الكتاب غير متوفر حالياً للقراءة' : 'Sorry, this book is currently unavailable for reading');
+      } else {
+        alert(t.error_internet_weak);
       }
     }
   };
 
-  const handleDownload = () => {
-    if (files.length > 1) {
+  const handleDownload = async () => {
+    let currentFiles = files;
+
+    if (currentFiles.length === 0 || pendingFilesFetchRef.current) {
+      currentFiles = await loadFiles();
+    }
+
+    if (currentFiles.length > 1) {
       setDialogMode('download');
       setShowPartsDialog(true);
-    } else if (files.length === 1) {
-      setSelectedFile(files[0]);
+    } else if (currentFiles.length === 1) {
+      setSelectedFile(currentFiles[0]);
       setShowDownloadModal(true);
+    } else {
+      alert(t.error_internet_weak);
     }
   };
 

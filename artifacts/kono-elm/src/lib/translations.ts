@@ -143,6 +143,7 @@ export interface TranslationKeys {
   search_header_title: string;
   search_header_subtitle: string;
   pin_offline_hint: string;
+  error_internet_weak: string;
 }
 
 export const translations: Record<Language, TranslationKeys> = {
@@ -286,7 +287,8 @@ export const translations: Record<Language, TranslationKeys> = {
     global_digital_library: 'المكتبة الرقمية العالمية',
     search_header_title: 'ابحث في الموسوعة',
     search_header_subtitle: 'استكشف أكثر من 500,000 كتاب ومخطوط إسلامي، وابحث عن أي كتاب إسلامي بأي لغة بسهولة وسرعة',
-    pin_offline_hint: '📍 اضغط علامة التثبيت لتتمكن من قراءة الكتاب في أي وقت بدون انترنت'
+    pin_offline_hint: '📍 اضغط علامة التثبيت لتتمكن من قراءة الكتاب في أي وقت بدون انترنت',
+    error_internet_weak: 'لا يمكن فتح الكتاب بسبب ضعف الإنترنت. يرجى تحديث الصفحة والمحاولة مرة أخرى.'
   },
   en: {
     title: 'Huda Library',
@@ -428,6 +430,7 @@ export const translations: Record<Language, TranslationKeys> = {
     global_digital_library: 'Global Digital Library',
     search_header_title: 'Search the Encyclopedia',
     search_header_subtitle: 'Explore over 500,000 Islamic books and manuscripts, and find any Islamic book in any language easily and quickly',
-    pin_offline_hint: '📍 Click the pin icon to read the book anytime without internet'
+    pin_offline_hint: '📍 Click the pin icon to read the book anytime without internet',
+    error_internet_weak: 'The book cannot be opened due to weak internet connection. Please refresh the page and try again.'
   }
 };

@@ -125,22 +125,56 @@ export function normalizeYear(date: any): string | undefined {
 }
 
 /**
- * Fetch with timeout and error handling
+ * Fetch with retry, timeout and exponential backoff
+ */
+export async function fetchWithRetry(
+  url: string,
+  options: RequestInit = {},
+  maxAttempts = 3,
+  timeout = 8000
+): Promise<Response | null> {
+  let attempts = 0;
+
+  while (attempts < maxAttempts) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(id);
+
+      if (response.ok) return response;
+
+      // If server error, retry
+      if (response.status >= 500) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      return response; // Return non-retryable error responses (4xx)
+    } catch (error: any) {
+      clearTimeout(id);
+      attempts++;
+
+      if (attempts >= maxAttempts) {
+        console.error(`Fetch failed after ${maxAttempts} attempts for ${url}:`, error);
+        return null;
+      }
+
+      // Exponential backoff: 1s, 2s
+      const delay = attempts * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Fetch with timeout and error handling (uses fetchWithRetry)
  */
 export async function safeFetch(url: string, options: RequestInit = {}, timeout = 8000): Promise<Response | null> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal
-    });
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    console.error(`Fetch failed for ${url}:`, error);
-    return null;
-  }
+  return fetchWithRetry(url, options, 3, timeout);
 }
