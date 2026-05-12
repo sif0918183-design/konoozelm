@@ -11,6 +11,7 @@ import { translations } from '@/lib/translations';
 import Link from 'next/link';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
+import AdBanner from '@/components/AdBanner';
 
 
 export default function Home() {
@@ -287,6 +288,8 @@ export default function Home() {
             <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
           </div>
         )}
+
+        {hasSearched && <AdBanner />}
 
         {/* Initial State (Placeholder if no recent books) */}
         {!hasSearched && !isLoading && books.length === 0 && (

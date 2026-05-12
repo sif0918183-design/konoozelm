@@ -9,6 +9,7 @@ import { type Book, type BookFile, getBookFiles } from '@/lib/archive-api';
 import { cn } from '@/lib/utils';
 import BookPartsDialog from './BookPartsDialog';
 import DownloadModal from './DownloadModal';
+import ReaderWaitModal from './ReaderWaitModal';
 import { translations } from '@/lib/translations';
 
 interface BookCardProps {
@@ -26,6 +27,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
   const [showPartsDialog, setShowPartsDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'read' | 'download'>('read');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [showReaderWaitModal, setShowReaderWaitModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<BookFile | null>(null);
 
   useEffect(() => {
@@ -62,8 +64,8 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       setDialogMode('read');
       setShowPartsDialog(true);
     } else if (files.length === 1) {
-      const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
-      router.push(readerUrl);
+      setSelectedFile(files[0]);
+      setShowReaderWaitModal(true);
     } else {
       // If no files found, inform user if they are online, or just do nothing to avoid Archive.org redirect
       if (typeof window !== 'undefined' && !navigator.onLine) {
@@ -87,6 +89,11 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
   const triggerDownload = (file: BookFile) => {
     setSelectedFile(file);
     setShowDownloadModal(true);
+  };
+
+  const triggerRead = (file: BookFile) => {
+    setSelectedFile(file);
+    setShowReaderWaitModal(true);
   };
 
   const detailsHref = lang === 'en'
@@ -198,6 +205,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
           mode={dialogMode}
           onClose={() => setShowPartsDialog(false)}
           onDownload={triggerDownload}
+          onRead={triggerRead}
         />
       )}
 
@@ -212,6 +220,22 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
           fileName={selectedFile.name}
           bookTitle={book.title}
           fileSize={selectedFile.size}
+        />
+      )}
+
+      {showReaderWaitModal && selectedFile && (
+        <ReaderWaitModal
+          isOpen={showReaderWaitModal}
+          bookTitle={book.title}
+          onClose={() => {
+            setShowReaderWaitModal(false);
+            setSelectedFile(null);
+          }}
+          onComplete={() => {
+            setShowReaderWaitModal(false);
+            const readerUrl = `/reader?pdf=${encodeURIComponent(selectedFile.url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
+            router.push(readerUrl);
+          }}
         />
       )}
     </div>
