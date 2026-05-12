@@ -11,6 +11,7 @@ export const revalidate = 120;
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
+import AdBanner from '@/components/AdBanner';
 
 interface Props {
   params: { categorySlug: string };
@@ -103,6 +104,8 @@ export default async function EnglishCategoryPage({ params }: Props) {
             <p className="text-gray-500 font-bold mb-2">{t.no_books_in_category}</p>
           </div>
         )}
+
+        <AdBanner />
       </main>
     </div>
   );

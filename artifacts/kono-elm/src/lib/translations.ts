@@ -49,6 +49,9 @@ export interface TranslationKeys {
   close: string;
   loading_book: string;
   preparing_download: string;
+  preparing_download_link: string;
+  download_now: string;
+  opening_reader: string;
   dont_close_page: string;
   book_label: string;
 
@@ -195,6 +198,9 @@ export const translations: Record<Language, TranslationKeys> = {
     close: 'إغلاق',
     loading_book: 'جاري تحميل الكتاب...',
     preparing_download: 'اكتمل التحضير، سيبدأ التحميل الآن...',
+    preparing_download_link: 'جاري تجهيز رابط التحميل...',
+    download_now: 'تحميل الآن',
+    opening_reader: 'جاري فتح القارئ...',
     dont_close_page: 'يرجى عدم إغلاق هذه الصفحة حتى يكتمل الشريط',
     book_label: 'الكتاب',
     admin_title: 'لوحة تحكم مكتبة الهدى',
@@ -337,6 +343,9 @@ export const translations: Record<Language, TranslationKeys> = {
     close: 'Close',
     loading_book: 'Loading book...',
     preparing_download: 'Preparation complete, downloading now...',
+    preparing_download_link: 'Preparing download link...',
+    download_now: 'Download Now',
+    opening_reader: 'Opening the reader...',
     dont_close_page: 'Please do not close this page until the bar is complete',
     book_label: 'Book',
     admin_title: 'Huda Library Control Panel',

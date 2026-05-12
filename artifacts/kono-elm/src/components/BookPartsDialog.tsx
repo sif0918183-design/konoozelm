@@ -13,9 +13,10 @@ interface BookPartsDialogProps {
   onClose: () => void;
   mode: 'read' | 'download';
   onDownload?: (file: BookFile) => void;
+  onRead?: (file: BookFile) => void;
 }
 
-export default function BookPartsDialog({ book, files, onClose, mode, onDownload }: BookPartsDialogProps) {
+export default function BookPartsDialog({ book, files, onClose, mode, onDownload, onRead }: BookPartsDialogProps) {
   const router = useRouter();
   const pathname = usePathname();
   const isEnglish = pathname?.startsWith('/en');
@@ -25,6 +26,8 @@ export default function BookPartsDialog({ book, files, onClose, mode, onDownload
   const handleAction = (file: BookFile) => {
     if (mode === 'download' && onDownload) {
       onDownload(file);
+    } else if (mode === 'read' && onRead) {
+      onRead(file);
     } else {
       const readerUrl = `/reader?pdf=${encodeURIComponent(file.url)}&title=${encodeURIComponent(book.title)} - ${file.name}`;
       router.push(readerUrl);

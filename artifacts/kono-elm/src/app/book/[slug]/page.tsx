@@ -13,6 +13,7 @@ import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { generateBookDescription } from '@/lib/groq';
 import Logo from '@/components/Logo';
+import AdBanner from '@/components/AdBanner';
 
 interface Props {
   params: { slug: string };
@@ -220,6 +221,8 @@ export default async function BookPage({ params }: Props) {
 
           </div>
         </div>
+
+        <AdBanner />
       </main>
     </div>
   );
