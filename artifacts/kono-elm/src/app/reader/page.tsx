@@ -11,7 +11,11 @@ import {
   ArrowRight,
   Download,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Search as SearchIcon,
+  ChevronUp,
+  ChevronDown,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addToRecentBooks } from '@/lib/recent-books';
@@ -21,6 +25,7 @@ import { getCachedPDF } from '@/lib/pdf-cache';
 // CDN for PDF.js
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDFJS_WORKER_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const PDFJS_CMAP_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
 
 interface PageItemProps {
   pageNumber: number;
@@ -28,10 +33,12 @@ interface PageItemProps {
   scale: number;
   isNightMode: boolean;
   onVisible: (pageNumber: number) => void;
+  searchQuery?: string;
 }
 
-const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible }: PageItemProps) {
+const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible, searchQuery }: PageItemProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const textLayerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRendered, setIsRendered] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
@@ -86,6 +93,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
       setIsRendering(true);
       const page = await pdf.getPage(pageNumber);
       const canvas = canvasRef.current;
+      const textLayerDiv = textLayerRef.current;
       const context = canvas.getContext('2d')!;
 
       const viewport = page.getViewport({ scale });
@@ -96,6 +104,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
         renderTaskRef.current.cancel();
       }
 
+      // Render Canvas
       const renderContext = {
         canvasContext: context,
         viewport: viewport,
@@ -103,6 +112,40 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
 
       renderTaskRef.current = page.render(renderContext);
       await renderTaskRef.current.promise;
+
+      // Render Text Layer for Arabic Support and Selection
+      if (textLayerDiv) {
+        textLayerDiv.innerHTML = '';
+        textLayerDiv.style.width = `${viewport.width}px`;
+        textLayerDiv.style.height = `${viewport.height}px`;
+
+        const textContent = await page.getTextContent();
+        const pdfjsLib = (window as any).pdfjsLib;
+
+        await pdfjsLib.renderTextLayer({
+          textContentSource: textContent,
+          container: textLayerDiv,
+          viewport: viewport,
+          enhanceTextSelection: true,
+        }).promise;
+
+        if (searchQuery && searchQuery.trim()) {
+          const spans = textLayerDiv.querySelectorAll('span');
+          // Escape special characters for regex
+          const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp(`(${escapedQuery})`, 'gi');
+          spans.forEach(span => {
+            const text = span.textContent || "";
+            if (regex.test(text)) {
+              // Create temporary container to safely build the highlighted HTML
+              const temp = document.createElement('div');
+              temp.innerHTML = text.replace(regex, '<mark class="highlight">$1</mark>');
+              span.innerHTML = temp.innerHTML;
+            }
+          });
+        }
+      }
+
       setIsRendered(true);
     } catch (err: any) {
       if (err.name !== 'RenderingCancelledException') {
@@ -132,7 +175,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [scale]);
+  }, [scale, searchQuery]);
 
   return (
     <div
@@ -158,6 +201,39 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
             isRendered ? "opacity-100" : "opacity-0"
           )}
         />
+        <div
+          ref={textLayerRef}
+          className="textLayer absolute inset-0 opacity-100 pointer-events-none"
+          style={{
+            lineHeight: 1.0,
+          }}
+        />
+        <style jsx global>{`
+          .textLayer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0.2;
+            line-height: 1.0;
+            text-align: initial;
+            white-space: pre;
+          }
+          .textLayer span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+          }
+          .textLayer .highlight {
+            background-color: rgba(255, 255, 0, 0.4);
+            border-radius: 4px;
+            color: transparent;
+          }
+        `}</style>
       </div>
       <div className="mt-2 text-xs text-gray-400 font-mono">
         {pageNumber}
@@ -187,6 +263,14 @@ function ReaderContent() {
   const [isInitialScrollDone, setIsInitialScrollDone] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [useArchiveFallback, setUseArchiveFallback] = useState(false);
+  const [archiveId, setArchiveId] = useState<string | null>(null);
+  const [pagesText, setPagesText] = useState<string[]>([]);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{page: number, index: number}[]>([]);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
+  const [showSearch, setShowSearch] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -223,6 +307,14 @@ function ReaderContent() {
         const pdfjsLib = (window as any).pdfjsLib;
         pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
 
+        // Extract Archive ID for fallback
+        if (url.includes('archive.org')) {
+          const match = url.match(/details\/([^\/]+)/) || url.match(/download\/([^\/]+)/);
+          if (match && match[1]) {
+            setArchiveId(match[1]);
+          }
+        }
+
         const cachedResponse = await getCachedPDF(url);
         let pdfSource: any;
 
@@ -237,7 +329,11 @@ function ReaderContent() {
             : optimizedUrl;
         }
 
-        const loadingTask = pdfjsLib.getDocument(pdfSource);
+        const loadingTask = pdfjsLib.getDocument({
+          ...pdfSource,
+          cMapUrl: PDFJS_CMAP_URL,
+          cMapPacked: true,
+        });
         const pdfDoc = await loadingTask.promise;
         setPdf(pdfDoc);
         setNumPages(pdfDoc.numPages);
@@ -264,6 +360,18 @@ function ReaderContent() {
         setIsLoading(false);
       } catch (err: any) {
         console.error('Error initializing PDF:', err);
+
+        // Check if we can fallback to Archive.org Viewer
+        if (url.includes('archive.org')) {
+          const match = url.match(/details\/([^\/]+)/) || url.match(/download\/([^\/]+)/);
+          if (match && match[1]) {
+            setArchiveId(match[1]);
+            setUseArchiveFallback(true);
+            setIsLoading(false);
+            return;
+          }
+        }
+
         setError(err.message?.includes('404') ? t.error_pdf_404 : t.error_pdf_general);
         setIsLoading(false);
       }
@@ -274,6 +382,35 @@ function ReaderContent() {
     const savedNightMode = localStorage.getItem('nightMode') === 'true';
     setIsNightMode(savedNightMode);
   }, [pdfUrl, bookTitle]);
+
+  // Background Text Extraction
+  useEffect(() => {
+    if (pdf && numPages > 0 && !isExtracting && pagesText.length === 0) {
+      const extractText = async () => {
+        setIsExtracting(true);
+        const extracted: string[] = new Array(numPages).fill("");
+
+        // Extract sequentially to avoid overwhelming the browser
+        for (let i = 1; i <= numPages; i++) {
+          try {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const text = textContent.items.map((item: any) => item.str).join(" ");
+            extracted[i-1] = text;
+
+            // Periodically update state to show progress or enable search early
+            if (i % 20 === 0 || i === numPages) {
+              setPagesText([...extracted]);
+            }
+          } catch (err) {
+            console.error(`Error extracting text from page ${i}:`, err);
+          }
+        }
+        setIsExtracting(false);
+      };
+      extractText();
+    }
+  }, [pdf, numPages, isExtracting, pagesText.length]);
 
   // Initial scroll to saved page
   useEffect(() => {
@@ -324,6 +461,51 @@ function ReaderContent() {
     localStorage.setItem('nightMode', newMode.toString());
   };
 
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setSearchResults([]);
+      setCurrentSearchIndex(-1);
+      return;
+    }
+
+    const results: {page: number, index: number}[] = [];
+    pagesText.forEach((text, pageIndex) => {
+      if (text.toLowerCase().includes(query.toLowerCase())) {
+        results.push({ page: pageIndex + 1, index: results.length });
+      }
+    });
+
+    setSearchResults(results);
+    if (results.length > 0) {
+      setCurrentSearchIndex(0);
+      scrollToPage(results[0].page);
+    } else {
+      setCurrentSearchIndex(-1);
+    }
+  };
+
+  const scrollToPage = (page: number) => {
+    const element = document.getElementById(`page-${page}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const nextSearch = () => {
+    if (searchResults.length === 0) return;
+    const nextIndex = (currentSearchIndex + 1) % searchResults.length;
+    setCurrentSearchIndex(nextIndex);
+    scrollToPage(searchResults[nextIndex].page);
+  };
+
+  const prevSearch = () => {
+    if (searchResults.length === 0) return;
+    const prevIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
+    setCurrentSearchIndex(prevIndex);
+    scrollToPage(searchResults[prevIndex].page);
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50" dir={isEnglish ? 'ltr' : 'rtl'}>
@@ -334,6 +516,13 @@ function ReaderContent() {
   }
 
   if (error) {
+    // If error occurs but we have an archiveId, we should have already set useArchiveFallback
+    // but just in case of unexpected errors after init
+    if (archiveId && !useArchiveFallback) {
+      setUseArchiveFallback(true);
+      return null; // Next render will show fallback
+    }
+
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50 p-4 text-center" dir={isEnglish ? 'ltr' : 'rtl'}>
         <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md border border-red-100">
@@ -347,6 +536,42 @@ function ReaderContent() {
             {t.back_to_home}
           </button>
           <p className="mt-4 text-xs text-gray-400">{isEnglish ? 'This might be due to security restrictions (CORS) or an invalid link.' : 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (useArchiveFallback && archiveId) {
+    return (
+      <div className="flex flex-col h-screen bg-slate-900">
+        <header className="h-16 flex items-center justify-between px-4 bg-slate-900 text-white shadow-md z-50">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-slate-800 rounded-full transition-colors"
+              title={t.back}
+            >
+              <ArrowRight className={`w-5 h-5 ${isEnglish ? 'rotate-180' : ''}`} />
+            </button>
+            <h1 className="font-bold text-sm md:text-base truncate max-w-[200px] md:max-w-md">
+              {bookTitle}
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] bg-gold-500/20 text-gold-400 px-2 py-1 rounded-full font-bold border border-gold-500/30">
+              {isEnglish ? 'Archive.org Viewer' : 'مشاهد Archive.org'}
+            </span>
+          </div>
+        </header>
+        <div className="flex-1 w-full bg-slate-800">
+          <iframe
+            src={`https://archive.org/embed/${archiveId}?ui=full`}
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            allowFullScreen
+            title={bookTitle}
+          />
         </div>
       </div>
     );
@@ -376,6 +601,18 @@ function ReaderContent() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
+          {/* Search Toggle */}
+          <button
+            onClick={() => setShowSearch(!showSearch)}
+            className={cn(
+              "p-2 rounded-full transition-colors",
+              showSearch ? "bg-primary-900 text-white" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+            )}
+            title={isEnglish ? 'Search in book' : 'البحث في الكتاب'}
+          >
+            <SearchIcon className="w-5 h-5" />
+          </button>
+
           {/* Zoom Controls */}
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shadow-inner">
             <button
@@ -420,6 +657,59 @@ function ReaderContent() {
         </div>
       </header>
 
+      {/* Search Bar */}
+      {showSearch && (
+        <div className={cn(
+          "fixed top-16 left-0 right-0 z-40 h-14 flex items-center justify-between px-4 shadow-sm backdrop-blur-md border-t",
+          isNightMode ? "bg-slate-900/95 border-slate-800" : "bg-white/95 border-slate-100"
+        )}>
+          <div className="max-w-4xl mx-auto w-full flex items-center gap-3">
+            <div className="relative flex-1">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                autoFocus
+                placeholder={isEnglish ? "Search in book..." : "ابحث في الكتاب..."}
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className={cn(
+                  "w-full pl-10 pr-4 py-2 rounded-xl text-sm outline-none transition-all",
+                  isNightMode ? "bg-slate-800 text-white focus:bg-slate-700" : "bg-slate-100 text-slate-900 focus:bg-white focus:ring-2 focus:ring-primary-900/10"
+                )}
+                dir={isEnglish ? 'ltr' : 'rtl'}
+              />
+            </div>
+
+            {searchResults.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 min-w-[60px] text-center">
+                  {currentSearchIndex + 1} / {searchResults.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={prevSearch} className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    <ChevronUp className="w-4 h-4" />
+                  </button>
+                  <button onClick={nextSearch} className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                setShowSearch(false);
+                setSearchQuery("");
+                setSearchResults([]);
+              }}
+              className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Reader Body */}
       <main className="pt-24 pb-12 px-4 flex flex-col items-center">
         <div className="w-full max-w-5xl">
@@ -431,6 +721,7 @@ function ReaderContent() {
                 scale={scale}
                 isNightMode={isNightMode}
                 onVisible={onPageVisible}
+                searchQuery={searchQuery}
               />
             </div>
           ))}
