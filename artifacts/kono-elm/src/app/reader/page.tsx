@@ -131,12 +131,23 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
           const spans = textLayerDiv.querySelectorAll('span');
           const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           const regex = new RegExp(`(${escapedQuery})`, 'gi');
+
           spans.forEach(span => {
             const text = span.textContent || "";
             if (regex.test(text)) {
-              const temp = document.createElement('div');
-              temp.innerHTML = text.replace(regex, '<mark class="highlight">$1</mark>');
-              span.innerHTML = temp.innerHTML;
+              // Use a safer way to highlight that doesn't mess with PDF.js character positioning too much
+              const parts = text.split(regex);
+              span.innerHTML = '';
+              parts.forEach(part => {
+                if (part.toLowerCase() === searchQuery.toLowerCase()) {
+                  const mark = document.createElement('mark');
+                  mark.className = 'highlight';
+                  mark.textContent = part;
+                  span.appendChild(mark);
+                } else {
+                  span.appendChild(document.createTextNode(part));
+                }
+              });
             }
           });
         }
@@ -212,13 +223,14 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
             right: 0;
             bottom: 0;
             overflow: hidden;
-            opacity: 0.2;
+            opacity: 1;
             line-height: 1.0;
             text-align: initial;
             white-space: pre;
           }
           .textLayer span {
             color: transparent;
+            -webkit-text-fill-color: transparent;
             position: absolute;
             white-space: pre;
             cursor: text;
@@ -226,8 +238,13 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
           }
           .textLayer .highlight {
             background-color: rgba(255, 255, 0, 0.4);
-            border-radius: 4px;
+            border-radius: 2px;
             color: transparent;
+            -webkit-text-fill-color: transparent;
+          }
+          /* Ensure PDF.js internal text layer styles don't conflict */
+          .textLayer br {
+            display: none;
           }
         `}</style>
       </div>
@@ -266,6 +283,7 @@ function ReaderContent() {
   const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
   const [showSearch, setShowSearch] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -384,21 +402,26 @@ function ReaderContent() {
     if (pdf && numPages > 0 && !isExtracting && pagesText.length === 0) {
       const extractText = async () => {
         setIsExtracting(true);
-        const extracted: string[] = new Array(numPages).fill("");
-        for (let i = 1; i <= numPages; i++) {
-          try {
-            const page = await pdf.getPage(i);
-            const textContent = await page.getTextContent();
-            const text = textContent.items.map((item: any) => item.str).join(" ");
-            extracted[i-1] = text;
-            if (i % 20 === 0 || i === numPages) {
-              setPagesText([...extracted]);
+        try {
+          const extracted: string[] = new Array(numPages).fill("");
+          for (let i = 1; i <= numPages; i++) {
+            try {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              // Join both with and without spaces to improve search matching
+              const text = textContent.items.map((item: any) => item.str).join(" ");
+              extracted[i-1] = text;
+
+              if (i <= 5 || i % 20 === 0 || i === numPages) {
+                setPagesText([...extracted]);
+              }
+            } catch (err) {
+              console.error(`Error extracting text from page ${i}:`, err);
             }
-          } catch (err) {
-            console.error(`Error extracting text from page ${i}:`, err);
           }
+        } finally {
+          setIsExtracting(false);
         }
-        setIsExtracting(false);
       };
       extractText();
     }
@@ -446,24 +469,33 @@ function ReaderContent() {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      setSearchResults([]);
-      setCurrentSearchIndex(-1);
-      return;
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
-    const results: {page: number, index: number}[] = [];
-    pagesText.forEach((text, pageIndex) => {
-      if (text.toLowerCase().includes(query.toLowerCase())) {
-        results.push({ page: pageIndex + 1, index: results.length });
+
+    searchTimeoutRef.current = setTimeout(() => {
+      if (!query.trim()) {
+        setSearchResults([]);
+        setCurrentSearchIndex(-1);
+        return;
       }
-    });
-    setSearchResults(results);
-    if (results.length > 0) {
-      setCurrentSearchIndex(0);
-      scrollToPage(results[0].page);
-    } else {
-      setCurrentSearchIndex(-1);
-    }
+
+      const results: {page: number, index: number}[] = [];
+      pagesText.forEach((text, pageIndex) => {
+        if (text.toLowerCase().includes(query.toLowerCase())) {
+          results.push({ page: pageIndex + 1, index: results.length });
+        }
+      });
+
+      setSearchResults(results);
+      if (results.length > 0) {
+        setCurrentSearchIndex(0);
+        scrollToPage(results[0].page);
+      } else {
+        setCurrentSearchIndex(-1);
+      }
+    }, 400);
   };
 
   const scrollToPage = (page: number) => {
@@ -591,7 +623,7 @@ function ReaderContent() {
             </button>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary-900 text-white rounded-xl text-xs font-black shadow-lg border border-primary-800">
+          <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary-900 text-white rounded-xl text-xs font-black shadow-lg border border-primary-800" dir="ltr">
             <span className="min-w-[1.5rem] text-center">{pageNum}</span>
             <span className="opacity-40 text-[10px]">/</span>
             <span className="opacity-70">{numPages}</span>
@@ -623,7 +655,11 @@ function ReaderContent() {
         )}>
           <div className="max-w-4xl mx-auto w-full flex items-center gap-3">
             <div className="relative flex-1">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              {isExtracting ? (
+                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-600 animate-spin" />
+              ) : (
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              )}
               <input
                 type="text"
                 autoFocus
@@ -685,7 +721,7 @@ function ReaderContent() {
       </main>
 
       <div className="fixed bottom-6 right-6 sm:hidden z-50">
-        <div className="bg-primary-900 text-white px-4 py-2 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 border-2 border-white/20 backdrop-blur-sm">
+        <div className="bg-primary-900 text-white px-4 py-2 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 border-2 border-white/20 backdrop-blur-sm" dir="ltr">
           <span>{pageNum}</span>
           <span className="opacity-50 text-xs">/</span>
           <span className="opacity-80 text-xs">{numPages}</span>
