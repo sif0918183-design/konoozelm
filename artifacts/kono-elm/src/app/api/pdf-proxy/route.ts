@@ -16,15 +16,33 @@ export async function GET(request: NextRequest) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
-    const response = await fetch(decodedUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-      redirect: 'follow',
-    });
+    let response: Response | null = null;
+    let attempts = 0;
+    const maxAttempts = 3;
 
-    if (!response.ok) {
-      return new NextResponse('Error fetching from Archive.org', { status: response.status });
+    while (attempts < maxAttempts) {
+      try {
+        response = await fetch(decodedUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+          redirect: 'follow',
+        });
+
+        if (response.ok) break;
+        if (response.status === 404) break; // Don't retry on 404
+      } catch (e) {
+        console.error(`Proxy attempt ${attempts + 1} failed:`, e);
+      }
+
+      attempts++;
+      if (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, attempts * 1000));
+      }
+    }
+
+    if (!response || !response.ok) {
+      return new NextResponse('Error fetching from Archive.org', { status: response?.status || 500 });
     }
 
     const headers = new Headers();

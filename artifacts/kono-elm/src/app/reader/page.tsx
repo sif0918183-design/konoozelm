@@ -27,6 +27,7 @@ import { getCachedPDF } from '@/lib/pdf-cache';
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDFJS_WORKER_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const PDFJS_CMAP_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
+const PDFJS_STANDARD_FONTS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/';
 
 interface PageItemProps {
   pageNumber: number;
@@ -35,9 +36,10 @@ interface PageItemProps {
   isNightMode: boolean;
   onVisible: (pageNumber: number) => void;
   searchQuery?: string;
+  aspectRatio?: number | null;
 }
 
-const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible, searchQuery }: PageItemProps) {
+const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible, searchQuery, aspectRatio }: PageItemProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -171,14 +173,19 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
   return (
     <div
       ref={containerRef}
-      className="flex flex-col items-center mb-8 last:mb-0"
-      style={{ minHeight: '500px' }}
+      className="flex flex-col items-center mb-12 last:mb-0 w-full"
     >
-      <div className={cn(
-        "shadow-2xl bg-white transition-all duration-300 relative",
-        isNightMode && "brightness-75 contrast-125",
-        !isRendered && "flex items-center justify-center bg-gray-50 border border-gray-100"
-      )}>
+      <div
+        className={cn(
+          "shadow-2xl bg-white transition-all duration-300 relative w-full max-w-full mx-auto",
+          isNightMode && "brightness-75 contrast-125",
+          !isRendered && "flex items-center justify-center bg-gray-50 border border-gray-100"
+        )}
+        style={{
+          aspectRatio: aspectRatio ? `${aspectRatio}` : '1 / 1.414',
+          maxWidth: pdf ? undefined : '800px'
+        }}
+      >
         {!isRendered && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
             <Loader2 className="w-6 h-6 text-primary-200 animate-spin" />
@@ -258,6 +265,7 @@ function ReaderContent() {
   const [searchResults, setSearchResults] = useState<{page: number, index: number}[]>([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
   const [showSearch, setShowSearch] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -315,11 +323,21 @@ function ReaderContent() {
             ...(typeof pdfSource === 'string' ? { url: pdfSource } : pdfSource),
             cMapUrl: PDFJS_CMAP_URL,
             cMapPacked: true,
+            standardFontDataUrl: PDFJS_STANDARD_FONTS_URL,
           });
           const pdfDoc = await loadingTask.promise;
 
           setPdf(pdfDoc);
           setNumPages(pdfDoc.numPages);
+
+          // Get aspect ratio from first page for smooth scrolling
+          try {
+            const firstPage = await pdfDoc.getPage(1);
+            const viewport = firstPage.getViewport({ scale: 1 });
+            setAspectRatio(viewport.width / viewport.height);
+          } catch (e) {
+            console.error("Error getting aspect ratio:", e);
+          }
 
           const savedPage = localStorage.getItem(`page_${url}`);
           if (savedPage) {
@@ -659,6 +677,7 @@ function ReaderContent() {
                 isNightMode={isNightMode}
                 onVisible={onPageVisible}
                 searchQuery={searchQuery}
+                aspectRatio={aspectRatio}
               />
             </div>
           ))}
