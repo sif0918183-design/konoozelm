@@ -1,0 +1,50 @@
+
+> kono-elm@1.0.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, trying 3001 instead.
+ ⚠ Port 3001 is in use, trying 3002 instead.
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3002
+
+ ✓ Starting...
+ ✓ Ready in 2.3s
+ ○ Compiling /reader ...
+request to https://fonts.gstatic.com/s/playfairdisplay/v40/nuFkD-vYSZviVYUb_rj3ij__anPXDTnohkk7yRZrPJ-M.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/playfairdisplay/v40/nuFkD-vYSZviVYUb_rj3ij__anPXDTnojUk7yRZrPJ-M.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/playfairdisplay/v40/nuFkD-vYSZviVYUb_rj3ij__anPXDTnojEk7yRZrPJ-M.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/playfairdisplay/v40/nuFkD-vYSZviVYUb_rj3ij__anPXDTnogkk7yRZrPA.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/playfairdisplay/v40/nuFiD-vYSZviVYUb_rj3ij__anPXDTjYgEM86xRbPQ.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/playfairdisplay/v40/nuFiD-vYSZviVYUb_rj3ij__anPXDTPYgEM86xRbPQ.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/playfairdisplay/v40/nuFiD-vYSZviVYUb_rj3ij__anPXDTLYgEM86xRbPQ.woff2 failed, reason:
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/playfairdisplay/v40/nuFiD-vYSZviVYUb_rj3ij__anPXDTzYgEM86xQ.woff2 failed, reason:
+
+Retrying 1/3...
+ ✓ Compiled /reader in 6.5s (607 modules)
+ ✓ Compiled in 927ms (295 modules)
+ GET /reader?pdf=https://archive.org/download/notes-on-aqeedah/Notes%20On%20Aqeedah.pdf&title=TestBook 200 in 7458ms
+ ○ Compiling /[categorySlug] ...
+ ✓ Compiled /api/pdf-proxy in 10.1s (840 modules)
+ GET /reader 200 in 10639ms
+ GET / 200 in 10660ms
+ ✓ Compiled /manifest.json in 195ms (467 modules)
+ GET /manifest.json?lang=en 200 in 250ms
+ GET /manifest.json?lang=ar 200 in 257ms
+ GET /favicon.ico 404 in 11127ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2Fnotes-on-aqeedah%2FNotes%20On%20Aqeedah.pdf 200 in 14378ms
+ ✓ Compiled in 1293ms (665 modules)
+ ✓ Compiled in 4.6s (665 modules)

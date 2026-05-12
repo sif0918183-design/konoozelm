@@ -1,0 +1,81 @@
+
+> kono-elm@1.0.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, trying 3001 instead.
+ ⚠ Port 3001 is in use, trying 3002 instead.
+ ⚠ Port 3002 is in use, trying 3003 instead.
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3003
+
+ ✓ Starting...
+ ✓ Ready in 3.1s
+ ○ Compiling /reader ...
+ ✓ Compiled /reader in 6.2s (607 modules)
+ ✓ Compiled in 969ms (295 modules)
+ GET /reader?pdf=https://archive.org/download/20200424_20200424_1020/20200424.pdf&title=TestBook 200 in 7206ms
+ ○ Compiling /[categorySlug] ...
+ ✓ Compiled /api/pdf-proxy in 9.1s (840 modules)
+ GET /reader 200 in 9568ms
+ GET / 200 in 9576ms
+ ✓ Compiled /manifest.json in 185ms (467 modules)
+ GET /manifest.json?lang=en 200 in 237ms
+ GET /manifest.json?lang=ar 200 in 244ms
+ GET /favicon.ico 404 in 10171ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2F20200424_20200424_1020%2F20200424.pdf 503 in 14771ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2F20200424_20200424_1020%2F20200424.pdf 503 in 3784ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2F20200424_20200424_1020%2F20200424.pdf 503 in 3758ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2F20200424_20200424_1020%2F20200424.pdf 503 in 3828ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2F20200424_20200424_1020%2F20200424.pdf 200 in 3066ms
+ GET /reader?pdf=https://archive.org/download/20200424_20200424_1020/20200424.pdf&title=TestBook 200 in 143ms
+ GET / 200 in 268ms
+ GET /favicon.ico 404 in 269ms
+ GET /reader 200 in 282ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2F20200424_20200424_1020%2F20200424.pdf 503 in 3796ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2F20200424_20200424_1020%2F20200424.pdf 503 in 3837ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2F20200424_20200424_1020%2F20200424.pdf 503 in 3722ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2F20200424_20200424_1020%2F20200424.pdf 503 in 3728ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2F20200424_20200424_1020%2F20200424.pdf 503 in 3807ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2F20200424_20200424_1020%2F20200424.pdf 503 in 3909ms
+ GET /reader?pdf=https://archive.org/download/quran-tajweed/quran-tajweed.pdf&title=Quran 200 in 35ms
+ GET /favicon.ico 404 in 116ms
+ GET /reader 200 in 125ms
+ GET / 200 in 128ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2Fquran-tajweed%2Fquran-tajweed.pdf 503 in 6072ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2Fquran-tajweed%2Fquran-tajweed.pdf 503 in 3813ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2Fquran-tajweed%2Fquran-tajweed.pdf 503 in 3725ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2Fquran-tajweed%2Fquran-tajweed.pdf 503 in 3774ms
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2Fquran-tajweed%2Fquran-tajweed.pdf 503 in 3788ms
+Proxy attempt 2 failed: TypeError: fetch failed
+    at node:internal/deps/undici/undici:14902:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/pdf-proxy/route.ts:28:28)
+    at async /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55831
+    at async eO.execute (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:46527)
+    at async eO.handle (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:57165)
+    at async doRender (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/base-server.js:1353:42)
+    at async cacheEntry.responseCache.get.routeKind (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/base-server.js:1575:28)
+    at async DevServer.renderToResponseWithComponentsImpl (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/base-server.js:1483:28)
+    at async DevServer.renderPageComponent (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/base-server.js:1911:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/base-server.js:1949:32)
+    at async DevServer.pipeImpl (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/base-server.js:921:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/base-server.js:817:17)
+    at async /app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/app/node_modules/.pnpm/next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: ConnectTimeoutError: Connect Timeout Error (attempted address: archive.org:443, timeout: 10000ms)
+      at onConnectTimeout (node:internal/deps/undici/undici:2718:28)
+      at Immediate._onImmediate (node:internal/deps/undici/undici:2699:11)
+      at process.processImmediate (node:internal/timers:484:21)
+      at process.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'UND_ERR_CONNECT_TIMEOUT',
+    [Symbol(undici.error.UND_ERR)]: true,
+    [Symbol(undici.error.UND_ERR_CONNECT_TIMEOUT)]: true
+  }
+}
+ GET /api/pdf-proxy?url=https%3A%2F%2Farchive.org%2Fdownload%2Fquran-tajweed%2Fquran-tajweed.pdf 503 in 13644ms

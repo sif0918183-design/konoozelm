@@ -41,59 +41,19 @@ interface PageItemProps {
 
 const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible, searchQuery, aspectRatio }: PageItemProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const textLayerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRendered, setIsRendered] = useState(false);
-  const [isRendering, setIsRendering] = useState(false);
+  const isRenderingRef = useRef(false);
+  const isRenderedRef = useRef(false);
   const renderTaskRef = useRef<any>(null);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry.isIntersecting) {
-          onVisible(pageNumber);
-          if (!isRendered && !isRendering) {
-            renderPage();
-          }
-        }
-      },
-      {
-        threshold: 0,
-        rootMargin: '-45% 0px -45% 0px'
-      }
-    );
-
-    const renderObserver = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          if (!isRendered && !isRendering) {
-            renderPage();
-          }
-        }
-      },
-      { threshold: 0, rootMargin: '1200px 0px' }
-    );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-      renderObserver.observe(containerRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-      renderObserver.disconnect();
-    };
-  }, [pdf, scale, isRendered, pageNumber, onVisible]);
-
-  const renderPage = async () => {
-    if (!pdf || !canvasRef.current || isRendered || isRendering) return;
+  const renderPage = useCallback(async () => {
+    if (!pdf || !canvasRef.current || isRenderedRef.current || isRenderingRef.current) return;
 
     try {
-      setIsRendering(true);
+      isRenderingRef.current = true;
       const page = await pdf.getPage(pageNumber);
       const canvas = canvasRef.current;
-      const textLayerDiv = textLayerRef.current;
       const context = canvas.getContext('2d')!;
 
       const viewport = page.getViewport({ scale });
@@ -112,89 +72,93 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
       renderTaskRef.current = page.render(renderContext);
       await renderTaskRef.current.promise;
 
-      if (textLayerDiv) {
-        textLayerDiv.innerHTML = '';
-        textLayerDiv.style.width = `${viewport.width}px`;
-        textLayerDiv.style.height = `${viewport.height}px`;
-
-        const textContent = await page.getTextContent();
-        const pdfjsLib = (window as any).pdfjsLib;
-
-        await pdfjsLib.renderTextLayer({
-          textContentSource: textContent,
-          container: textLayerDiv,
-          viewport: viewport,
-          enhanceTextSelection: true,
-        }).promise;
-
-        if (searchQuery && searchQuery.trim()) {
-          const spans = textLayerDiv.querySelectorAll('span');
-          const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp(`(${escapedQuery})`, 'gi');
-
-          spans.forEach(span => {
-            const text = span.textContent || "";
-            if (regex.test(text)) {
-              // Use a safer way to highlight that doesn't mess with PDF.js character positioning too much
-              const parts = text.split(regex);
-              span.innerHTML = '';
-              parts.forEach(part => {
-                if (part.toLowerCase() === searchQuery.toLowerCase()) {
-                  const mark = document.createElement('mark');
-                  mark.className = 'highlight';
-                  mark.textContent = part;
-                  span.appendChild(mark);
-                } else {
-                  span.appendChild(document.createTextNode(part));
-                }
-              });
-            }
-          });
-        }
-      }
-
+      isRenderedRef.current = true;
       setIsRendered(true);
     } catch (err: any) {
       if (err.name !== 'RenderingCancelledException') {
         console.error(`Error rendering page ${pageNumber}:`, err);
       }
     } finally {
-      setIsRendering(false);
+      isRenderingRef.current = false;
     }
-  };
+  }, [pdf, pageNumber, scale]);
 
   useEffect(() => {
-    if (isRendered || isRendering) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          onVisible(pageNumber);
+        }
+      },
+      {
+        threshold: [0, 0.1],
+        rootMargin: '-20% 0px -20% 0px'
+      }
+    );
+
+    const renderObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          if (!isRenderedRef.current && !isRenderingRef.current) {
+            renderPage();
+          }
+        }
+      },
+      { threshold: 0, rootMargin: '2500px 0px' }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+      renderObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+      renderObserver.disconnect();
+    };
+  }, [pageNumber, onVisible, renderPage]);
+
+  useEffect(() => {
+    // Re-render on scale change
+    if (isRenderedRef.current || isRenderingRef.current) {
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
       }
+      isRenderedRef.current = false;
+      isRenderingRef.current = false;
       setIsRendered(false);
-      setIsRendering(false);
 
       const timer = setTimeout(() => {
         const rect = containerRef.current?.getBoundingClientRect();
-        if (rect && rect.top < window.innerHeight * 2 && rect.bottom > -window.innerHeight) {
+        if (rect && rect.top < window.innerHeight * 3 && rect.bottom > -window.innerHeight * 2) {
           renderPage();
         }
-      }, 300);
+      }, 400);
       return () => clearTimeout(timer);
     }
-  }, [scale, searchQuery]);
+  }, [scale, renderPage]);
 
   return (
     <div
       ref={containerRef}
-      className="flex flex-col items-center mb-12 last:mb-0 w-full"
+      className="flex flex-col items-center mb-16 last:mb-0 w-full"
+      style={{
+        contain: 'size layout',
+        minHeight: aspectRatio ? 'unset' : '1000px'
+      }}
     >
       <div
         className={cn(
           "shadow-2xl bg-white transition-all duration-300 relative w-full max-w-full mx-auto",
           isNightMode && "brightness-75 contrast-125",
-          !isRendered && "flex items-center justify-center bg-gray-50 border border-gray-100"
+          !isRendered && "flex items-center justify-center bg-gray-100/50 border border-gray-200"
         )}
         style={{
           aspectRatio: aspectRatio ? `${aspectRatio}` : '1 / 1.414',
-          maxWidth: pdf ? undefined : '800px'
+          maxWidth: pdf ? undefined : '850px',
+          containIntrinsicSize: aspectRatio ? `850px ${850 / aspectRatio}px` : '850px 1200px',
+          contentVisibility: 'auto'
         }}
       >
         {!isRendered && (
@@ -205,48 +169,12 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
         )}
         <canvas
           ref={canvasRef}
+          data-rendered={isRendered}
           className={cn(
             "max-w-full h-auto transition-opacity duration-500",
             isRendered ? "opacity-100" : "opacity-0"
           )}
         />
-        <div
-          ref={textLayerRef}
-          className="textLayer absolute inset-0 opacity-100 pointer-events-none"
-          style={{ lineHeight: 1.0 }}
-        />
-        <style jsx global>{`
-          .textLayer {
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-            opacity: 1;
-            line-height: 1.0;
-            text-align: initial;
-            white-space: pre;
-          }
-          .textLayer span {
-            color: transparent;
-            -webkit-text-fill-color: transparent;
-            position: absolute;
-            white-space: pre;
-            cursor: text;
-            transform-origin: 0% 0%;
-          }
-          .textLayer .highlight {
-            background-color: rgba(255, 255, 0, 0.4);
-            border-radius: 2px;
-            color: transparent;
-            -webkit-text-fill-color: transparent;
-          }
-          /* Ensure PDF.js internal text layer styles don't conflict */
-          .textLayer br {
-            display: none;
-          }
-        `}</style>
       </div>
       <div className="mt-2 text-xs text-gray-400 font-mono">
         {pageNumber}
@@ -396,7 +324,7 @@ function ReaderContent() {
 
     const savedNightMode = localStorage.getItem('nightMode') === 'true';
     setIsNightMode(savedNightMode);
-  }, [pdfUrl, bookTitle]);
+  }, [pdfUrl, bookTitle, t.error_no_pdf, t.error_pdf_lib, t.error_pdf_404, t.error_internet_weak]);
 
   useEffect(() => {
     if (pdf && numPages > 0 && !isExtracting && pagesText.length === 0) {
@@ -443,10 +371,19 @@ function ReaderContent() {
   }, [isLoading, numPages, pageNum, isInitialScrollDone]);
 
   const lastStorageUpdate = useRef<number>(0);
+  const lastPageVisibleUpdate = useRef<number>(0);
   const onPageVisible = useCallback((page: number) => {
     if (!isInitialScrollDone) return;
-    setPageNum(page);
+
     const now = Date.now();
+
+    // Throttle UI update of page number (every 100ms)
+    if (now - lastPageVisibleUpdate.current > 100) {
+      setPageNum(page);
+      lastPageVisibleUpdate.current = now;
+    }
+
+    // Throttle persistence (every 2s)
     if (pdfUrl && now - lastStorageUpdate.current > 2000) {
       lastStorageUpdate.current = now;
       localStorage.setItem(`page_${pdfUrl}`, page.toString());
