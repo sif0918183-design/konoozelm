@@ -25,12 +25,13 @@ const PDFJS_WORKER_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174
 interface PageItemProps {
   pageNumber: number;
   pdf: any;
+  identifier: string | null;
   scale: number;
   isNightMode: boolean;
   onVisible: (pageNumber: number) => void;
 }
 
-const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, onVisible }: PageItemProps) {
+const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, isNightMode, onVisible }: PageItemProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRendered, setIsRendered] = useState(false);
@@ -80,7 +81,14 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
   }, [pdf, scale, isRendered, pageNumber, onVisible]);
 
   const renderPage = async () => {
-    if (!pdf || !canvasRef.current || isRendered || isRendering) return;
+    if (isRendered || isRendering) return;
+
+    if (identifier) {
+      setIsRendering(true);
+      return;
+    }
+
+    if (!pdf || !canvasRef.current) return;
 
     try {
       setIsRendering(true);
@@ -113,18 +121,16 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
     }
   };
 
-  // Re-render on scale change
+  // Re-render on scale change only for canvas mode
   useEffect(() => {
-    if (isRendered || isRendering) {
+    if (!identifier && (isRendered || isRendering)) {
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
       }
       setIsRendered(false);
       setIsRendering(false);
 
-      // Delay slightly to avoid rapid re-renders during scale slider movement if we had one
       const timer = setTimeout(() => {
-        // Only re-render if still visible
         const rect = containerRef.current?.getBoundingClientRect();
         if (rect && rect.top < window.innerHeight * 2 && rect.bottom > -window.innerHeight) {
           renderPage();
@@ -132,7 +138,11 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [scale]);
+  }, [scale, identifier]);
+
+  const imageUrl = identifier
+    ? `https://archive.org/download/${identifier}/page/n${pageNumber - 1}.jpg`
+    : null;
 
   return (
     <div
@@ -140,24 +150,55 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, scale, isNightMode, o
       className="flex flex-col items-center mb-8 last:mb-0"
       style={{ minHeight: '500px' }}
     >
-      <div className={cn(
-        "shadow-2xl bg-white transition-all duration-300 relative",
-        isNightMode && "brightness-75 contrast-125",
-        !isRendered && "flex items-center justify-center bg-gray-50 border border-gray-100"
-      )}>
+      <div
+        className={cn(
+          "shadow-2xl bg-white transition-all duration-300 relative overflow-hidden",
+          isNightMode && "brightness-75 contrast-125",
+          !isRendered && "flex items-center justify-center bg-gray-50 border border-gray-100"
+        )}
+        style={{
+          width: identifier ? `${600 * scale}px` : 'auto',
+          maxWidth: '95vw',
+          aspectRatio: identifier ? '1/1.4' : 'auto'
+        }}
+      >
         {!isRendered && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
             <Loader2 className="w-6 h-6 text-primary-200 animate-spin" />
             <span className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">{pageNumber}</span>
           </div>
         )}
-        <canvas
-          ref={canvasRef}
-          className={cn(
-            "max-w-full h-auto transition-opacity duration-500",
-            isRendered ? "opacity-100" : "opacity-0"
-          )}
-        />
+
+        {identifier ? (
+          (isRendering || isRendered) && (
+            <img
+              src={imageUrl!}
+              alt={`Page ${pageNumber}`}
+              className={cn(
+                "w-full h-full object-contain transition-opacity duration-500",
+                isRendered ? "opacity-100" : "opacity-0"
+              )}
+              onLoad={() => {
+                setIsRendered(true);
+                setIsRendering(false);
+              }}
+              onError={() => {
+                // Fallback to canvas if image fails (unlikely for archive.org but good practice)
+                setIsRendering(false);
+                setIsRendered(false);
+              }}
+              loading="lazy"
+            />
+          )
+        ) : (
+          <canvas
+            ref={canvasRef}
+            className={cn(
+              "max-w-full h-auto transition-opacity duration-500",
+              isRendered ? "opacity-100" : "opacity-0"
+            )}
+          />
+        )}
       </div>
       <div className="mt-2 text-xs text-gray-400 font-mono">
         {pageNumber}
@@ -180,6 +221,7 @@ function ReaderContent() {
   const bookTitle = searchParams.get('title') || t.loading;
 
   const [pdf, setPdf] = useState<any>(null);
+  const [identifier, setIdentifier] = useState<string | null>(null);
   const [pageNum, setPageNum] = useState(1);
   const [numPages, setNumPages] = useState(0);
   const [scale, setScale] = useState(1.5);
@@ -246,6 +288,12 @@ function ReaderContent() {
         const pdfDoc = await loadingTask.promise;
         setPdf(pdfDoc);
         setNumPages(pdfDoc.numPages);
+
+        // Extract identifier for image rendering
+        const idMatch = url.match(/archive\.org\/download\/([^\/]+)/);
+        if (idMatch) {
+          setIdentifier(idMatch[1]);
+        }
 
         const savedPage = localStorage.getItem(`page_${url}`);
         if (savedPage) {
@@ -433,6 +481,7 @@ function ReaderContent() {
               <PageItem
                 pageNumber={i + 1}
                 pdf={pdf}
+                identifier={identifier}
                 scale={scale}
                 isNightMode={isNightMode}
                 onVisible={onPageVisible}
