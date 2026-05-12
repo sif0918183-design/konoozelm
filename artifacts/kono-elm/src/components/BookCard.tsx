@@ -62,14 +62,18 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       setDialogMode('read');
       setShowPartsDialog(true);
     } else if (files.length === 1) {
-      const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
+      const readerUrl = `/reader?id=${book.identifier}&file=${encodeURIComponent(files[0].filename)}&pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
       router.push(readerUrl);
     } else {
-      // If no files found, inform user if they are online, or just do nothing to avoid Archive.org redirect
-      if (typeof window !== 'undefined' && !navigator.onLine) {
+      // If no files found but we have an identifier, we can still try to open the reader
+      // The reader will handle the loading/retry logic using the iframe as fallback
+      if (book.identifier) {
+        const readerUrl = `/reader?id=${book.identifier}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
+        router.push(readerUrl);
+      } else if (typeof window !== 'undefined' && !navigator.onLine) {
         alert(t.offline_notice);
       } else if (files.length === 0 && !isLoadingFiles) {
-        alert(lang === 'ar' ? 'عذراً، هذا الكتاب غير متوفر حالياً للقراءة' : 'Sorry, this book is currently unavailable for reading');
+        alert(t.loading_wait);
       }
     }
   };

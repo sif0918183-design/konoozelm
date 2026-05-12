@@ -1,7 +1,8 @@
-import { normalizeYear, safeFetch } from './utils';
+import { normalizeYear, safeFetch, fetchWithRetry } from './utils';
 
 export interface BookFile {
   name: string;
+  filename: string;
   url: string;
   format?: string;
   size?: string;
@@ -22,6 +23,7 @@ export interface Book {
   ocrUrl?: string;
   guessedOcrUrl?: string;
   firstPageImageUrl?: string;
+  totalPages?: number;
 }
 
 export interface SearchResult {
@@ -68,7 +70,7 @@ export async function searchBooks(
     // We don't specify sort to use Archive.org's default relevance ranking
   });
 
-  const response = await safeFetch(`${ARCHIVE_API_BASE}?${params.toString()}`);
+  const response = await fetchWithRetry(`${ARCHIVE_API_BASE}?${params.toString()}`);
 
   if (!response || !response.ok) {
     return { books: [], totalResults: 0, page, hasMore: false };
@@ -94,6 +96,7 @@ export async function searchBooks(
     previewLink: `https://archive.org/details/${doc.identifier}`,
     firstPageImageUrl: `https://archive.org/download/${doc.identifier}/page/n0.jpg`,
     guessedOcrUrl: `https://archive.org/download/${doc.identifier}/${doc.identifier}_djvu.txt`,
+    totalPages: doc.imagecount ? parseInt(normalizeField(doc.imagecount)) : undefined,
   }));
 
   const totalResults = data.response?.numFound || 0;
@@ -112,7 +115,7 @@ export async function searchBooks(
  */
 export async function getBookFiles(identifier: string): Promise<BookFile[]> {
   try {
-    const response = await safeFetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
+    const response = await fetchWithRetry(`${ARCHIVE_METADATA_BASE}${identifier}`);
     if (!response || !response.ok) return [];
 
     const data = await response.json();
@@ -126,6 +129,7 @@ export async function getBookFiles(identifier: string): Promise<BookFile[]> {
       )
       .map((file: any) => ({
         name: file.title || file.name.replace('.pdf', '').replace(/_/g, ' '),
+        filename: file.name,
         url: `https://archive.org/download/${identifier}/${encodeURIComponent(file.name)}`,
         format: file.format,
         size: file.size
@@ -141,7 +145,7 @@ export async function getBookFiles(identifier: string): Promise<BookFile[]> {
  */
 export async function getBookDetails(identifier: string): Promise<Book | null> {
   try {
-    const response = await safeFetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
+    const response = await fetchWithRetry(`${ARCHIVE_METADATA_BASE}${identifier}`);
     if (!response || !response.ok) return null;
 
     const data = await response.json();
@@ -152,6 +156,8 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
     const language = normalizeField(data.metadata?.language);
     const publisher = normalizeField(data.metadata?.publisher);
     const description = normalizeField(data.metadata?.description);
+    const totalPages = data.metadata?.imagecount ? parseInt(normalizeField(data.metadata.imagecount)) :
+                      (data.metadata?.pages ? parseInt(normalizeField(data.metadata.pages)) : undefined);
 
     const files = data.files || [];
     const ocrFile = files.find((f: any) => f.name && f.name.toLowerCase().endsWith('_djvu.txt'));
@@ -165,6 +171,7 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
       )
       .map((file: any) => ({
         name: file.title || file.name.replace('.pdf', '').replace(/_/g, ' '),
+        filename: file.name,
         url: `https://archive.org/download/${identifier}/${encodeURIComponent(file.name)}`,
         format: file.format,
         size: file.size
@@ -183,7 +190,8 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
       firstPageImageUrl: `https://archive.org/download/${identifier}/page/n0.jpg`,
       downloadLink: bookFiles.length > 0 ? bookFiles[0].url : undefined,
       files: bookFiles,
-      ocrUrl
+      ocrUrl,
+      totalPages
     };
   } catch (error) {
     console.error('Error getting book details:', error);

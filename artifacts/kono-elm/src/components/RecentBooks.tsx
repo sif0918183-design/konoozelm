@@ -109,7 +109,7 @@ export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
         {filteredBooks.slice(0, 10).map((book, index) => (
           <Link
             key={book.url}
-            href={`/reader?pdf=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`}
+            href={`/reader?pdf=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}&lang=${lang}${book.url.includes('archive.org/download/') ? `&id=${book.url.split('archive.org/download/')[1].split('/')[0]}&file=${book.url.split('/').pop()}` : ''}`}
             className={cn(
               "group relative bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3",
               index >= itemsToShow ? "hidden md:flex" : "flex"

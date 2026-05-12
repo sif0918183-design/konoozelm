@@ -48,6 +48,8 @@ export interface TranslationKeys {
   select_part_download: string;
   close: string;
   loading_book: string;
+  loading_wait: string;
+  retry_loading: string;
   preparing_download: string;
   dont_close_page: string;
   book_label: string;
@@ -194,6 +196,8 @@ export const translations: Record<Language, TranslationKeys> = {
     select_part_download: 'اختر الجزء للتحميل',
     close: 'إغلاق',
     loading_book: 'جاري تحميل الكتاب...',
+    loading_wait: 'جاري تحميل الكتاب، حاول بعد لحظات...',
+    retry_loading: 'إعادة المحاولة',
     preparing_download: 'اكتمل التحضير، سيبدأ التحميل الآن...',
     dont_close_page: 'يرجى عدم إغلاق هذه الصفحة حتى يكتمل الشريط',
     book_label: 'الكتاب',
@@ -336,6 +340,8 @@ export const translations: Record<Language, TranslationKeys> = {
     select_part_download: 'Select part to download',
     close: 'Close',
     loading_book: 'Loading book...',
+    loading_wait: 'Loading book, please try again in a moment...',
+    retry_loading: 'Retry',
     preparing_download: 'Preparation complete, downloading now...',
     dont_close_page: 'Please do not close this page until the bar is complete',
     book_label: 'Book',
