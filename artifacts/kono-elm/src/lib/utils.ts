@@ -125,22 +125,60 @@ export function normalizeYear(date: any): string | undefined {
 }
 
 /**
- * Fetch with timeout and error handling
+ * Generic fetch with retry logic, exponential backoff, and per-attempt timeout
+ */
+export async function fetchWithRetry(
+  url: string,
+  options: RequestInit = {},
+  retries = 3,
+  baseDelay = 300,
+  timeout = 8000
+): Promise<Response> {
+  let lastError: any;
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+
+      clearTimeout(id);
+
+      // If successful or client error (4xx) that we shouldn't retry
+      if (response.ok || (response.status >= 400 && response.status < 500)) {
+        return response;
+      }
+
+      // If server error (5xx), it's worth retrying
+      throw new Error(`Server error: ${response.status}`);
+    } catch (error: any) {
+      clearTimeout(id);
+      lastError = error;
+
+      // Don't wait on the last attempt
+      if (attempt < retries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+/**
+ * Fetch with retry resilience and automated timeout management
  */
 export async function safeFetch(url: string, options: RequestInit = {}, timeout = 8000): Promise<Response | null> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-
   try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal
-    });
-    clearTimeout(id);
+    const response = await fetchWithRetry(url, options, 3, 300, timeout);
     return response;
   } catch (error) {
-    clearTimeout(id);
-    console.error(`Fetch failed for ${url}:`, error);
+    console.error(`Fetch failed for ${url} after retries:`, error);
     return null;
   }
 }
