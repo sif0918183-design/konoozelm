@@ -237,7 +237,12 @@ function ReaderContent() {
             : optimizedUrl;
         }
 
-        const loadingTask = pdfjsLib.getDocument(pdfSource);
+        const loadingTask = pdfjsLib.getDocument({
+          ...(typeof pdfSource === 'string' ? { url: pdfSource } : pdfSource),
+          cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+          cMapPacked: true,
+          standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+        });
         const pdfDoc = await loadingTask.promise;
         setPdf(pdfDoc);
         setNumPages(pdfDoc.numPages);
