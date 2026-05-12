@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { addToRecentBooks } from '@/lib/recent-books';
 import { optimizeArchiveUrl } from '@/lib/archive-utils';
 import { getCachedPDF } from '@/lib/pdf-cache';
+import { getBookDetails } from '@/lib/archive-api';
 
 // CDN for PDF.js
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
@@ -176,9 +177,9 @@ function ReaderContent() {
   const lang = isEnglish ? 'en' : 'ar';
   const t = translations[lang];
 
-  const pdfUrl = searchParams.get('pdf');
+  const [pdfUrl, setPdfUrl] = useState<string | null>(searchParams.get('pdf'));
   const bookId = searchParams.get('id');
-  const fileName = searchParams.get('file');
+  const [fileName, setFileName] = useState<string | null>(searchParams.get('file'));
   const bookTitle = searchParams.get('title') || t.loading;
 
   const [pdf, setPdf] = useState<any>(null);
@@ -191,6 +192,7 @@ function ReaderContent() {
   const [error, setError] = useState<string | null>(null);
   const [isUsingEmbed, setIsUsingEmbed] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
+  const [isIframeLoading, setIsIframeLoading] = useState(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -201,31 +203,45 @@ function ReaderContent() {
         setIsLoading(true);
         setError(null);
 
-        // 1. Check if we should use PDF.js (Offline/Pinned check)
-        const isPinned = pdfUrl ? await getCachedPDF(pdfUrl) : false;
+        let currentPdfUrl = pdfUrl;
+        let currentFileName = fileName;
 
-        if (isPinned && pdfUrl) {
+        // If we have an ID but no PDF URL/Filename, fetch them first for proper persistence and download
+        if (bookId && (!currentPdfUrl || !currentFileName)) {
+          const details = await getBookDetails(bookId);
+          if (details && details.files && details.files.length > 0) {
+            currentPdfUrl = details.files[0].url;
+            currentFileName = details.files[0].filename;
+            setPdfUrl(currentPdfUrl);
+            setFileName(currentFileName);
+          }
+        }
+
+        // 1. Check if we should use PDF.js (Offline/Pinned check)
+        const isPinned = currentPdfUrl ? await getCachedPDF(currentPdfUrl) : false;
+
+        if (isPinned && currentPdfUrl) {
           setIsUsingEmbed(false);
-          await loadWithPdfJs(pdfUrl);
+          await loadWithPdfJs(currentPdfUrl);
         } else if (bookId) {
           // 2. Use Archive.org Embed directly for better availability
           setIsUsingEmbed(true);
           // Progress tracking for embed (basic entry)
-          if (pdfUrl) {
+          if (currentPdfUrl) {
             addToRecentBooks({
-              identifier: pdfUrl,
+              identifier: currentPdfUrl,
               title: bookTitle,
-              url: pdfUrl,
+              url: currentPdfUrl,
               lastRead: new Date().toISOString(),
               currentPage: 1,
               totalPages: 1
             });
           }
           setIsLoading(false);
-        } else if (pdfUrl) {
+        } else if (currentPdfUrl) {
           // 3. Fallback to PDF.js if no ID is available
           setIsUsingEmbed(false);
-          await loadWithPdfJs(pdfUrl);
+          await loadWithPdfJs(currentPdfUrl);
         } else {
           setError(t.error_no_pdf);
           setIsLoading(false);
@@ -357,8 +373,9 @@ function ReaderContent() {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50" dir={isEnglish ? 'ltr' : 'rtl'}>
-        <Loader2 className="w-12 h-12 text-primary-900 animate-spin mb-4" />
-        <p className="text-primary-900 font-bold text-lg animate-pulse">{t.loading_wait}</p>
+        <div className="text-primary-900 font-bold text-xl md:text-2xl text-center px-4 animate-pulse">
+          {t.loading_wait}
+        </div>
       </div>
     );
   }
@@ -455,8 +472,7 @@ function ReaderContent() {
 
           {pdfUrl && (
             <a
-              href={pdfUrl}
-              download
+              href={`/api/download?url=${encodeURIComponent(pdfUrl)}&filename=${encodeURIComponent(fileName || 'book.pdf')}`}
               className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
               title={t.download_pdf}
             >
@@ -472,17 +488,27 @@ function ReaderContent() {
         isUsingEmbed ? "h-[100dvh] pb-0 px-0 overflow-hidden" : "min-h-screen pb-12 px-4 flex flex-col items-center pt-24"
       )}>
         {isUsingEmbed ? (
-          <iframe
-            src={embedUrl}
-            width="100%"
-            height="100%"
-            frameBorder="0"
-            allowFullScreen
-            className={cn(
-              "w-full h-full",
-              isNightMode && "invert brightness-90 hue-rotate-180"
+          <div className="relative w-full h-full">
+            {isIframeLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-creamy-50 z-10">
+                <div className="text-primary-900 font-bold text-xl md:text-2xl text-center px-4 animate-pulse">
+                  {t.loading_wait}
+                </div>
+              </div>
             )}
-          />
+            <iframe
+              src={embedUrl}
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              allowFullScreen
+              onLoad={() => setIsIframeLoading(false)}
+              className={cn(
+                "w-full h-full",
+                isNightMode && "invert brightness-90 hue-rotate-180"
+              )}
+            />
+          </div>
         ) : (
           <div className="w-full max-w-5xl">
             {Array.from({ length: numPages }, (_, i) => (
@@ -518,8 +544,9 @@ export default function ReaderPage() {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50">
-        <Loader2 className="w-12 h-12 text-primary-900 animate-spin mb-4" />
-        <p className="text-primary-900 font-bold text-lg animate-pulse">Loading...</p>
+        <div className="text-primary-900 font-bold text-xl md:text-2xl text-center px-4 animate-pulse">
+          جاري تحميل الكتاب، يرجى الانتظار...
+        </div>
       </div>
     }>
       <ReaderContent />
