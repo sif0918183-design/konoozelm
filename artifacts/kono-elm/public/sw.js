@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kono-elm-shell-v4';
+const CACHE_NAME = 'kono-elm-shell-v5';
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDFJS_WORKER_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -42,6 +42,9 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Skip API requests
+  if (event.request.url.includes('/api/')) return;
+
   const url = new URL(event.request.url);
 
   // For Archive.org page images, try cache first then network
@@ -49,11 +52,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(event.request).then((response) => {
         if (response) return response;
-
-        // If not in cache, fetch from network
-        return fetch(event.request).then((networkResponse) => {
-          return networkResponse;
-        }).catch(() => {
+        return fetch(event.request).catch(() => {
           return new Response('Offline', { status: 503, statusText: 'Offline' });
         });
       })
@@ -61,27 +60,39 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For navigation requests, try network then fallback to cache (Shell)
+  // Navigation fallback
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
+      fetch(event.request).catch(async () => {
         const path = url.pathname;
+
+        // Match specific shells first
         if (path.includes('/reader')) {
-          return caches.match('/reader');
+          const readerMatch = await caches.match('/reader');
+          if (readerMatch) return readerMatch;
         }
+
         if (path.includes('/continue-reading')) {
-           return caches.match(path.startsWith('/en') ? '/en/continue-reading' : '/continue-reading');
+           const crPath = path.startsWith('/en') ? '/en/continue-reading' : '/continue-reading';
+           const crMatch = await caches.match(crPath);
+           if (crMatch) return crMatch;
         }
+
+        // Language home fallback
         if (path.startsWith('/en')) {
-          return caches.match('/en');
+          const enHome = await caches.match('/en');
+          if (enHome) return enHome;
         }
-        return caches.match('/');
+
+        // Default to Arabic home
+        const arHome = await caches.match('/');
+        return arHome || new Response('Offline', { status: 503 });
       })
     );
     return;
   }
 
-  // For other requests (scripts, fonts, images)
+  // Static assets: Cache first, then network
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
