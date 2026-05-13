@@ -34,6 +34,11 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Huda Library',
   },
+  verification: {
+    other: {
+      'msvalidate.01': 'B3F0A80329F60E6CDAAF9BA26C5E2166',
+    },
+  },
 };
 
 export const viewport = {
