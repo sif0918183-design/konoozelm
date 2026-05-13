@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { BookOpen, Pin, PinOff, Trash2, Clock, ChevronLeft, WifiOff, CheckCircle2 } from 'lucide-react';
 import { getRecentBooks, togglePinBook, removeFromRecent, type RecentBook } from '@/lib/recent-books';
 import { cn } from '@/lib/utils';
-import { cachePDF, uncachePDF, cacheBookImages, uncacheBookImages } from '@/lib/pdf-cache';
+import { cachePDF, uncachePDF } from '@/lib/pdf-cache';
 import { translations } from '@/lib/translations';
 
 interface RecentBooksProps {
@@ -51,22 +51,11 @@ export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
     const newPinnedStatus = !book.isPinned;
 
     if (newPinnedStatus) {
-      // Pinning: cache the PDF and all page images
+      // Pinning: cache the PDF
       await cachePDF(book.url);
-
-      // Extract identifier to cache images
-      const idMatch = book.url.match(/archive\.org\/download\/([^\/]+)/);
-      if (idMatch) {
-        cacheBookImages(idMatch[1], book.totalPages);
-      }
     } else {
       // Unpinning: remove from cache
       await uncachePDF(book.url);
-
-      const idMatch = book.url.match(/archive\.org\/download\/([^\/]+)/);
-      if (idMatch) {
-        uncacheBookImages(idMatch[1], book.totalPages);
-      }
     }
 
     togglePinBook(book.url);

@@ -40,19 +40,6 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // For Archive.org page images, try cache first then network
-  if (url.hostname === 'archive.org' && url.pathname.includes('/page/n')) {
-    event.respondWith(
-      caches.match(event.request).then((response) => {
-        return response || fetch(event.request).then((networkResponse) => {
-          // Optional: we could also cache on the fly here if we wanted
-          return networkResponse;
-        });
-      })
-    );
-    return;
-  }
-
   // For navigation requests, try network then fallback to cache (Shell)
   if (event.request.mode === 'navigate') {
     event.respondWith(

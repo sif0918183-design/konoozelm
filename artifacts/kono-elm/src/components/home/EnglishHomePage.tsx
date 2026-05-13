@@ -25,9 +25,9 @@ export default function EnglishHome() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
 
-  // Restore search state from localStorage
+  // Restore search state from sessionStorage
   useEffect(() => {
-    const savedState = localStorage.getItem('searchState_en');
+    const savedState = sessionStorage.getItem('searchState_en');
     if (savedState) {
       try {
         const parsed = JSON.parse(savedState);
@@ -43,11 +43,11 @@ export default function EnglishHome() {
     }
   }, []);
 
-  // Save search state to localStorage
+  // Save search state to sessionStorage
   useEffect(() => {
     if (hasSearched) {
       const state = { query, books, hasSearched, totalResults, page, hasMore };
-      localStorage.setItem('searchState_en', JSON.stringify(state));
+      sessionStorage.setItem('searchState_en', JSON.stringify(state));
     }
   }, [query, books, hasSearched, totalResults, page, hasMore]);
 
@@ -108,7 +108,7 @@ export default function EnglishHome() {
     setPage(1);
     setHasMore(false);
     setError(null);
-    localStorage.removeItem('searchState_en');
+    sessionStorage.removeItem('searchState_en');
   };
 
   const [featuredCategories, setFeaturedCategories] = useState<{title: string, slug: string}[]>([]);
