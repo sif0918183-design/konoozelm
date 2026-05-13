@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kono-elm-shell-v5';
+const CACHE_NAME = 'kono-elm-shell-v6';
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDFJS_WORKER_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -95,7 +95,22 @@ self.addEventListener('fetch', (event) => {
   // Static assets: Cache first, then network
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+      if (response) return response;
+
+      return fetch(event.request).then(networkResponse => {
+        // Only cache successful GET responses for our own assets
+        if (networkResponse.ok && event.request.method === 'GET' &&
+            (url.origin === self.location.origin || url.hostname.includes('cdnjs.cloudflare.com'))) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        // Fallback for failed asset fetches (optional)
+        return new Response('Asset not available', { status: 404 });
+      });
     })
   );
 });

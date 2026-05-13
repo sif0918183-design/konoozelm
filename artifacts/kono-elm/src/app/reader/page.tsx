@@ -290,15 +290,18 @@ function ReaderContent() {
         pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
 
         // Try to get from IndexedDB first
+        console.log('Attempting to load PDF from cache:', url);
         const cachedResponse = await getCachedPDF(url);
         let pdfSource: any;
 
         if (cachedResponse) {
+          console.log('PDF found in IndexedDB cache');
           const blob = await cachedResponse.blob();
           const arrayBuffer = await blob.arrayBuffer();
           pdfSource = { data: arrayBuffer };
         } else {
           // If offline, this will fail
+          console.log('PDF not in cache, fetching via proxy');
           const optimizedUrl = optimizeArchiveUrl(url);
           pdfSource = optimizedUrl.includes('archive.org')
             ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
@@ -311,6 +314,14 @@ function ReaderContent() {
           cMapPacked: true,
           standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
         });
+
+        loadingTask.onProgress = (progressData: any) => {
+          if (progressData.total > 0) {
+            const percent = Math.round((progressData.loaded / progressData.total) * 100);
+            console.log(`Loading PDF: ${percent}%`);
+          }
+        };
+
         const pdfDoc = await loadingTask.promise;
         setPdf(pdfDoc);
         setNumPages(pdfDoc.numPages);
