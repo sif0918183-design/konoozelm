@@ -51,8 +51,14 @@ export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
     const newPinnedStatus = !book.isPinned;
 
     if (newPinnedStatus) {
-      // Pinning: cache the PDF
+      // Pinning: cache the PDF and all page images
       await cachePDF(book.url);
+
+      const idMatch = book.url.match(/archive\.org\/download\/([^\/]+)/);
+      if (idMatch && book.totalPages > 0) {
+        const { cacheBookImages } = await import('@/lib/pdf-cache');
+        cacheBookImages(idMatch[1], book.totalPages);
+      }
     } else {
       // Unpinning: remove from cache
       await uncachePDF(book.url);
