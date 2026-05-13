@@ -69,7 +69,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       if (typeof window !== 'undefined' && !navigator.onLine) {
         alert(t.offline_notice);
       } else if (files.length === 0 && !isLoadingFiles) {
-        alert(lang === 'ar' ? 'عذراً، هذا الكتاب غير متوفر حالياً للقراءة' : 'Sorry, this book is currently unavailable for reading');
+        alert(lang === 'ar' ? 'لايمكن فتح الكتاب بسبب ضعف الإنترنت، يرجى تحديث الصفحة المحاولة مرة أخرى' : 'The book cannot be opened due to weak internet, please refresh the page and try again');
       }
     }
   };

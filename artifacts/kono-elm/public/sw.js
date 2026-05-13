@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kono-elm-shell-v2';
+const CACHE_NAME = 'kono-elm-shell-v3';
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDFJS_WORKER_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -40,12 +40,29 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
+  // For Archive.org page images, try cache first then network
+  if (url.hostname === 'archive.org' && url.pathname.includes('/page/n')) {
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        if (response) return response;
+
+        // If not in cache, fetch from network
+        return fetch(event.request).then((networkResponse) => {
+          return networkResponse;
+        }).catch(() => {
+          return new Response('Offline', { status: 503, statusText: 'Offline' });
+        });
+      })
+    );
+    return;
+  }
+
   // For navigation requests, try network then fallback to cache (Shell)
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
         // Fallback to home or reader shell
-        if (url.pathname.startsWith('/reader')) {
+        if (url.pathname.includes('/reader')) {
           return caches.match('/reader');
         }
         return caches.match('/');
