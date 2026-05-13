@@ -1,20 +1,22 @@
 /**
- * Utility for managing PDF files in the browser's Cache API
+ * Utility for managing PDF files in the browser's Cache API and IndexedDB
  */
 
 import { optimizeArchiveUrl } from './archive-utils';
+import { savePDFToOffline, deletePDFFromOffline, isPDFStoredOffline, getPDFFromOffline } from './offline-storage';
 
 const CACHE_NAME = 'kono-elm-pdf-cache-v1';
 
 /**
- * Saves a PDF to the cache
+ * Saves a PDF to IndexedDB for offline reading
  */
-export async function cachePDF(url: string): Promise<boolean> {
-  if (typeof window === 'undefined' || !('caches' in window)) return false;
+export async function cachePDF(
+  url: string,
+  onProgress?: (progress: number) => void
+): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
 
   try {
-    const cache = await caches.open(CACHE_NAME);
-
     // Use proxy for Archive.org URLs to avoid CORS
     const optimizedUrl = optimizeArchiveUrl(url);
     const fetchUrl = optimizedUrl.includes('archive.org')
@@ -24,8 +26,33 @@ export async function cachePDF(url: string): Promise<boolean> {
     const response = await fetch(fetchUrl);
     if (!response.ok) throw new Error('Failed to fetch PDF for caching');
 
-    // Store it using the original URL as key
-    await cache.put(url, response);
+    const contentLength = response.headers.get('content-length');
+    const total = contentLength ? parseInt(contentLength, 10) : 0;
+
+    if (onProgress && total > 0) {
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('ReadableStream not supported');
+
+      let loaded = 0;
+      const chunks = [];
+
+      while(true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        chunks.push(value);
+        loaded += value.length;
+        onProgress(Math.round((loaded / total) * 100));
+      }
+
+      const blob = new Blob(chunks, { type: 'application/pdf' });
+      await savePDFToOffline(url, blob);
+    } else {
+      const blob = await response.blob();
+      await savePDFToOffline(url, blob);
+      if (onProgress) onProgress(100);
+    }
+
     return true;
   } catch (error) {
     console.error('Error caching PDF:', error);
@@ -73,14 +100,14 @@ export async function cacheBookImages(identifier: string, totalPages: number): P
 }
 
 /**
- * Removes a PDF from the cache
+ * Removes a PDF from offline storage
  */
 export async function uncachePDF(url: string): Promise<boolean> {
-  if (typeof window === 'undefined' || !('caches' in window)) return false;
+  if (typeof window === 'undefined') return false;
 
   try {
-    const cache = await caches.open(CACHE_NAME);
-    return await cache.delete(url);
+    await deletePDFFromOffline(url);
+    return true;
   } catch (error) {
     console.error('Error uncaching PDF:', error);
     return false;
@@ -88,33 +115,19 @@ export async function uncachePDF(url: string): Promise<boolean> {
 }
 
 /**
- * Checks if a PDF is in the cache
+ * Checks if a PDF is available offline (in IndexedDB)
  */
 export async function isPDFCached(url: string): Promise<boolean> {
-  if (typeof window === 'undefined' || !('caches' in window)) return false;
-
-  try {
-    const cache = await caches.open(CACHE_NAME);
-    const response = await cache.match(url);
-    return !!response;
-  } catch (error) {
-    console.error('Error checking cache:', error);
-    return false;
-  }
+  return await isPDFStoredOffline(url);
 }
 
 /**
- * Gets a cached response for a PDF URL
+ * Gets a cached response for a PDF URL (now from IndexedDB)
  */
 export async function getCachedPDF(url: string): Promise<Response | null> {
-  if (typeof window === 'undefined' || !('caches' in window)) return null;
-
-  try {
-    const cache = await caches.open(CACHE_NAME);
-    const response = await cache.match(url);
-    return response || null;
-  } catch (error) {
-    console.error('Error getting cached PDF:', error);
-    return null;
+  const blob = await getPDFFromOffline(url);
+  if (blob) {
+    return new Response(blob);
   }
+  return null;
 }

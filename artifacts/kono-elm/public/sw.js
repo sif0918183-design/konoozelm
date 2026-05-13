@@ -1,10 +1,13 @@
-const CACHE_NAME = 'kono-elm-shell-v3';
+const CACHE_NAME = 'kono-elm-shell-v4';
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDFJS_WORKER_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const ASSETS_TO_CACHE = [
   '/',
+  '/en',
   '/reader',
+  '/continue-reading',
+  '/en/continue-reading',
   '/favicon.ico',
   '/favicon.png',
   '/manifest.json?lang=ar',
@@ -13,7 +16,8 @@ const ASSETS_TO_CACHE = [
   '/icon-top.png',
   '/apple-icon.png',
   PDFJS_CDN,
-  PDFJS_WORKER_CDN
+  PDFJS_WORKER_CDN,
+  'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Tajawal:wght@200;300;400;500;700;800;900&display=swap'
 ];
 
 self.addEventListener('install', (event) => {
@@ -61,9 +65,15 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
-        // Fallback to home or reader shell
-        if (url.pathname.includes('/reader')) {
+        const path = url.pathname;
+        if (path.includes('/reader')) {
           return caches.match('/reader');
+        }
+        if (path.includes('/continue-reading')) {
+           return caches.match(path.startsWith('/en') ? '/en/continue-reading' : '/continue-reading');
+        }
+        if (path.startsWith('/en')) {
+          return caches.match('/en');
         }
         return caches.match('/');
       })

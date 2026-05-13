@@ -43,8 +43,6 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
       (entries) => {
         const entry = entries[0];
         if (entry.isIntersecting) {
-          // Fast Page Detection: Trigger as soon as the page occupies a significant part of the viewport center
-          // We use rootMargin to create a narrow detection band in the middle of the screen
           onVisible(pageNumber);
 
           if (!isRendered && !isRendering) {
@@ -54,7 +52,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
       },
       {
         threshold: 0,
-        rootMargin: '-45% 0px -45% 0px' // Only trigger for pages in the middle 10% of the screen
+        rootMargin: '-45% 0px -45% 0px'
       }
     );
 
@@ -66,7 +64,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
           }
         }
       },
-      { threshold: 0, rootMargin: '1200px 0px' } // Rendering uses a wider margin
+      { threshold: 0, rootMargin: '1200px 0px' }
     );
 
     if (containerRef.current) {
@@ -83,7 +81,8 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
   const renderPage = async () => {
     if (isRendered || isRendering) return;
 
-    if (identifier) {
+    // Use images if available (Archive.org specific)
+    if (identifier && !pdf) {
       setIsRendering(true);
       return;
     }
@@ -121,7 +120,6 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
     }
   };
 
-  // Re-render on scale change only for canvas mode
   useEffect(() => {
     if (!identifier && (isRendered || isRendering)) {
       if (renderTaskRef.current) {
@@ -183,7 +181,6 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
                 setIsRendering(false);
               }}
               onError={() => {
-                // Fallback to canvas if image fails (unlikely for archive.org but good practice)
                 setIsRendering(false);
                 setIsRendered(false);
               }}
@@ -251,7 +248,7 @@ function ReaderContent() {
           script.onload = () => initPdf(pdfUrl);
           script.onerror = () => {
             console.error('Failed to load PDF.js script, attempting offline fallback');
-            initPdf(pdfUrl); // Try initPdf anyway to trigger offline fallback logic
+            initPdf(pdfUrl);
           };
           document.head.appendChild(script);
         } else {
@@ -265,7 +262,6 @@ function ReaderContent() {
     };
 
     const initPdf = async (url: string) => {
-      // Extract identifier immediately for image fallback
       const idMatch = url.match(/archive\.org\/download\/([^\/]+)/);
       const bookIdentifier = idMatch ? idMatch[1] : null;
       setIdentifier(bookIdentifier);
@@ -276,6 +272,7 @@ function ReaderContent() {
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
 
+        // Try to get from IndexedDB first
         const cachedResponse = await getCachedPDF(url);
         let pdfSource: any;
 
@@ -284,6 +281,7 @@ function ReaderContent() {
           const arrayBuffer = await blob.arrayBuffer();
           pdfSource = { data: arrayBuffer };
         } else {
+          // If offline, this will fail
           const optimizedUrl = optimizeArchiveUrl(url);
           pdfSource = optimizedUrl.includes('archive.org')
             ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
@@ -301,21 +299,15 @@ function ReaderContent() {
         setNumPages(pdfDoc.numPages);
 
         const savedPage = localStorage.getItem(`page_${url}`);
-        if (savedPage) {
-          const page = parseInt(savedPage);
-          if (page > 0 && page <= pdfDoc.numPages) {
-            setPageNum(page);
-          }
-        } else {
-          setPageNum(1);
-        }
+        const initialPage = savedPage ? parseInt(savedPage) : 1;
+        setPageNum(initialPage);
 
         addToRecentBooks({
           identifier: url,
           title: bookTitle,
           url: url,
           lastRead: new Date().toISOString(),
-          currentPage: parseInt(savedPage || '1'),
+          currentPage: initialPage,
           totalPages: pdfDoc.numPages
         });
 
@@ -323,7 +315,6 @@ function ReaderContent() {
       } catch (err: any) {
         console.error('Error initializing PDF, trying offline fallback:', err);
 
-        // Offline Fallback: Try to get metadata from recentBooks if we have an identifier
         const recentBooks = JSON.parse(localStorage.getItem('recentBooks') || '[]');
         const bookData = recentBooks.find((b: any) => b.url === url);
 
@@ -345,18 +336,13 @@ function ReaderContent() {
     setIsNightMode(savedNightMode);
   }, [pdfUrl, bookTitle]);
 
-  // Initial scroll to saved page
   useEffect(() => {
     if (!isLoading && numPages > 0 && pageNum > 1 && !isInitialScrollDone) {
       const timer = setTimeout(() => {
         const pageElement = document.getElementById(`page-${pageNum}`);
         if (pageElement) {
           pageElement.scrollIntoView({ behavior: 'auto', block: 'start' });
-          // Use a longer timeout or multiple checks to ensure it actually scrolled
-          // Before marking initial scroll as done
           setTimeout(() => setIsInitialScrollDone(true), 500);
-        } else {
-          // If element not found yet, don't mark as done, it will retry
         }
       }, 800);
       return () => clearTimeout(timer);
@@ -369,10 +355,8 @@ function ReaderContent() {
   const onPageVisible = useCallback((page: number) => {
     if (!isInitialScrollDone) return;
 
-    // Update UI immediately
     setPageNum(page);
 
-    // Throttle storage updates to once every 2 seconds to keep the UI smooth
     const now = Date.now();
     if (pdfUrl && now - lastStorageUpdate.current > 2000) {
       lastStorageUpdate.current = now;

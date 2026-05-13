@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BookOpen, Pin, PinOff, Trash2, Clock, ChevronLeft, WifiOff, CheckCircle2 } from 'lucide-react';
-import { getRecentBooks, togglePinBook, removeFromRecent, type RecentBook } from '@/lib/recent-books';
+import { BookOpen, Pin, PinOff, Trash2, Clock, ChevronLeft, WifiOff, CheckCircle2, Loader2 } from 'lucide-react';
+import { getRecentBooks, togglePinBook, removeFromRecent, updateOfflineStatus, type RecentBook } from '@/lib/recent-books';
 import { cn } from '@/lib/utils';
 import { cachePDF, uncachePDF } from '@/lib/pdf-cache';
 import { translations } from '@/lib/translations';
@@ -18,6 +18,8 @@ export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [showAllMobile, setShowAllMobile] = useState(false);
+  const [downloadingUrl, setDownloadingUrl] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number>(0);
 
   useEffect(() => {
     setRecentBooks(getRecentBooks());
@@ -48,20 +50,32 @@ export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
     e.preventDefault();
     e.stopPropagation();
 
+    if (downloadingUrl) return; // Prevent multiple downloads at once
+
     const newPinnedStatus = !book.isPinned;
 
     if (newPinnedStatus) {
       // Pinning: cache the PDF and all page images
-      await cachePDF(book.url);
+      setDownloadingUrl(book.url);
+      setProgress(0);
 
-      const idMatch = book.url.match(/archive\.org\/download\/([^\/]+)/);
-      if (idMatch && book.totalPages > 0) {
-        const { cacheBookImages } = await import('@/lib/pdf-cache');
-        cacheBookImages(idMatch[1], book.totalPages);
+      const success = await cachePDF(book.url, (p) => setProgress(p));
+
+      if (success) {
+        updateOfflineStatus(book.url, true);
+        const idMatch = book.url.match(/archive\.org\/download\/([^\/]+)/);
+        if (idMatch && book.totalPages > 0) {
+          const { cacheBookImages } = await import('@/lib/pdf-cache');
+          cacheBookImages(idMatch[1], book.totalPages);
+        }
       }
+
+      setDownloadingUrl(null);
+      setProgress(0);
     } else {
       // Unpinning: remove from cache
       await uncachePDF(book.url);
+      updateOfflineStatus(book.url, false);
     }
 
     togglePinBook(book.url);
@@ -126,7 +140,7 @@ export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
                 <div className="p-3 bg-creamy-100 rounded-xl group-hover:bg-primary-50 transition-colors">
                   <BookOpen className="w-6 h-6 text-primary-900" />
                 </div>
-                {book.isPinned && (
+                {book.isOfflineAvailable && (
                   <div className={`absolute -top-2 ${lang === 'ar' ? '-right-2' : '-left-2'} bg-primary-600 text-white p-1 rounded-full border-2 border-white shadow-sm`} title={lang === 'ar' ? 'متوفر بدون اتصال' : 'Available offline'}>
                     <CheckCircle2 className="w-3 h-3" />
                   </div>
@@ -135,13 +149,18 @@ export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
               <div className="flex gap-1">
                 <button
                   onClick={(e) => handleTogglePin(e, book)}
+                  disabled={!!downloadingUrl}
                   className={cn(
-                    "p-2 rounded-lg transition-colors",
+                    "p-2 rounded-lg transition-colors relative",
                     book.isPinned ? "text-gold-600 bg-gold-50" : "text-gray-400 hover:bg-gray-100"
                   )}
                   title={book.isPinned ? (lang === 'ar' ? "إلغاء التثبيت" : "Unpin") : (lang === 'ar' ? "تثبيت" : "Pin")}
                 >
-                  {book.isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                  {downloadingUrl === book.url ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    book.isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />
+                  )}
                 </button>
                 <button
                   onClick={(e) => handleRemove(e, book.url)}
@@ -157,20 +176,40 @@ export default function RecentBooks({ lang = 'ar' }: RecentBooksProps) {
               <h3 className="font-bold text-gray-800 line-clamp-1 mb-1 group-hover:text-primary-800 transition-colors">
                 {book.title}
               </h3>
-              {book.isPinned && (
+
+              {downloadingUrl === book.url ? (
+                <div className="space-y-1 mb-2">
+                   <div className="flex items-center justify-between text-[10px] text-primary-600 font-bold">
+                    <span>{lang === 'ar' ? 'جاري التحميل للقراءة بدون إنترنت...' : 'Downloading for offline...'}</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="h-1 w-full bg-primary-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary-600 transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              ) : book.isOfflineAvailable ? (
                 <div className="flex items-center gap-1 text-[10px] font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full w-fit mb-2">
                   <WifiOff className="w-3 h-3" />
                   <span>{lang === 'ar' ? 'جاهز للقراءة بدون إنترنت' : 'Ready for offline reading'}</span>
                 </div>
-              )}
+              ) : book.isPinned ? (
+                <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full w-fit mb-2">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>{lang === 'ar' ? 'بانتظار التحميل...' : 'Waiting for download...'}</span>
+                </div>
+              ) : null}
+
               <div className="flex items-center justify-between text-xs text-gray-500" dir="ltr">
                 <span>{lang === 'ar' ? `الصفحة ${book.currentPage} من ${book.totalPages}` : `Page ${book.currentPage} of ${book.totalPages}`}</span>
-                <span>{Math.round((book.currentPage / book.totalPages) * 100)}%</span>
+                <span>{Math.round((book.currentPage / (book.totalPages || 1)) * 100)}%</span>
               </div>
               <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary-600 transition-all duration-500"
-                  style={{ width: `${(book.currentPage / book.totalPages) * 100}%` }}
+                  style={{ width: `${(book.currentPage / (book.totalPages || 1)) * 100}%` }}
                 />
               </div>
             </div>
