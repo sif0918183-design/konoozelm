@@ -39,3 +39,4 @@
  GET /api/admin/books?archiveId=test-id&lang=en 200 in 43ms
  ⨯ upstream image response failed for https://archive.org/services/img/test-id 403
  GET /api/admin/books?archiveId=test-id&lang=en 200 in 40ms
+ ✓ Compiled in 7.9s (767 modules)

@@ -197,20 +197,47 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
 export function cleanOcrText(text: string, maxLength: number = 1500): string {
   if (!text) return '';
 
-  let cleaned = text
-    .replace(/[^\u0600-\u06FFa-zA-Z0-9\s.,!?;:()\[\]{}""'']/g, ' ') // Keep Arabic, Latin, numbers and basic punctuation
-    .replace(/\s+/g, ' ') // Collapse multiple spaces
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
-    .join('\n');
+  // Initial cleanup: remove URLs and obvious noise
+  let raw = text
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/www\.\S+/gi, '')
+    .replace(/[a-zA-Z0-9._-]+\.[a-z]{2,4}\S*/gi, '');
 
-  // Remove some duplication (consecutive identical lines/phrases)
-  const lines = cleaned.split('\n');
-  const uniqueLines = lines.filter((line, index) => lines.indexOf(line) === index);
-  cleaned = uniqueLines.join('\n');
+  const lines = raw.split(/[\r\n]+/);
+  const cleanedLines: string[] = [];
 
-  return cleaned.substring(0, maxLength).trim();
+  for (let line of lines) {
+    // Basic trim and noise removal
+    line = line.trim()
+      .replace(/[^\u0600-\u06FFa-zA-Z0-9\s.,!?;:()]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (line.length < 15) continue; // Skip very short lines/fragments
+
+    // Density check: skip lines that are mostly non-alphabetic (numbers, punctuation, symbols)
+    const letters = line.match(/[\u0600-\u06FFa-zA-Z]/g) || [];
+    const density = letters.length / line.length;
+    if (density < 0.6) continue;
+
+    // Gibberish check: skip lines with too many single characters
+    const words = line.split(' ');
+    const singleCharWords = words.filter(w => w.length === 1);
+    if (singleCharWords.length / words.length > 0.4 && words.length > 3) continue;
+
+    cleanedLines.push(line);
+  }
+
+  // Deduplicate and join
+  const uniqueLines = Array.from(new Set(cleanedLines));
+
+  // Combine back to text and enforce maxLength
+  let finalResult = uniqueLines.join(' ');
+
+  // Final pass to collapse excessive whitespace if any
+  finalResult = finalResult.replace(/\s+/g, ' ').trim();
+
+  return finalResult.substring(0, maxLength);
 }
 
 /**
