@@ -3,13 +3,15 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Book as BookIcon, Download, Loader2, Layers, BookOpen } from 'lucide-react';
+import { Book as BookIcon, Download, Loader2, Layers, BookOpen, Pin, PinOff, CheckCircle2 } from 'lucide-react';
 import { slugify } from '@/lib/utils';
 import { type Book, type BookFile, getBookFiles } from '@/lib/archive-api';
 import { cn } from '@/lib/utils';
 import BookPartsDialog from './BookPartsDialog';
 import DownloadModal from './DownloadModal';
 import { translations } from '@/lib/translations';
+import { addToRecentBooks, togglePinBook, updateOfflineStatus, getRecentBooks } from '@/lib/recent-books';
+import { cachePDF, uncachePDF, isPDFCached } from '@/lib/pdf-cache';
 
 interface BookCardProps {
   book: Book;
@@ -27,6 +29,11 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
   const [dialogMode, setDialogMode] = useState<'read' | 'download'>('read');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<BookFile | null>(null);
+
+  const [isPinned, setIsPinned] = useState(false);
+  const [isOfflineReady, setIsOfflineReady] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   useEffect(() => {
     const fetchSeoData = async () => {
@@ -46,6 +53,20 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       try {
         const bookFiles = await getBookFiles(book.identifier);
         setFiles(bookFiles);
+
+        // Check if already pinned or cached
+        const recent = getRecentBooks();
+        const firstFileUrl = bookFiles[0]?.url;
+        const recentBook = recent.find(b => b.url === firstFileUrl);
+
+        if (recentBook) {
+          setIsPinned(!!recentBook.isPinned);
+          setIsOfflineReady(!!recentBook.isOfflineAvailable);
+        } else if (firstFileUrl) {
+          const cached = await isPDFCached(firstFileUrl);
+          setIsOfflineReady(cached);
+        }
+
       } catch (error) {
         console.error('Error fetching book files:', error);
       } finally {
@@ -65,13 +86,60 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
       const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
       router.push(readerUrl);
     } else {
-      // If no files found, inform user if they are online, or just do nothing to avoid Archive.org redirect
       if (typeof window !== 'undefined' && !navigator.onLine) {
         alert(t.offline_notice);
       } else if (files.length === 0 && !isLoadingFiles) {
         alert(lang === 'ar' ? 'لايمكن فتح الكتاب بسبب ضعف الإنترنت، يرجى تحديث الصفحة المحاولة مرة أخرى' : 'The book cannot be opened due to weak internet, please refresh the page and try again');
       }
     }
+  };
+
+  const handleTogglePin = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (files.length === 0 || isDownloading) return;
+
+    const fileUrl = files[0].url;
+    const newPinnedStatus = !isPinned;
+
+    if (newPinnedStatus) {
+      // Add to recent if not there
+      addToRecentBooks({
+        identifier: book.identifier,
+        title: book.title,
+        url: fileUrl,
+        lastRead: new Date().toISOString(),
+        currentPage: 1,
+        totalPages: 0 // Will be updated when opened
+      });
+
+      setIsPinned(true);
+      setIsDownloading(true);
+      setDownloadProgress(0);
+
+      const success = await cachePDF(fileUrl, (p) => setDownloadProgress(p));
+
+      if (success) {
+        updateOfflineStatus(fileUrl, true);
+        setIsOfflineReady(true);
+        // Page images caching is done in background
+        const idMatch = fileUrl.match(/archive\.org\/download\/([^\/]+)/);
+        if (idMatch) {
+          const { cacheBookImages } = await import('@/lib/pdf-cache');
+          cacheBookImages(idMatch[1], 100); // Guessing 100 pages for background cache
+        }
+      }
+
+      setIsDownloading(false);
+    } else {
+      await uncachePDF(fileUrl);
+      updateOfflineStatus(fileUrl, false);
+      setIsPinned(false);
+      setIsOfflineReady(false);
+    }
+
+    togglePinBook(fileUrl);
   };
 
   const handleDownload = () => {
@@ -95,7 +163,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
 
   return (
     <div className={`group bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(15,46,34,0.12)] transition-all duration-500 border border-primary-900/5 hover:border-primary-900/20 flex flex-col h-full overflow-hidden relative ${lang === 'en' ? 'text-left' : 'text-right'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-      {/* Detail Link (Internal SEO link) - Only for the card body, excluding buttons */}
+      {/* Detail Link */}
       <a
         href={detailsHref}
         className="absolute inset-0 z-0 cursor-pointer"
@@ -130,6 +198,13 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
                 </span>
               )}
             </div>
+
+            {/* Offline Badge */}
+            {isOfflineReady && (
+               <div className={`absolute top-2 ${lang === 'ar' ? 'left-2' : 'right-2'} z-10 bg-primary-600 text-white p-1 rounded-full shadow-lg border border-white/20`}>
+                <CheckCircle2 className="w-3 h-3" />
+              </div>
+            )}
           </div>
 
           {/* Content Section */}
@@ -155,6 +230,22 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
           </div>
         </div>
 
+        {/* Download Progress */}
+        {isDownloading && (
+          <div className="mb-3 relative z-10">
+            <div className="flex items-center justify-between text-[10px] text-primary-700 font-bold mb-1">
+              <span>{lang === 'ar' ? 'جاري الحفظ للأوفلاين...' : 'Saving for offline...'}</span>
+              <span>{downloadProgress}%</span>
+            </div>
+            <div className="h-1.5 w-full bg-primary-50 rounded-full overflow-hidden border border-primary-100">
+              <div
+                className="h-full bg-primary-600 transition-all duration-300"
+                style={{ width: `${downloadProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons - Always at bottom */}
         <div className="flex flex-row gap-2 relative z-10 mt-auto pt-3 border-t border-gray-50">
           <button
@@ -171,6 +262,22 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
               <BookOpen className="w-4 h-4 flex-shrink-0" />
             )}
             <span className="whitespace-nowrap">{t.read_now}</span>
+          </button>
+
+          <button
+            onClick={handleTogglePin}
+            disabled={isLoadingFiles || files.length === 0 || isDownloading}
+            className={cn(
+              "px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
+              isPinned ? "bg-gold-50 text-gold-600 border-2 border-gold-200" : "bg-white text-gray-400 border-2 border-gray-100 hover:bg-gray-50 active:scale-95 disabled:opacity-50"
+            )}
+            title={isPinned ? t.unpin : t.pin}
+          >
+             {isDownloading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />
+            )}
           </button>
 
           <button

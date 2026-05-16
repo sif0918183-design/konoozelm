@@ -10,6 +10,7 @@ export interface RecentBook {
   currentPage: number;
   totalPages: number;
   isPinned?: boolean;
+  isOfflineAvailable?: boolean;
 }
 
 const STORAGE_KEY = 'recentBooks';
@@ -36,11 +37,12 @@ export function addToRecentBooks(book: RecentBook): void {
   const existingIndex = recent.findIndex(b => b.url === book.url);
 
   if (existingIndex !== -1) {
-    // Preserve pinned status if it exists
+    // Preserve pinned and offline status if it exists
     const existingBook = recent[existingIndex];
     const updatedBook = {
       ...book,
-      isPinned: existingBook.isPinned
+      isPinned: existingBook.isPinned,
+      isOfflineAvailable: existingBook.isOfflineAvailable
     };
     // Move to front
     recent.splice(existingIndex, 1);
@@ -75,6 +77,20 @@ export function togglePinBook(url: string): void {
   const book = recent.find(b => b.url === url);
   if (book) {
     book.isPinned = !book.isPinned;
+    // If we unpin, we also mark it as not offline available (until we verify actual storage)
+    if (!book.isPinned) {
+      book.isOfflineAvailable = false;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(recent));
+  }
+}
+
+export function updateOfflineStatus(url: string, isAvailable: boolean): void {
+  if (typeof window === 'undefined') return;
+  const recent = getRecentBooks();
+  const book = recent.find(b => b.url === url);
+  if (book) {
+    book.isOfflineAvailable = isAvailable;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(recent));
   }
 }
