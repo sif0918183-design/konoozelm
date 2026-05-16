@@ -4,10 +4,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, Download, User, Tag, ChevronRight, Book as BookIcon, Sparkles, Globe } from 'lucide-react';
 import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug } from '@/lib/seo-data';
-import { getBookDetails } from '@/lib/archive-api';
+import { getBookDetails, getOcrSnippet, generateSmartFallback } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
+import BookSeoLayer from '@/components/BookSeoLayer';
+import BookSchema from '@/components/BookSchema';
 import { slugify } from '@/lib/utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -75,6 +77,9 @@ export default async function BookPage({ params }: Props) {
 
   if (!archiveBook && !seoBook) notFound();
 
+  const ocrResult = archiveBook?.ocrUrl ? await getOcrSnippet(archiveBook.ocrUrl, lang) : null;
+  const ocrSnippet = ocrResult?.text || null;
+
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const displayAuthor = seoBook?.author || archiveBook?.author || 'غير معروف';
   const authorSlug = slugify(displayAuthor);
@@ -109,6 +114,27 @@ export default async function BookPage({ params }: Props) {
           </Link>
         </div>
       </header>
+
+      <BookSchema
+        book={{
+          title: displayTitle,
+          author: displayAuthor,
+          description: displayDescription || '',
+          language: lang,
+          category: displayCategory,
+          coverImage: archiveBook?.coverImage,
+          datePublished: archiveBook?.year,
+          publisher: archiveBook?.publisher,
+          identifier: archiveId,
+          url: `https://hudalibrary.com/book/${params.slug}`,
+          excerpt: ocrSnippet || undefined,
+          keywords: `${displayTitle}, ${displayAuthor}, ${displayCategory}, كتب إسلامية PDF, مكتبة الهدى`,
+          about: displayDescription?.substring(0, 300),
+          mentions: ocrResult?.relatedTopics,
+          learningResourceType: "E-book",
+          educationalLevel: "General Islamic Education"
+        }}
+      />
 
       {/* Breadcrumbs */}
       <nav className="max-w-7xl mx-auto px-4 py-4 mt-12 md:mt-0 flex items-center gap-2 text-sm text-gray-500">
@@ -187,6 +213,23 @@ export default async function BookPage({ params }: Props) {
                   {displayDescription}
                 </div>
               </div>
+
+              {/* OCR SEO Layer */}
+              <BookSeoLayer
+                ocrSnippet={ocrSnippet}
+                toc={ocrResult?.toc}
+                relatedTopics={ocrResult?.relatedTopics}
+                fallbackText={generateSmartFallback({
+                  identifier: archiveId,
+                  title: displayTitle,
+                  author: displayAuthor,
+                  publisher: archiveBook?.publisher,
+                  description: displayDescription
+                }, lang)}
+                lang={lang}
+                archiveId={archiveId}
+                slug={params.slug}
+              />
 
               {/* Internal Linking: Related Content */}
               {otherBooks.length > 0 && (
