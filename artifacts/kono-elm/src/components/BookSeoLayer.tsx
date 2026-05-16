@@ -1,14 +1,13 @@
 import React from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, List, Hash } from 'lucide-react';
 import { translations } from '@/lib/translations';
 import Link from 'next/link';
-
-import { List, Hash } from 'lucide-react';
+import { RelatedTopic } from '@/lib/archive-api';
 
 interface BookSeoLayerProps {
   ocrSnippet: string | null;
   toc?: string[];
-  relatedTopics?: string[];
+  relatedTopics?: RelatedTopic[];
   fallbackText: string;
   lang: 'ar' | 'en';
   archiveId: string;
@@ -89,12 +88,13 @@ export default function BookSeoLayer({ ocrSnippet, toc, relatedTopics, fallbackT
           </h3>
           <div className="flex flex-wrap gap-2">
             {relatedTopics.map((topic, idx) => (
-              <span
+              <Link
                 key={idx}
-                className="px-4 py-1.5 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:border-gold-300 hover:text-gold-700 transition-all"
+                href={lang === 'ar' ? `/category/${topic.slug}` : `/en/category/${topic.slug}`}
+                className="px-4 py-1.5 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:border-gold-300 hover:text-gold-700 hover:shadow-sm transition-all"
               >
-                {topic}
-              </span>
+                {topic.name}
+              </Link>
             ))}
           </div>
         </section>

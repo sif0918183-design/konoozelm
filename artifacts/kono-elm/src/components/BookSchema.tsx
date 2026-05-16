@@ -15,7 +15,7 @@ interface BookSchemaProps {
     excerpt?: string;
     keywords?: string;
     about?: string;
-    mentions?: string[];
+    mentions?: { name: string; slug: string }[];
     educationalLevel?: string;
     learningResourceType?: string;
     typicalAgeRange?: string;
@@ -36,7 +36,7 @@ export default function BookSchema({ book }: BookSchemaProps) {
     "genre": book.category,
     "keywords": book.keywords,
     "about": book.about,
-    "mentions": book.mentions?.map(m => ({ "@type": "Thing", "name": m })),
+    "mentions": book.mentions?.map(m => ({ "@type": "Thing", "name": m.name })),
     "educationalLevel": book.educationalLevel,
     "learningResourceType": book.learningResourceType,
     "typicalAgeRange": book.typicalAgeRange,

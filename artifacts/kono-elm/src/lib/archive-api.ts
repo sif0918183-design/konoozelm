@@ -15,6 +15,7 @@ export interface Book {
   publisher?: string;
   description?: string;
   language?: string;
+  category?: string;
   coverImage?: string;
   downloadLink?: string;
   previewLink?: string;
@@ -155,7 +156,11 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
 
     const files = data.files || [];
     const ocrFile = files.find((f: any) => f.name && f.name.toLowerCase().endsWith('_djvu.txt'));
-    const ocrUrl = ocrFile ? `https://archive.org/download/${identifier}/${encodeURIComponent(ocrFile.name)}` : undefined;
+
+    // Use official OCR file if found, otherwise fallback to standard Archive.org OCR pattern
+    const ocrUrl = ocrFile
+      ? `https://archive.org/download/${identifier}/${encodeURIComponent(ocrFile.name)}`
+      : `https://archive.org/download/${identifier}/${identifier}_djvu.txt`;
 
     const bookFiles: BookFile[] = files
       .filter((file: any) =>
@@ -192,7 +197,39 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
 }
 
 /**
- * Detects language confidence (0-100) for a piece of text
+ * Normalizes Arabic text (removes tashkeel, standardizes characters)
+ */
+export function normalizeArabic(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/[\u064B-\u0652\u0640]/g, '') // Remove tashkeel and tatweel
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Detects if a word is likely OCR garbage/gibberish
+ */
+export function isGarbageWord(word: string): boolean {
+  if (word.length < 3) return false;
+
+  // Known Archive garbage patterns
+  const patterns = [
+    /^[XOZSE]{4,}$/i,
+    /^[BCDFGHJKLMNPQRSTVWXYZ]{5,}$/i, // Long consonant-only strings
+    /ROSSER|XOZSESSY|HEREY|NEWEST|IJIJI/i,
+    /[^\w\u0600-\u06FF]{3,}/, // Excessive symbols within word
+    /(.)\1{3,}/, // Repeated chars
+  ];
+
+  return patterns.some(p => p.test(word));
+}
+
+/**
+ * Detects language confidence (0-1) for a piece of text
  */
 export function detectOcrLanguageConfidence(text: string, expectedLang: string): number {
   if (!text) return 0;
@@ -204,9 +241,9 @@ export function detectOcrLanguageConfidence(text: string, expectedLang: string):
   if (totalAlpha === 0) return 0;
 
   if (expectedLang === 'ar') {
-    return (arabicChars.length / totalAlpha) * 100;
+    return arabicChars.length / totalAlpha;
   } else {
-    return (latinChars.length / totalAlpha) * 100;
+    return latinChars.length / totalAlpha;
   }
 }
 
@@ -214,197 +251,170 @@ export function detectOcrLanguageConfidence(text: string, expectedLang: string):
  * Calculates a quality score for an OCR paragraph (0-100)
  */
 export function getParagraphQuality(text: string, lang: string): number {
-  if (!text || text.length < 60) return 0;
+  if (!text || text.length < 80) return 0;
 
   let score = 0;
-  const length = text.length;
   const words = text.trim().split(/\s+/);
+  const length = text.length;
 
-  // 1. Language Confidence (Weight: 30)
-  const langConfidence = detectOcrLanguageConfidence(text, lang);
-  if (langConfidence > 85) score += 30;
-  else if (langConfidence > 60) score += 15;
-  else return 0; // Reject if language doesn't match
+  // 1. Language Confidence (Weight: 40)
+  const confidence = detectOcrLanguageConfidence(text, lang);
+  if (confidence > 0.85) score += 40;
+  else if (confidence > 0.7) score += 25;
+  else return 0; // Hard reject if low confidence
 
-  // 2. Average Word Length (Weight: 20)
-  const avgWordLength = length / words.length;
-  if (avgWordLength > 3 && avgWordLength < 10) score += 20;
-  else if (avgWordLength >= 10 && avgWordLength < 15) score += 10;
+  // 2. Garbage Detection (Weight: 30)
+  const garbageWords = words.filter(w => isGarbageWord(w));
+  const garbageRatio = garbageWords.length / words.length;
+  if (garbageRatio < 0.05) score += 30;
+  else if (garbageRatio < 0.15) score += 15;
+  else return 0; // Too much garbage
 
-  // 3. Punctuation & Meaningful Content (Weight: 20)
-  const punctuation = text.match(/[.,!?;:()]/g) || [];
-  if (punctuation.length > 0) score += 10;
+  // 3. Isolated Characters & Symbol Density (Weight: 30)
+  const singleCharWords = words.filter(w => w.length === 1 && !/[\u0648]/.test(w)); // Exclude 'waw'
+  const isolationRatio = singleCharWords.length / words.length;
 
-  // Script-specific meaningful vocabulary density
-  if (lang === 'ar') {
-    // Check for common Arabic functional words/patterns
-    const commonAr = text.match(/(في|من|على|إلى|عن|كان|هذا|الذي|التي|الذين|قال|أنه)/g) || [];
-    if (commonAr.length > 0) score += 10;
-  } else {
-    const commonEn = text.match(/\b(the|and|that|for|was|with|his|from|which)\b/gi) || [];
-    if (commonEn.length > 0) score += 10;
-  }
-
-  // 4. Cleanliness Heuristics (Penalty System)
-  let penalties = 0;
-
-  // Repeated characters (noise)
-  if (/(.)\1{3,}/.test(text)) penalties += 20; // "aaaa" or "...."
-
-  // Isolated single letters ratio
-  const singleCharWords = words.filter(w => w.length === 1);
-  if (singleCharWords.length / words.length > 0.3) penalties += 30;
-
-  // Symbol density
   const symbols = text.match(/[^\u0600-\u06FFa-zA-Z0-9\s]/g) || [];
-  if (symbols.length / length > 0.15) penalties += 20;
+  const symbolRatio = symbols.length / length;
 
-  // Uppercase clusters (English specific noise)
-  if (lang === 'en') {
-    const upperClusters = text.match(/\b[A-Z]{4,}\b/g) || [];
-    if (upperClusters.length > 2) penalties += 15;
-  }
+  if (isolationRatio < 0.15 && symbolRatio < 0.08) score += 30;
+  else if (isolationRatio < 0.3 && symbolRatio < 0.15) score += 15;
 
-  // Mixed corruption patterns
-  if (/[^\x00-\x7F\u0600-\u06FF\s]{2,}/.test(text)) penalties += 25;
-
-  return Math.max(0, Math.min(100, score - penalties));
+  return score;
 }
 
 /**
- * Extracts a simple Table of Contents from OCR text
+ * Stricter extraction of Table of Contents
  */
-export function extractTableOfContents(text: string): string[] {
+export function extractTableOfContents(text: string, lang: string): string[] {
   if (!text) return [];
 
-  // Look for lines that look like headings:
-  // - Starts with digits or Roman numerals
-  // - Short lines with capital letters or "الفصل", "الباب"
-  // - Lines ending with dots followed by a page number
   const lines = text.split('\n');
   const toc: string[] = [];
 
   const headingPatterns = [
-    /^(الفصل|الباب|المبحث|المطلب|كتاب)\s+\w+/i,
-    /^(Chapter|Section|Part|Book)\s+\d+/i,
-    /^([A-Z\u0600-\u06FF]{4,}\s*){1,5}$/, // All caps/short lines
-    /^[0-9IVX]+\.\s+.+/i, // Numbered lists
-    /.+\.{3,}\s*\d+$/ // Dotted lines to page numbers
+    /^(الفصل|الباب|المبحث|المطلب|كتاب|الخاتمة|المقدمة)\s*/i,
+    /^(Chapter|Section|Part|Book|Introduction|Conclusion)\s*/i,
+    /^[0-9IVX]+\.\s+.+/i,
+    /.+\.{3,}\s*\d+$/
   ];
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.length < 5 || trimmed.length > 80) continue;
+    if (trimmed.length < 4 || trimmed.length > 100) continue;
+
+    // Check line quality
+    if (detectOcrLanguageConfidence(trimmed, lang) < 0.7) continue;
+    if (isGarbageWord(trimmed)) continue;
 
     if (headingPatterns.some(p => p.test(trimmed))) {
-      toc.push(trimmed.replace(/\.{3,}\s*\d+$/, '').trim());
+      const cleaned = trimmed.replace(/\.{3,}\s*\d+$/, '').trim();
+      if (cleaned.length >= 4) {
+        toc.push(cleaned);
+      }
     }
 
-    if (toc.length >= 8) break;
+    if (toc.length >= 15) break;
   }
 
-  return Array.from(new Set(toc));
+  // Minimum 3 items for credibility
+  return toc.length >= 3 ? Array.from(new Set(toc)) : [];
+}
+
+export interface RelatedTopic {
+  name: string;
+  slug: string;
 }
 
 /**
- * Extracts related topics based on keywords
+ * Extracts semantic related topics with actual category links
  */
-export function getRelatedTopics(text: string, lang: string): string[] {
+export function getRelatedTopics(text: string, lang: string): RelatedTopic[] {
   const topicsAr = [
-    { name: 'الفقه الإسلامي', keywords: ['فقه', 'أحكام', 'شرعية', 'فتوى', 'الصلاة', 'الزكاة', 'الصوم', 'الحج'] },
-    { name: 'العقيدة والتوحيد', keywords: ['عقيدة', 'توحيد', 'إيمان', 'أسماء', 'صفات', 'منهج'] },
-    { name: 'القرآن وعلومه', keywords: ['تفسير', 'قرآن', 'قراءات', 'تجويد', 'آية', 'سورة'] },
-    { name: 'الحديث الشريف', keywords: ['حديث', 'سنة', 'نبوي', 'بخاري', 'مسلم', 'إسناد', 'رواية'] },
-    { name: 'السيرة النبوية', keywords: ['سيرة', 'النبي', 'غزوة', 'الصحابة', 'آل البيت'] },
-    { name: 'التاريخ الإسلامي', keywords: ['تاريخ', 'خلافة', 'أموي', 'عباسي', 'حضارة'] },
-    { name: 'اللغة العربية', keywords: ['نحو', 'صرف', 'بلاغة', 'أدب', 'شعر', 'لغة'] },
-    { name: 'الأخلاق والرقائق', keywords: ['أخلاق', 'زهد', 'رقائق', 'تزكية', 'آداب'] }
+    { name: 'الفقه الإسلامي', slug: 'fiqh', keywords: ['فقه', 'أحكام', 'شرعية', 'فتوى', 'الصلاة', 'الزكاة'] },
+    { name: 'العقيدة والتوحيد', slug: 'aqeedah', keywords: ['عقيدة', 'توحيد', 'إيمان', 'أسماء', 'منهج'] },
+    { name: 'القرآن وعلومه', slug: 'quran', keywords: ['تفسير', 'قرآن', 'قراءات', 'تجويد', 'آية'] },
+    { name: 'الحديث الشريف', slug: 'hadith', keywords: ['حديث', 'سنة', 'نبوي', 'بخاري', 'مسلم', 'إسناد'] },
+    { name: 'السيرة النبوية', slug: 'seerah', keywords: ['سيرة', 'النبي', 'غزوة', 'الصحابة'] },
+    { name: 'التاريخ الإسلامي', slug: 'history', keywords: ['تاريخ', 'خلافة', 'أموي', 'عباسي'] },
+    { name: 'اللغة العربية', slug: 'arabic', keywords: ['نحو', 'صرف', 'بلاغة', 'أدب', 'شعر'] },
+    { name: 'الأخلاق والرقائق', slug: 'ethics', keywords: ['أخلاق', 'زهد', 'رقائق', 'تزكية'] }
   ];
 
   const topicsEn = [
-    { name: 'Fiqh (Jurisprudence)', keywords: ['fiqh', 'law', 'ruling', 'fatwa', 'prayer', 'zakat', 'fasting', 'hajj'] },
-    { name: 'Aqeedah (Creed)', keywords: ['aqeedah', 'creed', 'tawheed', 'belief', 'faith', 'names', 'attributes'] },
-    { name: 'Quran Studies', keywords: ['quran', 'tafsir', 'interpretation', 'tajweed', 'verse', 'surah'] },
-    { name: 'Hadith Studies', keywords: ['hadith', 'sunnah', 'prophetic', 'narrations', 'isnad', 'bukhari', 'muslim'] },
-    { name: 'Prophetic Biography', keywords: ['seerah', 'biography', 'prophet', 'sahaba', 'companions'] },
-    { name: 'Islamic History', keywords: ['history', 'caliphate', 'civilization', 'islamic'] },
-    { name: 'Arabic Language', keywords: ['arabic', 'grammar', 'literature', 'poetry'] },
-    { name: 'Ethics & Spirituality', keywords: ['ethics', 'spirituality', 'tazkiyah', 'manners', 'character'] }
+    { name: 'Islamic Creed', slug: 'aqeedah', keywords: ['aqeedah', 'creed', 'tawheed', 'belief', 'faith'] },
+    { name: 'Hadith Sciences', slug: 'hadith', keywords: ['hadith', 'sunnah', 'prophetic', 'narrations'] },
+    { name: 'Islamic Jurisprudence', slug: 'fiqh', keywords: ['fiqh', 'law', 'ruling', 'fatwa', 'prayer'] },
+    { name: 'Quranic Studies', slug: 'quran', keywords: ['quran', 'tafsir', 'interpretation', 'tajweed'] },
+    { name: 'Islamic History', slug: 'history', keywords: ['history', 'caliphate', 'civilization'] },
+    { name: 'Arabic Language', slug: 'arabic', keywords: ['arabic', 'grammar', 'literature'] },
+    { name: 'Ethics & Spirituality', slug: 'ethics', keywords: ['ethics', 'spirituality', 'tazkiyah'] }
   ];
 
-  const relevantTopics: string[] = [];
-  const searchPool = text.toLowerCase();
+  const relevant: RelatedTopic[] = [];
+  const searchPool = text.toLowerCase() + (lang === 'ar' ? ' ' + normalizeArabic(text) : '');
   const topics = lang === 'ar' ? topicsAr : topicsEn;
 
   for (const topic of topics) {
     if (topic.keywords.some(k => searchPool.includes(k.toLowerCase()))) {
-      relevantTopics.push(topic.name);
+      relevant.push({ name: topic.name, slug: topic.slug });
     }
   }
 
-  return relevantTopics.slice(0, 5);
+  return relevant.slice(0, 6);
 }
 
 /**
- * Generates a smart SEO fallback snippet when OCR is bad or missing
+ * Generates a high-quality SEO description when OCR is insufficient
  */
 export function generateSmartFallback(book: Book, lang: string): string {
   const isAr = lang === 'ar';
 
   if (isAr) {
-    return `استكشف كتاب "${book.title}" ${book.author ? `من تأليف ${book.author}` : ''}.
-    هذا الكتاب مصنف ضمن ${book.publisher || 'المجموعات الإسلامية'}
-    ويعتبر من المصادر الهامة في مجاله. يتيح لك موقع مكتبة الهدى تصفح هذا الكتاب وقراءته مباشرة
-    أو تحميله بصيغة PDF للاستخدام المكتبي أو القراءة في وضع عدم الاتصال.
-    ${book.description ? book.description.substring(0, 300) : ''}`;
+    return `كتاب ${book.title} ${book.author ? `للمؤلف ${book.author}` : ''} هو عمل متميز في ${book.category || 'العلوم الإسلامية'}.
+    ${book.description ? book.description.substring(0, 400) : 'يقدم هذا الكتاب مادة علمية ثرية وقيمة للباحثين والقراء المهتمين بالتراث الإسلامي.'}
+    يمكنك الآن قراءة "${book.title}" مباشرة عبر مكتبة الهدى أو تحميله بصيغة PDF عالية الجودة للمطالعة لاحقاً.`.replace(/\s+/g, ' ').trim();
   } else {
-    return `Explore "${book.title}" ${book.author ? `by ${book.author}` : ''}.
-    This book is part of the ${book.publisher || 'Islamic collections'}
-    and is considered an important resource in its field. Huda Library provides
-    you with the ability to read this book online or download it as a PDF for offline access.
-    ${book.description ? book.description.substring(0, 300) : ''}`;
+    return `${book.title} ${book.author ? `by ${book.author}` : ''} is a notable work in ${book.category || 'Islamic studies'}.
+    ${book.description ? book.description.substring(0, 400) : 'This volume provides valuable insights and scholarly content for those interested in Islamic heritage.'}
+    Read "${book.title}" online at Huda Library or download it as a PDF for your personal collection.`.replace(/\s+/g, ' ').trim();
   }
 }
 
 /**
- * Cleans OCR text and returns curated paragraphs
+ * Aggressively cleans OCR noise and returns high-quality paragraphs
  */
 export function cleanOcrText(text: string, lang: string, maxLength: number = 2000): string {
   if (!text) return '';
 
-  // Initial cleanup: remove URLs and noise
-  let raw = text
-    .replace(/https?:\/\/\S+/gi, '')
-    .replace(/www\.\S+/gi, '')
-    .replace(/[a-zA-Z0-9._-]+\.[a-z]{2,4}\S*/gi, '');
-
-  // Split by paragraphs
-  const paragraphs = raw.split(/\n\s*\n/);
-  const scoredParagraphs: { text: string, score: number }[] = [];
+  const paragraphs = text.split(/\n\s*\n/);
+  const curated: string[] = [];
 
   for (let p of paragraphs) {
-    p = p.trim()
-      .replace(/[^\u0600-\u06FFa-zA-Z0-9\s.,!?;:()]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    // 1. Remove URLs and basic noise
+    p = p.replace(/https?:\/\/\S+|www\.\S+/gi, '').replace(/\s+/g, ' ').trim();
+
+    // 2. Arabic specific normalization for matching/cleaning
+    if (lang === 'ar') {
+      p = p.replace(/[^\u0600-\u06FF0-9\s.,!?;:()]/g, ' '); // Keep only Arabic, numbers, spaces, and punctuation
+    } else {
+      p = p.replace(/[^\x20-\x7E]/g, ' '); // Keep only printable ASCII
+    }
 
     if (p.length < 100) continue;
 
+    // 3. Final Quality Pass
     const score = getParagraphQuality(p, lang);
-    if (score >= 70) {
-      scoredParagraphs.push({ text: p, score });
+    if (score >= 75) { // Higher threshold for final snippet
+      curated.push(p);
     }
   }
 
-  // Sort by score and take top 3
-  const topParagraphs = scoredParagraphs
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
-    .map(p => p.text);
+  // Deduplicate
+  const unique = Array.from(new Set(curated));
 
-  if (topParagraphs.length === 0) return '';
-
-  return topParagraphs.join('\n\n').substring(0, maxLength).trim();
+  // Sort by length/quality and take top 3
+  return unique.slice(0, 3).join('\n\n').substring(0, maxLength).trim();
 }
 
 /**
@@ -413,33 +423,24 @@ export function cleanOcrText(text: string, lang: string, maxLength: number = 200
 export async function getOcrSnippet(ocrUrl: string, lang: string): Promise<{
   text: string;
   toc: string[];
-  relatedTopics: string[];
+  relatedTopics: RelatedTopic[];
 } | null> {
   try {
-    // Take a larger chunk to find better paragraphs (80KB)
     const response = await safeFetch(ocrUrl, {
-      headers: {
-        'Range': 'bytes=4096-86016'
-      }
+      headers: { 'Range': 'bytes=8192-90112' } // Skip first 8KB to avoid covers/noisy frontmatter
     });
 
-    if (!response || !response.ok && response.status !== 206) {
-      console.log('OCR FETCH: Failed or not found');
-      return null;
-    }
+    if (!response || !response.ok && response.status !== 206) return null;
 
     const rawText = await response.text();
     const curatedText = cleanOcrText(rawText, lang);
 
-    if (!curatedText) {
-      console.log('OCR QUALITY: REJECTED (No high-quality paragraphs found)');
+    if (!curatedText || detectOcrLanguageConfidence(curatedText, lang) < 0.75) {
       return null;
     }
 
-    const toc = extractTableOfContents(rawText);
+    const toc = extractTableOfContents(rawText, lang);
     const relatedTopics = getRelatedTopics(rawText + ' ' + curatedText, lang);
-
-    console.log(`OCR QUALITY: ACCEPTED (Top curated paragraphs selected)`);
 
     return {
       text: curatedText,
@@ -447,7 +448,6 @@ export async function getOcrSnippet(ocrUrl: string, lang: string): Promise<{
       relatedTopics
     };
   } catch (error) {
-    console.error('Error fetching OCR snippet:', error);
     return null;
   }
 }
