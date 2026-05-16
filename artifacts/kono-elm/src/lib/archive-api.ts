@@ -190,3 +190,46 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
     return null;
   }
 }
+
+/**
+ * Cleans OCR text for SEO purposes
+ */
+export function cleanOcrText(text: string, maxLength: number = 1500): string {
+  if (!text) return '';
+
+  let cleaned = text
+    .replace(/[^\u0600-\u06FFa-zA-Z0-9\s.,!?;:()\[\]{}""'']/g, ' ') // Keep Arabic, Latin, numbers and basic punctuation
+    .replace(/\s+/g, ' ') // Collapse multiple spaces
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('\n');
+
+  // Remove some duplication (consecutive identical lines/phrases)
+  const lines = cleaned.split('\n');
+  const uniqueLines = lines.filter((line, index) => lines.indexOf(line) === index);
+  cleaned = uniqueLines.join('\n');
+
+  return cleaned.substring(0, maxLength).trim();
+}
+
+/**
+ * Fetches a snippet of OCR text using Range header to save bandwidth
+ */
+export async function getOcrSnippet(ocrUrl: string): Promise<string | null> {
+  try {
+    const response = await safeFetch(ocrUrl, {
+      headers: {
+        'Range': 'bytes=0-51200' // First 50KB
+      }
+    });
+
+    if (!response || !response.ok && response.status !== 206) return null;
+
+    const text = await response.text();
+    return cleanOcrText(text);
+  } catch (error) {
+    console.error('Error fetching OCR snippet:', error);
+    return null;
+  }
+}
