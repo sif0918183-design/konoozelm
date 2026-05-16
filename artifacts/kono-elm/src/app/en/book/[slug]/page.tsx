@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, User, Tag, ChevronLeft, Book as BookIcon, Sparkles, Globe } from 'lucide-react';
 import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor } from '@/lib/seo-data';
-import { getBookDetails, getOcrSnippet } from '@/lib/archive-api';
+import { getBookDetails, getOcrSnippet, generateSmartFallback } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
@@ -102,7 +102,9 @@ export default async function EnglishBookPage({ params }: Props) {
           publisher: archiveBook?.publisher,
           identifier: archiveId,
           url: `https://hudalibrary.com/en/book/${params.slug}`,
-          excerpt: ocrSnippet || undefined
+          excerpt: ocrSnippet || undefined,
+          keywords: `${displayTitle}, ${displayAuthor}, ${displayCategory}, Islamic Books PDF, Huda Library`,
+          about: displayDescription?.substring(0, 300)
         }}
       />
 
@@ -186,7 +188,14 @@ export default async function EnglishBookPage({ params }: Props) {
 
               {/* OCR SEO Layer */}
               <BookSeoLayer
-                ocrSnippet={ocrSnippet || (displayDescription && displayDescription.length > 200 ? displayDescription.substring(0, 500) : '')}
+                ocrSnippet={ocrSnippet}
+                fallbackText={generateSmartFallback({
+                  identifier: archiveId,
+                  title: displayTitle,
+                  author: displayAuthor,
+                  publisher: archiveBook?.publisher,
+                  description: displayDescription
+                }, lang)}
                 lang={lang}
                 archiveId={archiveId}
                 slug={params.slug}

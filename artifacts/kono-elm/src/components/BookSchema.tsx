@@ -13,6 +13,8 @@ interface BookSchemaProps {
     identifier: string;
     url: string;
     excerpt?: string;
+    keywords?: string;
+    about?: string;
   };
 }
 
@@ -28,6 +30,8 @@ export default function BookSchema({ book }: BookSchemaProps) {
     "description": book.description,
     "inLanguage": book.language,
     "genre": book.category,
+    "keywords": book.keywords,
+    "about": book.about,
     "image": book.coverImage,
     "datePublished": book.datePublished,
     "publisher": book.publisher ? {
@@ -61,7 +65,9 @@ export default function BookSchema({ book }: BookSchemaProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(schema).replace(/</g, '\\u003c')
+      }}
     />
   );
 }

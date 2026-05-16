@@ -4,15 +4,14 @@ import { translations } from '@/lib/translations';
 import Link from 'next/link';
 
 interface BookSeoLayerProps {
-  ocrSnippet: string;
+  ocrSnippet: string | null;
+  fallbackText: string;
   lang: 'ar' | 'en';
   archiveId: string;
   slug: string;
 }
 
-export default function BookSeoLayer({ ocrSnippet, lang, archiveId, slug }: BookSeoLayerProps) {
-  if (!ocrSnippet) return null;
-
+export default function BookSeoLayer({ ocrSnippet, fallbackText, lang, archiveId, slug }: BookSeoLayerProps) {
   const t = translations[lang];
   const isRtl = lang === 'ar';
 
@@ -32,7 +31,7 @@ export default function BookSeoLayer({ ocrSnippet, lang, archiveId, slug }: Book
           dir={isRtl ? 'rtl' : 'ltr'}
         >
           <div className="whitespace-pre-wrap break-words">
-            {ocrSnippet}
+            {ocrSnippet || fallbackText}
           </div>
 
           {/* Fade Effect Overlay */}

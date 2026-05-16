@@ -192,6 +192,83 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
 }
 
 /**
+ * Calculates a quality score for OCR text (0-100)
+ */
+export function getOcrQualityScore(text: string): number {
+  if (!text || text.length < 50) return 0;
+
+  let score = 0;
+  const length = text.length;
+
+  // 1. Script density (Arabic + Latin)
+  const letters = text.match(/[\u0600-\u06FFa-zA-Z]/g) || [];
+  const letterDensity = letters.length / length;
+  if (letterDensity > 0.8) score += 40;
+  else if (letterDensity > 0.6) score += 20;
+
+  // 2. Average word length (natural languages have 4-8)
+  const words = text.trim().split(/\s+/);
+  const avgWordLength = length / words.length;
+  if (avgWordLength > 3 && avgWordLength < 10) score += 20;
+
+  // 3. Gibberish check: clusters of single letters (OCR noise)
+  const singleCharWords = words.filter(w => w.length === 1);
+  const singleCharRatio = singleCharWords.length / words.length;
+  if (singleCharRatio < 0.15) score += 20;
+  else if (singleCharRatio < 0.3) score += 10;
+
+  // 4. Script consistency (avoid high mix of random scripts)
+  const arabicChars = text.match(/[\u0600-\u06FF]/g) || [];
+  const latinChars = text.match(/[a-zA-Z]/g) || [];
+  const totalAlpha = arabicChars.length + latinChars.length;
+
+  if (totalAlpha > 0) {
+    const arabicRatio = arabicChars.length / totalAlpha;
+    const latinRatio = latinChars.length / totalAlpha;
+    // If it's mostly one script, it's better quality
+    if (arabicRatio > 0.9 || latinRatio > 0.9) score += 20;
+    else if (arabicRatio > 0.75 || latinRatio > 0.75) score += 10;
+  }
+
+  // 5. Corruption patterns
+  const corruptionPatterns = [
+    /(\s.\s){2,}/g, // Repeated single chars
+    /[^\u0600-\u06FFa-zA-Z0-9\s,.?!:;()]{2,}/g, // Symbol clusters
+    /\b(\w)\1{2,}\b/g, // "aaa"
+    /[0-9]{5,}/g, // Long number strings
+  ];
+
+  for (const pattern of corruptionPatterns) {
+    const matches = text.match(pattern);
+    if (matches && matches.length > 2) score -= 20;
+    else if (matches) score -= 10;
+  }
+
+  return Math.max(0, Math.min(100, score));
+}
+
+/**
+ * Generates a smart SEO fallback snippet when OCR is bad or missing
+ */
+export function generateSmartFallback(book: Book, lang: string): string {
+  const isAr = lang === 'ar';
+
+  if (isAr) {
+    return `استكشف كتاب "${book.title}" ${book.author ? `من تأليف ${book.author}` : ''}.
+    هذا الكتاب مصنف ضمن ${book.publisher || 'المجموعات الإسلامية'}
+    ويعتبر من المصادر الهامة في مجاله. يتيح لك موقع مكتبة الهدى تصفح هذا الكتاب وقراءته مباشرة
+    أو تحميله بصيغة PDF للاستخدام المكتبي أو القراءة في وضع عدم الاتصال.
+    ${book.description ? book.description.substring(0, 300) : ''}`;
+  } else {
+    return `Explore "${book.title}" ${book.author ? `by ${book.author}` : ''}.
+    This book is part of the ${book.publisher || 'Islamic collections'}
+    and is considered an important resource in its field. Huda Library provides
+    you with the ability to read this book online or download it as a PDF for offline access.
+    ${book.description ? book.description.substring(0, 300) : ''}`;
+  }
+}
+
+/**
  * Cleans OCR text for SEO purposes
  */
 export function cleanOcrText(text: string, maxLength: number = 1500): string {
@@ -203,41 +280,36 @@ export function cleanOcrText(text: string, maxLength: number = 1500): string {
     .replace(/www\.\S+/gi, '')
     .replace(/[a-zA-Z0-9._-]+\.[a-z]{2,4}\S*/gi, '');
 
-  const lines = raw.split(/[\r\n]+/);
-  const cleanedLines: string[] = [];
+  // Split by paragraphs (double newlines) instead of just lines
+  const paragraphs = raw.split(/\n\s*\n/);
+  const cleanedParagraphs: string[] = [];
 
-  for (let line of lines) {
+  for (let p of paragraphs) {
     // Basic trim and noise removal
-    line = line.trim()
+    p = p.trim()
       .replace(/[^\u0600-\u06FFa-zA-Z0-9\s.,!?;:()]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
-    if (line.length < 15) continue; // Skip very short lines/fragments
+    // Stricter filtering per paragraph
+    if (p.length < 60) continue;
 
-    // Density check: skip lines that are mostly non-alphabetic (numbers, punctuation, symbols)
-    const letters = line.match(/[\u0600-\u06FFa-zA-Z]/g) || [];
-    const density = letters.length / line.length;
-    if (density < 0.6) continue;
+    const score = getOcrQualityScore(p);
+    if (score < 65) continue; // High threshold for paragraphs
 
-    // Gibberish check: skip lines with too many single characters
-    const words = line.split(' ');
-    const singleCharWords = words.filter(w => w.length === 1);
-    if (singleCharWords.length / words.length > 0.4 && words.length > 3) continue;
-
-    cleanedLines.push(line);
+    cleanedParagraphs.push(p);
   }
 
   // Deduplicate and join
-  const uniqueLines = Array.from(new Set(cleanedLines));
+  const uniqueParagraphs = Array.from(new Set(cleanedParagraphs));
 
   // Combine back to text and enforce maxLength
-  let finalResult = uniqueLines.join(' ');
+  let finalResult = uniqueParagraphs.join('\n\n');
 
-  // Final pass to collapse excessive whitespace if any
-  finalResult = finalResult.replace(/\s+/g, ' ').trim();
+  // If we have no good paragraphs, return empty
+  if (finalResult.length < 100) return '';
 
-  return finalResult.substring(0, maxLength);
+  return finalResult.substring(0, maxLength).trim();
 }
 
 /**
@@ -245,16 +317,32 @@ export function cleanOcrText(text: string, maxLength: number = 1500): string {
  */
 export async function getOcrSnippet(ocrUrl: string): Promise<string | null> {
   try {
+    // Skip the first few KB as it often contains metadata noise/headers
     const response = await safeFetch(ocrUrl, {
       headers: {
-        'Range': 'bytes=0-51200' // First 50KB
+        'Range': 'bytes=4096-55296' // Skip first 4KB, take next 50KB
       }
     });
 
-    if (!response || !response.ok && response.status !== 206) return null;
+    if (!response || !response.ok && response.status !== 206) {
+      console.log('OCR FETCH: Failed or not found');
+      return null;
+    }
 
     const text = await response.text();
-    return cleanOcrText(text);
+    const cleaned = cleanOcrText(text);
+
+    if (!cleaned) {
+      console.log('OCR QUALITY: REJECTED (No high-quality paragraphs found)');
+      return null;
+    }
+
+    const quality = getOcrQualityScore(cleaned);
+    console.log(`OCR QUALITY: ${quality >= 70 ? 'ACCEPTED' : 'REJECTED'} (Score: ${quality})`);
+
+    if (quality < 70) return null;
+
+    return cleaned;
   } catch (error) {
     console.error('Error fetching OCR snippet:', error);
     return null;
