@@ -77,7 +77,8 @@ export default async function BookPage({ params }: Props) {
 
   if (!archiveBook && !seoBook) notFound();
 
-  const ocrSnippet = archiveBook?.ocrUrl ? await getOcrSnippet(archiveBook.ocrUrl) : null;
+  const ocrResult = archiveBook?.ocrUrl ? await getOcrSnippet(archiveBook.ocrUrl, lang) : null;
+  const ocrSnippet = ocrResult?.text || null;
 
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const displayAuthor = seoBook?.author || archiveBook?.author || 'غير معروف';
@@ -128,7 +129,10 @@ export default async function BookPage({ params }: Props) {
           url: `https://hudalibrary.com/book/${params.slug}`,
           excerpt: ocrSnippet || undefined,
           keywords: `${displayTitle}, ${displayAuthor}, ${displayCategory}, كتب إسلامية PDF, مكتبة الهدى`,
-          about: displayDescription?.substring(0, 300)
+          about: displayDescription?.substring(0, 300),
+          mentions: ocrResult?.relatedTopics,
+          learningResourceType: "E-book",
+          educationalLevel: "General Islamic Education"
         }}
       />
 
@@ -213,6 +217,8 @@ export default async function BookPage({ params }: Props) {
               {/* OCR SEO Layer */}
               <BookSeoLayer
                 ocrSnippet={ocrSnippet}
+                toc={ocrResult?.toc}
+                relatedTopics={ocrResult?.relatedTopics}
                 fallbackText={generateSmartFallback({
                   identifier: archiveId,
                   title: displayTitle,

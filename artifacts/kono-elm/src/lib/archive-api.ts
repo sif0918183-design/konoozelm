@@ -192,59 +192,157 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
 }
 
 /**
- * Calculates a quality score for OCR text (0-100)
+ * Detects language confidence (0-100) for a piece of text
  */
-export function getOcrQualityScore(text: string): number {
-  if (!text || text.length < 50) return 0;
+export function detectOcrLanguageConfidence(text: string, expectedLang: string): number {
+  if (!text) return 0;
 
-  let score = 0;
-  const length = text.length;
-
-  // 1. Script density (Arabic + Latin)
-  const letters = text.match(/[\u0600-\u06FFa-zA-Z]/g) || [];
-  const letterDensity = letters.length / length;
-  if (letterDensity > 0.8) score += 40;
-  else if (letterDensity > 0.6) score += 20;
-
-  // 2. Average word length (natural languages have 4-8)
-  const words = text.trim().split(/\s+/);
-  const avgWordLength = length / words.length;
-  if (avgWordLength > 3 && avgWordLength < 10) score += 20;
-
-  // 3. Gibberish check: clusters of single letters (OCR noise)
-  const singleCharWords = words.filter(w => w.length === 1);
-  const singleCharRatio = singleCharWords.length / words.length;
-  if (singleCharRatio < 0.15) score += 20;
-  else if (singleCharRatio < 0.3) score += 10;
-
-  // 4. Script consistency (avoid high mix of random scripts)
   const arabicChars = text.match(/[\u0600-\u06FF]/g) || [];
   const latinChars = text.match(/[a-zA-Z]/g) || [];
   const totalAlpha = arabicChars.length + latinChars.length;
 
-  if (totalAlpha > 0) {
-    const arabicRatio = arabicChars.length / totalAlpha;
-    const latinRatio = latinChars.length / totalAlpha;
-    // If it's mostly one script, it's better quality
-    if (arabicRatio > 0.9 || latinRatio > 0.9) score += 20;
-    else if (arabicRatio > 0.75 || latinRatio > 0.75) score += 10;
+  if (totalAlpha === 0) return 0;
+
+  if (expectedLang === 'ar') {
+    return (arabicChars.length / totalAlpha) * 100;
+  } else {
+    return (latinChars.length / totalAlpha) * 100;
+  }
+}
+
+/**
+ * Calculates a quality score for an OCR paragraph (0-100)
+ */
+export function getParagraphQuality(text: string, lang: string): number {
+  if (!text || text.length < 60) return 0;
+
+  let score = 0;
+  const length = text.length;
+  const words = text.trim().split(/\s+/);
+
+  // 1. Language Confidence (Weight: 30)
+  const langConfidence = detectOcrLanguageConfidence(text, lang);
+  if (langConfidence > 85) score += 30;
+  else if (langConfidence > 60) score += 15;
+  else return 0; // Reject if language doesn't match
+
+  // 2. Average Word Length (Weight: 20)
+  const avgWordLength = length / words.length;
+  if (avgWordLength > 3 && avgWordLength < 10) score += 20;
+  else if (avgWordLength >= 10 && avgWordLength < 15) score += 10;
+
+  // 3. Punctuation & Meaningful Content (Weight: 20)
+  const punctuation = text.match(/[.,!?;:()]/g) || [];
+  if (punctuation.length > 0) score += 10;
+
+  // Script-specific meaningful vocabulary density
+  if (lang === 'ar') {
+    // Check for common Arabic functional words/patterns
+    const commonAr = text.match(/(في|من|على|إلى|عن|كان|هذا|الذي|التي|الذين|قال|أنه)/g) || [];
+    if (commonAr.length > 0) score += 10;
+  } else {
+    const commonEn = text.match(/\b(the|and|that|for|was|with|his|from|which)\b/gi) || [];
+    if (commonEn.length > 0) score += 10;
   }
 
-  // 5. Corruption patterns
-  const corruptionPatterns = [
-    /(\s.\s){2,}/g, // Repeated single chars
-    /[^\u0600-\u06FFa-zA-Z0-9\s,.?!:;()]{2,}/g, // Symbol clusters
-    /\b(\w)\1{2,}\b/g, // "aaa"
-    /[0-9]{5,}/g, // Long number strings
+  // 4. Cleanliness Heuristics (Penalty System)
+  let penalties = 0;
+
+  // Repeated characters (noise)
+  if (/(.)\1{3,}/.test(text)) penalties += 20; // "aaaa" or "...."
+
+  // Isolated single letters ratio
+  const singleCharWords = words.filter(w => w.length === 1);
+  if (singleCharWords.length / words.length > 0.3) penalties += 30;
+
+  // Symbol density
+  const symbols = text.match(/[^\u0600-\u06FFa-zA-Z0-9\s]/g) || [];
+  if (symbols.length / length > 0.15) penalties += 20;
+
+  // Uppercase clusters (English specific noise)
+  if (lang === 'en') {
+    const upperClusters = text.match(/\b[A-Z]{4,}\b/g) || [];
+    if (upperClusters.length > 2) penalties += 15;
+  }
+
+  // Mixed corruption patterns
+  if (/[^\x00-\x7F\u0600-\u06FF\s]{2,}/.test(text)) penalties += 25;
+
+  return Math.max(0, Math.min(100, score - penalties));
+}
+
+/**
+ * Extracts a simple Table of Contents from OCR text
+ */
+export function extractTableOfContents(text: string): string[] {
+  if (!text) return [];
+
+  // Look for lines that look like headings:
+  // - Starts with digits or Roman numerals
+  // - Short lines with capital letters or "الفصل", "الباب"
+  // - Lines ending with dots followed by a page number
+  const lines = text.split('\n');
+  const toc: string[] = [];
+
+  const headingPatterns = [
+    /^(الفصل|الباب|المبحث|المطلب|كتاب)\s+\w+/i,
+    /^(Chapter|Section|Part|Book)\s+\d+/i,
+    /^([A-Z\u0600-\u06FF]{4,}\s*){1,5}$/, // All caps/short lines
+    /^[0-9IVX]+\.\s+.+/i, // Numbered lists
+    /.+\.{3,}\s*\d+$/ // Dotted lines to page numbers
   ];
 
-  for (const pattern of corruptionPatterns) {
-    const matches = text.match(pattern);
-    if (matches && matches.length > 2) score -= 20;
-    else if (matches) score -= 10;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length < 5 || trimmed.length > 80) continue;
+
+    if (headingPatterns.some(p => p.test(trimmed))) {
+      toc.push(trimmed.replace(/\.{3,}\s*\d+$/, '').trim());
+    }
+
+    if (toc.length >= 8) break;
   }
 
-  return Math.max(0, Math.min(100, score));
+  return Array.from(new Set(toc));
+}
+
+/**
+ * Extracts related topics based on keywords
+ */
+export function getRelatedTopics(text: string, lang: string): string[] {
+  const topicsAr = [
+    { name: 'الفقه الإسلامي', keywords: ['فقه', 'أحكام', 'شرعية', 'فتوى', 'الصلاة', 'الزكاة', 'الصوم', 'الحج'] },
+    { name: 'العقيدة والتوحيد', keywords: ['عقيدة', 'توحيد', 'إيمان', 'أسماء', 'صفات', 'منهج'] },
+    { name: 'القرآن وعلومه', keywords: ['تفسير', 'قرآن', 'قراءات', 'تجويد', 'آية', 'سورة'] },
+    { name: 'الحديث الشريف', keywords: ['حديث', 'سنة', 'نبوي', 'بخاري', 'مسلم', 'إسناد', 'رواية'] },
+    { name: 'السيرة النبوية', keywords: ['سيرة', 'النبي', 'غزوة', 'الصحابة', 'آل البيت'] },
+    { name: 'التاريخ الإسلامي', keywords: ['تاريخ', 'خلافة', 'أموي', 'عباسي', 'حضارة'] },
+    { name: 'اللغة العربية', keywords: ['نحو', 'صرف', 'بلاغة', 'أدب', 'شعر', 'لغة'] },
+    { name: 'الأخلاق والرقائق', keywords: ['أخلاق', 'زهد', 'رقائق', 'تزكية', 'آداب'] }
+  ];
+
+  const topicsEn = [
+    { name: 'Fiqh (Jurisprudence)', keywords: ['fiqh', 'law', 'ruling', 'fatwa', 'prayer', 'zakat', 'fasting', 'hajj'] },
+    { name: 'Aqeedah (Creed)', keywords: ['aqeedah', 'creed', 'tawheed', 'belief', 'faith', 'names', 'attributes'] },
+    { name: 'Quran Studies', keywords: ['quran', 'tafsir', 'interpretation', 'tajweed', 'verse', 'surah'] },
+    { name: 'Hadith Studies', keywords: ['hadith', 'sunnah', 'prophetic', 'narrations', 'isnad', 'bukhari', 'muslim'] },
+    { name: 'Prophetic Biography', keywords: ['seerah', 'biography', 'prophet', 'sahaba', 'companions'] },
+    { name: 'Islamic History', keywords: ['history', 'caliphate', 'civilization', 'islamic'] },
+    { name: 'Arabic Language', keywords: ['arabic', 'grammar', 'literature', 'poetry'] },
+    { name: 'Ethics & Spirituality', keywords: ['ethics', 'spirituality', 'tazkiyah', 'manners', 'character'] }
+  ];
+
+  const relevantTopics: string[] = [];
+  const searchPool = text.toLowerCase();
+  const topics = lang === 'ar' ? topicsAr : topicsEn;
+
+  for (const topic of topics) {
+    if (topic.keywords.some(k => searchPool.includes(k.toLowerCase()))) {
+      relevantTopics.push(topic.name);
+    }
+  }
+
+  return relevantTopics.slice(0, 5);
 }
 
 /**
@@ -269,58 +367,59 @@ export function generateSmartFallback(book: Book, lang: string): string {
 }
 
 /**
- * Cleans OCR text for SEO purposes
+ * Cleans OCR text and returns curated paragraphs
  */
-export function cleanOcrText(text: string, maxLength: number = 1500): string {
+export function cleanOcrText(text: string, lang: string, maxLength: number = 2000): string {
   if (!text) return '';
 
-  // Initial cleanup: remove URLs and obvious noise
+  // Initial cleanup: remove URLs and noise
   let raw = text
     .replace(/https?:\/\/\S+/gi, '')
     .replace(/www\.\S+/gi, '')
     .replace(/[a-zA-Z0-9._-]+\.[a-z]{2,4}\S*/gi, '');
 
-  // Split by paragraphs (double newlines) instead of just lines
+  // Split by paragraphs
   const paragraphs = raw.split(/\n\s*\n/);
-  const cleanedParagraphs: string[] = [];
+  const scoredParagraphs: { text: string, score: number }[] = [];
 
   for (let p of paragraphs) {
-    // Basic trim and noise removal
     p = p.trim()
       .replace(/[^\u0600-\u06FFa-zA-Z0-9\s.,!?;:()]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
-    // Stricter filtering per paragraph
-    if (p.length < 60) continue;
+    if (p.length < 100) continue;
 
-    const score = getOcrQualityScore(p);
-    if (score < 65) continue; // High threshold for paragraphs
-
-    cleanedParagraphs.push(p);
+    const score = getParagraphQuality(p, lang);
+    if (score >= 70) {
+      scoredParagraphs.push({ text: p, score });
+    }
   }
 
-  // Deduplicate and join
-  const uniqueParagraphs = Array.from(new Set(cleanedParagraphs));
+  // Sort by score and take top 3
+  const topParagraphs = scoredParagraphs
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(p => p.text);
 
-  // Combine back to text and enforce maxLength
-  let finalResult = uniqueParagraphs.join('\n\n');
+  if (topParagraphs.length === 0) return '';
 
-  // If we have no good paragraphs, return empty
-  if (finalResult.length < 100) return '';
-
-  return finalResult.substring(0, maxLength).trim();
+  return topParagraphs.join('\n\n').substring(0, maxLength).trim();
 }
 
 /**
- * Fetches a snippet of OCR text using Range header to save bandwidth
+ * Fetches and curates a high-quality OCR snippet
  */
-export async function getOcrSnippet(ocrUrl: string): Promise<string | null> {
+export async function getOcrSnippet(ocrUrl: string, lang: string): Promise<{
+  text: string;
+  toc: string[];
+  relatedTopics: string[];
+} | null> {
   try {
-    // Skip the first few KB as it often contains metadata noise/headers
+    // Take a larger chunk to find better paragraphs (80KB)
     const response = await safeFetch(ocrUrl, {
       headers: {
-        'Range': 'bytes=4096-55296' // Skip first 4KB, take next 50KB
+        'Range': 'bytes=4096-86016'
       }
     });
 
@@ -329,20 +428,24 @@ export async function getOcrSnippet(ocrUrl: string): Promise<string | null> {
       return null;
     }
 
-    const text = await response.text();
-    const cleaned = cleanOcrText(text);
+    const rawText = await response.text();
+    const curatedText = cleanOcrText(rawText, lang);
 
-    if (!cleaned) {
+    if (!curatedText) {
       console.log('OCR QUALITY: REJECTED (No high-quality paragraphs found)');
       return null;
     }
 
-    const quality = getOcrQualityScore(cleaned);
-    console.log(`OCR QUALITY: ${quality >= 70 ? 'ACCEPTED' : 'REJECTED'} (Score: ${quality})`);
+    const toc = extractTableOfContents(rawText);
+    const relatedTopics = getRelatedTopics(rawText + ' ' + curatedText, lang);
 
-    if (quality < 70) return null;
+    console.log(`OCR QUALITY: ACCEPTED (Top curated paragraphs selected)`);
 
-    return cleaned;
+    return {
+      text: curatedText,
+      toc,
+      relatedTopics
+    };
   } catch (error) {
     console.error('Error fetching OCR snippet:', error);
     return null;
