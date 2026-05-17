@@ -8,7 +8,7 @@ import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
-import { slugify, getSiteUrl } from '@/lib/utils';
+import { slugify, getSiteUrl, isAuthorUnknown } from '@/lib/utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { generateBookDescription } from '@/lib/groq';
@@ -44,7 +44,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   title = title || `تحميل كتاب ${archiveDetails?.title || 'كتاب'} PDF وقراءته أونلاين - مكتبة الهدى`;
-  description = description || `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${archiveDetails?.author || 'غير معروف'} بصيغة PDF مجاناً.`;
+
+  const authorName = archiveDetails?.author;
+  const hasAuthor = !isAuthorUnknown(authorName);
+
+  description = description || (hasAuthor
+    ? `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${authorName} بصيغة PDF مجاناً.`
+    : `قراءة وتحميل كتاب ${archiveDetails?.title} بصيغة PDF مجاناً أونلاين.`);
 
   const siteUrl = getSiteUrl();
 
@@ -80,6 +86,7 @@ export default async function BookPage({ params }: Props) {
 
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const displayAuthor = seoBook?.author || archiveBook?.author || 'غير معروف';
+  const hasAuthor = !isAuthorUnknown(displayAuthor);
   const authorSlug = slugify(displayAuthor);
   const displayCategory = seoBook?.category || 'عام';
   const categorySlug = seoBook?.category_slug || slugify(displayCategory);
@@ -94,7 +101,9 @@ export default async function BookPage({ params }: Props) {
       displayDescription = generated.description;
       dynamicSeoTitle = generated.seoTitle;
     } catch (e) {
-      displayDescription = `يعتبر كتاب ${displayTitle} من الكتب القيمة والمهمة في بابه، حيث يقدم المؤلف ${displayAuthor} رؤية علمية ومنهجية متميزة. يهدف هذا الكتاب إلى تيسير الوصول للمعلومات الدقيقة لطلبة العلم والباحثين. يمكنك الآن تحميل نسخة PDF عالية الجودة أو القراءة مباشرة عبر متصفحك من خلال مكتبتنا الإلكترونية الشاملة.`;
+      displayDescription = hasAuthor
+        ? `يعتبر كتاب ${displayTitle} من الكتب القيمة والمهمة في بابه، حيث يقدم المؤلف ${displayAuthor} رؤية علمية ومنهجية متميزة. يهدف هذا الكتاب إلى تيسير الوصول للمعلومات الدقيقة لطلبة العلم والباحثين. يمكنك الآن تحميل نسخة PDF عالية الجودة أو القراءة مباشرة عبر متصفحك من خلال مكتبتنا الإلكترونية الشاملة.`
+        : `يعتبر كتاب ${displayTitle} من الكتب القيمة والمهمة في بابه، حيث يقدم رؤية علمية ومنهجية متميزة. يهدف هذا الكتاب إلى تيسير الوصول للمعلومات الدقيقة لطلبة العلم والباحثين. يمكنك الآن تحميل نسخة PDF عالية الجودة أو القراءة مباشرة عبر متصفحك من خلال مكتبتنا الإلكترونية الشاملة.`;
     }
   }
 
@@ -108,7 +117,9 @@ export default async function BookPage({ params }: Props) {
   const faqItems = [
     {
       question: `ما هو كتاب ${displayTitle}؟`,
-      answer: `كتاب ${displayTitle} هو من مؤلفات ${displayAuthor} في تصنيف ${displayCategory}. يعتبر من الكتب القيمة التي توفر معرفة عميقة في مجاله.`
+      answer: hasAuthor
+        ? `كتاب ${displayTitle} هو من مؤلفات ${displayAuthor} في تصنيف ${displayCategory}. يعتبر من الكتب القيمة التي توفر معرفة عميقة في مجاله.`
+        : `كتاب ${displayTitle} هو كتاب قيم في تصنيف ${displayCategory}. يوفر الكتاب معرفة عميقة في مجاله ويسهل الوصول للمعلومات للباحثين.`
     },
     {
       question: `كيف يمكنني تحميل كتاب ${displayTitle} PDF؟`,
@@ -185,13 +196,15 @@ export default async function BookPage({ params }: Props) {
               </div>
 
               <div className="space-y-4">
-                <Link href={`/author/${authorSlug}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gold-50 transition-colors">
-                  <User className="w-5 h-5 text-gold-600" />
-                  <div>
-                    <p className="text-xs text-gray-400">{t.author}</p>
-                    <p className="font-bold text-gray-900">{displayAuthor}</p>
-                  </div>
-                </Link>
+                {hasAuthor && (
+                  <Link href={`/author/${authorSlug}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gold-50 transition-colors">
+                    <User className="w-5 h-5 text-gold-600" />
+                    <div>
+                      <p className="text-xs text-gray-400">{t.author}</p>
+                      <p className="font-bold text-gray-900">{displayAuthor}</p>
+                    </div>
+                  </Link>
+                )}
                 <Link href={`/${categorySlug}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gold-50 transition-colors">
                   <Tag className="w-5 h-5 text-gold-600" />
                   <div>
@@ -272,7 +285,9 @@ export default async function BookPage({ params }: Props) {
                           <h4 className="font-bold text-gray-900 group-hover:text-primary-900 transition-colors line-clamp-4 break-words leading-snug" title={book.title}>
                             {book.title}
                           </h4>
-                          <p className="text-xs text-gray-500 truncate">{book.author}</p>
+                          {!isAuthorUnknown(book.author) && (
+                            <p className="text-xs text-gray-500 truncate">{book.author}</p>
+                          )}
                         </div>
                       </Link>
                     ))}
