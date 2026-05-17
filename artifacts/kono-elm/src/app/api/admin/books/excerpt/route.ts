@@ -18,7 +18,9 @@ export async function POST(request: Request) {
     const excerpts = await fetchBookExcerpts(archiveId, [5, 9]);
 
     if (!excerpts[5] && !excerpts[9]) {
-      return NextResponse.json({ error: 'Could not extract excerpts for this book' }, { status: 404 });
+      return NextResponse.json({
+        error: 'Could not extract excerpts. The book might be restricted or missing OCR files on Archive.org.'
+      }, { status: 404 });
     }
 
     const updatedBook = {
@@ -35,7 +37,7 @@ export async function POST(request: Request) {
       excerpt_p9: excerpts[9]
     });
   } catch (error: any) {
-    console.error('Error in POST /api/admin/books/extract-excerpt:', error);
+    console.error('Error in POST /api/admin/books/excerpt:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

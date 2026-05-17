@@ -228,7 +228,7 @@ export default function AdminDashboard() {
   const handleExtractExcerpt = async (archiveId: string) => {
     setIsExtractingExcerpt(archiveId);
     try {
-      const res = await fetch('/api/admin/extract-excerpt', {
+      const res = await fetch('/api/admin/books/excerpt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ archiveId }),

@@ -208,10 +208,15 @@ function cleanOcrText(text: string): string {
  */
 export async function fetchBookExcerpts(identifier: string, pageNums: number[]): Promise<Record<number, string>> {
   const excerpts: Record<number, string> = {};
+  console.log(`[fetchBookExcerpts] Starting extraction for ${identifier}, pages: ${pageNums}`);
 
   try {
-    const response = await safeFetch(`https://archive.org/metadata/${identifier}`);
-    if (!response || !response.ok) return excerpts;
+    // Increase timeout for metadata and use no-cache to avoid stale redirects
+    const response = await safeFetch(`https://archive.org/metadata/${identifier}`, { cache: 'no-store' } as any, 20000);
+    if (!response || !response.ok) {
+      console.error(`[fetchBookExcerpts] Metadata fetch failed for ${identifier}`);
+      return excerpts;
+    }
 
     const data = await response.json();
     const files = data.files || [];
@@ -219,34 +224,40 @@ export async function fetchBookExcerpts(identifier: string, pageNums: number[]):
     // 1. Try DJVU.XML for precise page extraction
     const xmlFile = files.find((f: any) => f.name && f.name.toLowerCase().endsWith('_djvu.xml'));
     if (xmlFile) {
+      console.log(`[fetchBookExcerpts] Found XML file: ${xmlFile.name}`);
       const xmlUrl = `https://archive.org/download/${identifier}/${encodeURIComponent(xmlFile.name)}`;
-      const xmlResponse = await safeFetch(xmlUrl);
+      const xmlResponse = await safeFetch(xmlUrl, { cache: 'no-store' } as any, 40000); // 40s timeout for large XML
       if (xmlResponse && xmlResponse.ok) {
         const xmlText = await xmlResponse.text();
 
-        // Simple regex-based page extraction from DJVU XML
-        for (const pageNum of pageNums) {
-          const pagePattern = /<PAGE[^>]*>([\s\S]*?)<\/PAGE>/g;
-          let match;
-          let count = 0;
-          while ((match = pagePattern.exec(xmlText)) !== null) {
-            count++;
-            if (count === pageNum) {
-              const pageContent = match[1].replace(/<[^>]+>/g, ' '); // Strip all tags
-              excerpts[pageNum] = cleanOcrText(pageContent);
-              break;
-            }
+        // More robust regex for DJVU XML: supports <PAGE> or <OBJECT> tags
+        // Limit total text size processed to avoid regex hang on massive files
+        const truncatedText = xmlText.slice(0, 5 * 1024 * 1024); // Process first 5MB only
+        const pagePattern = /<(PAGE|OBJECT)[^>]*>([\s\S]*?)<\/\1>/gi;
+        let match;
+        let count = 0;
+        while ((match = pagePattern.exec(truncatedText)) !== null) {
+          count++;
+          if (pageNums.includes(count)) {
+            const pageContent = match[2].replace(/<[^>]+>/g, ' '); // Strip all tags
+            excerpts[count] = cleanOcrText(pageContent);
+            console.log(`[fetchBookExcerpts] Extracted page ${count} from XML`);
           }
+          if (count >= Math.max(...pageNums)) break;
         }
+      } else {
+        console.warn(`[fetchBookExcerpts] XML fetch failed or timed out for ${xmlUrl}`);
       }
     }
 
     // 2. Fallback to DJVU.TXT with form-feed splitting
-    if (Object.keys(excerpts).length < pageNums.length) {
+    const missingPages = pageNums.filter(n => !excerpts[n]);
+    if (missingPages.length > 0) {
       const txtFile = files.find((f: any) => f.name && f.name.toLowerCase().endsWith('_djvu.txt'));
       if (txtFile) {
+        console.log(`[fetchBookExcerpts] Trying fallback TXT file: ${txtFile.name}`);
         const txtUrl = `https://archive.org/download/${identifier}/${encodeURIComponent(txtFile.name)}`;
-        const txtResponse = await safeFetch(txtUrl);
+        const txtResponse = await safeFetch(txtUrl, { cache: 'no-store' } as any, 25000);
         if (txtResponse && txtResponse.ok) {
           const txtBody = await txtResponse.text();
           const pages = txtBody.split('\f');
@@ -254,14 +265,20 @@ export async function fetchBookExcerpts(identifier: string, pageNums: number[]):
           for (const pageNum of pageNums) {
             if (!excerpts[pageNum] && pages[pageNum - 1]) {
               excerpts[pageNum] = cleanOcrText(pages[pageNum - 1]);
+              console.log(`[fetchBookExcerpts] Extracted page ${pageNum} from TXT fallback`);
             }
           }
         }
       }
     }
 
+    // 3. Last resort: If still missing, try any OCR file that might contain text
+    if (Object.keys(excerpts).length === 0) {
+       console.log(`[fetchBookExcerpts] No excerpts found via XML/TXT for ${identifier}`);
+    }
+
   } catch (error) {
-    console.error('Error fetching book excerpts:', error);
+    console.error(`[fetchBookExcerpts] Error for ${identifier}:`, error);
   }
 
   return excerpts;
