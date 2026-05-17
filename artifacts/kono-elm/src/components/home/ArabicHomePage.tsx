@@ -13,7 +13,11 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
 
 
-export default function Home() {
+interface Props {
+  initialCategories?: { title: string, slug: string }[];
+}
+
+export default function Home({ initialCategories = [] }: Props) {
   const lang = 'ar';
   const t = translations[lang];
   const [query, setQuery] = useState('');
@@ -111,29 +115,20 @@ export default function Home() {
     localStorage.removeItem('searchState');
   };
 
-  const [featuredCategories, setFeaturedCategories] = useState<{title: string, slug: string}[]>([]);
+  const [featuredCategories, setFeaturedCategories] = useState<{title: string, slug: string}[]>(initialCategories);
 
   useEffect(() => {
-    // Load cached categories first
-    const cachedCategories = localStorage.getItem('featuredCategories_ar');
-    if (cachedCategories) {
-      try {
-        setFeaturedCategories(JSON.parse(cachedCategories));
-      } catch (e) {
-        console.error('Error parsing cached categories:', e);
-      }
-    }
+    if (initialCategories.length > 0) return;
 
     fetch('/api/admin/categories')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
           setFeaturedCategories(data);
-          localStorage.setItem('featuredCategories_ar', JSON.stringify(data));
         }
       })
       .catch(() => {});
-  }, []);
+  }, [initialCategories]);
 
   return (
     <div className="min-h-screen bg-transparent font-tajawal">

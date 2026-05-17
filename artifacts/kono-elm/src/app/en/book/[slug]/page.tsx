@@ -2,16 +2,17 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { BookOpen, User, Tag, ChevronLeft, Book as BookIcon, Sparkles, Globe } from 'lucide-react';
+import { BookOpen, User, Tag, ChevronLeft, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
 import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor } from '@/lib/seo-data';
-import { getBookDetails } from '@/lib/archive-api';
+import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
-import { generateEnglishSlug } from '@/lib/utils';
+import { generateEnglishSlug, getSiteUrl } from '@/lib/utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
+import BookSchema from '@/components/BookSchema';
 
 interface Props {
   params: { slug: string };
@@ -32,14 +33,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   title = title || `Download ${archiveDetails?.title || 'Book'} PDF - Read Online - Huda Library`;
   description = description || `Read and download ${archiveDetails?.title} by ${archiveDetails?.author || 'Unknown'} in PDF format for free.`;
 
+  const siteUrl = getSiteUrl();
+
   return {
     title,
     description: description.substring(0, 160),
     alternates: {
-      canonical: `https://kono-elm.vercel.app/en/book/${params.slug}`,
+      canonical: `${siteUrl}/en/book/${params.slug}`,
       languages: {
-        'ar': `https://kono-elm.vercel.app/book/${params.slug}`,
-        'en': `https://kono-elm.vercel.app/en/book/${params.slug}`,
+        'ar': `${siteUrl}/book/${params.slug}`,
+        'en': `${siteUrl}/en/book/${params.slug}`,
       },
     },
     openGraph: {
@@ -75,8 +78,48 @@ export default async function EnglishBookPage({ params }: Props) {
   const otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, lang)
     .then(books => books.filter(b => b.archiveId !== archiveId));
 
+  const bookFiles = await getBookFiles(archiveId);
+
+  // Generate FAQ items
+  const faqItems = [
+    {
+      question: `What is the book ${displayTitle}?`,
+      answer: `The book ${displayTitle} is written by ${displayAuthor} and is categorized under ${displayCategory}. It is considered a valuable resource in its field.`
+    },
+    {
+      question: `How can I download ${displayTitle} PDF?`,
+      answer: `You can download ${displayTitle} in PDF format directly from this page by clicking the download button. You can also read it online for free.`
+    },
+    {
+      question: `Is it free to read ${displayTitle}?`,
+      answer: `Yes, Huda Library provides free access to read and download ${displayTitle} and all its Islamic books and manuscripts for researchers and students.`
+    }
+  ];
+
+  const siteUrl = getSiteUrl();
+
+  const breadcrumbs = [
+    { name: t.home, item: `${siteUrl}/en` },
+    { name: displayCategory, item: `${siteUrl}/en/${categorySlug}` },
+    { name: displayTitle, item: `${siteUrl}/en/book/${params.slug}` }
+  ];
+
   return (
     <div className="min-h-screen bg-[#fcfcf8] font-tajawal" dir="ltr">
+      <BookSchema
+        book={{
+          title: dynamicSeoTitle || displayTitle,
+          author: displayAuthor,
+          description: displayDescription || '',
+          image: archiveBook?.coverImage,
+          url: `${siteUrl}/en/book/${params.slug}`,
+          category: displayCategory,
+          categoryUrl: `${siteUrl}/en/${categorySlug}`
+        }}
+        breadcrumbs={breadcrumbs}
+        faq={faqItems}
+        lang="en"
+      />
       <header className="bg-primary-900 text-white pt-2 pb-12 px-4 relative overflow-hidden">
         <LanguageSwitcher light />
         <div className="max-w-7xl mx-auto flex flex-col items-center mt-8 md:mt-4">
@@ -87,20 +130,20 @@ export default async function EnglishBookPage({ params }: Props) {
       </header>
 
       {/* Breadcrumbs */}
-      <nav className="max-w-7xl mx-auto px-4 py-4 mt-12 md:mt-0 flex items-center gap-2 text-sm text-gray-500">
+      <nav className="max-w-7xl mx-auto px-4 py-4 mt-12 md:mt-0 flex items-center gap-2 text-sm text-gray-500" aria-label="Breadcrumb">
         <Link href="/en" className="hover:text-primary-900 transition-colors">{t.home}</Link>
         <ChevronLeft className="w-4 h-4" />
         <Link href={`/en/${categorySlug}`} className="hover:text-primary-900 transition-colors">{displayCategory}</Link>
         <ChevronLeft className="w-4 h-4" />
-        <span className="text-gray-900 font-medium truncate">{displayTitle}</span>
+        <span className="text-gray-900 font-medium truncate" aria-current="page">{displayTitle}</span>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <article className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8">
 
             {/* Book Cover & Quick Info */}
-            <div className="md:col-span-1 space-y-6">
+            <aside className="md:col-span-1 space-y-6">
               <div className="aspect-[3/4] bg-gray-100 rounded-2xl overflow-hidden relative shadow-md border border-gray-100">
                 {archiveBook?.coverImage ? (
                   <Image
@@ -142,31 +185,52 @@ export default async function EnglishBookPage({ params }: Props) {
                   </div>
                 )}
               </div>
-            </div>
+            </aside>
 
             {/* Description & Actions */}
             <div className="md:col-span-2 space-y-8">
-              <div>
+              <section>
                 <h1 className="text-3xl md:text-4xl font-amiri font-bold text-primary-900 mb-4 leading-tight">
                   {dynamicSeoTitle || displayTitle}
                 </h1>
                 <div className="mb-8 max-w-md">
                   {archiveBook && (
-                    <BookCard book={archiveBook} lang="en" />
+                    <BookCard
+                      book={archiveBook}
+                      lang="en"
+                      initialFiles={bookFiles}
+                      initialSeoSlug={seoBook?.slug}
+                    />
                   )}
                 </div>
-              </div>
+              </section>
 
-              <div className="prose prose-lg max-w-none">
+              <section className="prose prose-lg max-w-none">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4 border-l-4 border-gold-500 pl-4">{lang === 'en' ? 'About the Book' : 'نبذة عن الكتاب'}</h2>
                 <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                   {displayDescription}
                 </div>
-              </div>
+              </section>
+
+              {/* FAQ Section */}
+              <section className="pt-12 border-t border-gray-100">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <HelpCircle className="w-6 h-6 text-gold-500" />
+                  {lang === 'en' ? 'Frequently Asked Questions' : 'الأسئلة الشائعة حول الكتاب'}
+                </h2>
+                <div className="space-y-4">
+                  {faqItems.map((item, idx) => (
+                    <div key={idx} className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                      <h3 className="text-lg font-bold text-primary-900 mb-2">{item.question}</h3>
+                      <p className="text-gray-700 leading-relaxed">{item.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
 
               {/* Internal Linking: Related Content */}
               {otherBooks.length > 0 && (
-                <div className="pt-12 border-t border-gray-100">
+                <section className="pt-12 border-t border-gray-100">
                   <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-gold-500" />
                     {lang === 'en' ? 'You May Also Like' : 'قد يعجبك أيضاً'}
@@ -190,12 +254,12 @@ export default async function EnglishBookPage({ params }: Props) {
                       </Link>
                     ))}
                   </div>
-                </div>
+                </section>
               )}
             </div>
 
           </div>
-        </div>
+        </article>
       </main>
     </div>
   );

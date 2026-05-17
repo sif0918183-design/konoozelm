@@ -11,6 +11,7 @@ export const revalidate = 120;
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
+import { getSiteUrl } from '@/lib/utils';
 
 interface Props {
   params: { categorySlug: string };
@@ -21,14 +22,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const category = await getCategoryBySlug(slug);
   if (!category) return { title: 'التصنيف غير موجود' };
 
+  const siteUrl = getSiteUrl();
+
   return {
     title: `${category.title} - تحميل وقراءة كتب PDF`,
     description: category.description.substring(0, 160),
     alternates: {
-      canonical: `https://kono-elm.vercel.app/${params.categorySlug}`,
+      canonical: `${siteUrl}/${params.categorySlug}`,
       languages: {
-        'ar': `https://kono-elm.vercel.app/${params.categorySlug}`,
-        'en': `https://kono-elm.vercel.app/en/${params.categorySlug}`,
+        'ar': `${siteUrl}/${params.categorySlug}`,
+        'en': `${siteUrl}/en/${params.categorySlug}`,
       },
     },
   };
@@ -91,6 +94,13 @@ export default async function CategoryPage({ params }: Props) {
                   previewLink: `https://archive.org/details/${book.archiveId}`,
                   coverImage: `https://archive.org/services/img/${book.archiveId}`,
                 }}
+                initialSeoSlug={book.slug}
+                initialFiles={[
+                  {
+                    name: book.title,
+                    url: `https://archive.org/download/${book.archiveId}/${book.archiveId}.pdf`
+                  }
+                ]}
               />
             </div>
           ))}

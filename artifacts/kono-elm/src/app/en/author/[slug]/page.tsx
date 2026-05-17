@@ -8,6 +8,7 @@ import { translations } from '@/lib/translations';
 export const revalidate = 600;
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
+import { getSiteUrl } from '@/lib/utils';
 
 interface Props {
   params: { slug: string };
@@ -18,14 +19,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const author = await getAuthorBySlug(slug, 'en');
   if (!author) return { title: 'Author not found' };
 
+  const siteUrl = getSiteUrl();
+
   return {
     title: `${author.name} - Books and Biography - Huda Library`,
     description: author.bio?.substring(0, 160) || `Books and biography of ${author.name}`,
     alternates: {
-      canonical: `https://kono-elm.vercel.app/en/author/${params.slug}`,
+      canonical: `${siteUrl}/en/author/${params.slug}`,
       languages: {
-        'ar': `https://kono-elm.vercel.app/author/${params.slug}`,
-        'en': `https://kono-elm.vercel.app/en/author/${params.slug}`,
+        'ar': `${siteUrl}/author/${params.slug}`,
+        'en': `${siteUrl}/en/author/${params.slug}`,
       },
     },
   };

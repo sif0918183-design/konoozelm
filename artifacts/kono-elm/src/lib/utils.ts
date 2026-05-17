@@ -6,6 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Returns the site base URL
+ */
+export function getSiteUrl(): string {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+  }
+  return 'https://hudalibrary.com';
+}
+
+/**
  * Ensures an Archive.org URL uses the direct download domain
  */
 export function optimizeArchiveUrl(url: string): string {
