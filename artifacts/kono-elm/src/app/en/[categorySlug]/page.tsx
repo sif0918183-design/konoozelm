@@ -92,6 +92,13 @@ export default async function EnglishCategoryPage({ params }: Props) {
                   previewLink: `https://archive.org/details/${book.archiveId}`,
                   coverImage: `https://archive.org/services/img/${book.archiveId}`,
                 }}
+                initialSeoSlug={book.slug}
+                initialFiles={[
+                  {
+                    name: book.title,
+                    url: `https://archive.org/download/${book.archiveId}/${book.archiveId}.pdf`
+                  }
+                ]}
               />
             </div>
           ))}

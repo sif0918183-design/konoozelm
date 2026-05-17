@@ -14,13 +14,15 @@ import { translations } from '@/lib/translations';
 interface BookCardProps {
   book: Book;
   lang?: 'ar' | 'en';
+  initialFiles?: BookFile[];
+  initialSeoSlug?: string | null;
 }
 
-export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
+export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSlug }: BookCardProps) {
   const t = translations[lang];
   const router = useRouter();
-  const [seoSlug, setSeoSlug] = useState<string | null>(null);
-  const [files, setFiles] = useState<BookFile[]>([]);
+  const [seoSlug, setSeoSlug] = useState<string | null>(initialSeoSlug || null);
+  const [files, setFiles] = useState<BookFile[]>(initialFiles || []);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [showPartsDialog, setShowPartsDialog] = useState(false);
@@ -30,6 +32,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
 
   useEffect(() => {
     const fetchSeoData = async () => {
+      if (initialSeoSlug !== undefined) return;
       try {
         const res = await fetch(`/api/admin/books?archiveId=${book.identifier}&lang=${lang}`);
         if (res.ok) {
@@ -42,6 +45,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
     };
 
     const fetchFiles = async () => {
+      if (initialFiles !== undefined) return;
       setIsLoadingFiles(true);
       try {
         const bookFiles = await getBookFiles(book.identifier);
@@ -55,7 +59,7 @@ export default function BookCard({ book, lang = 'ar' }: BookCardProps) {
 
     fetchSeoData();
     fetchFiles();
-  }, [book.identifier, lang]);
+  }, [book.identifier, lang, initialFiles, initialSeoSlug]);
 
   const handleRead = () => {
     if (files.length > 1) {
