@@ -3,6 +3,8 @@ import { checkAuth } from '@/lib/admin-auth';
 import { getBookByArchiveId, saveSeoBook } from '@/lib/seo-data';
 import { fetchBookExcerpts } from '@/lib/archive-api';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   if (!checkAuth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
