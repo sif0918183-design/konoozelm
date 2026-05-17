@@ -1,20 +1,25 @@
 import { Metadata } from 'next';
 import ArabicHomePage from '@/components/home/ArabicHomePage';
+import { getSiteUrl } from '@/lib/utils';
+import { getCategories } from '@/lib/seo-data';
 
 export const revalidate = 300;
+
+const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
   title: 'مكتبة الهدى - موسوعة الكتب الإسلامية الشاملة',
   description: 'موسوعة شاملة للكتب الإسلامية، تتيح لك قراءة وتحميل آلاف الكتب بصيغة PDF مجاناً بروابط مباشرة من Archive.org.',
   alternates: {
-    canonical: 'https://kono-elm.vercel.app',
+    canonical: siteUrl,
     languages: {
-      'ar': 'https://kono-elm.vercel.app',
-      'en': 'https://kono-elm.vercel.app/en',
+      'ar': siteUrl,
+      'en': `${siteUrl}/en`,
     },
   },
 };
 
-export default function Home() {
-  return <ArabicHomePage />;
+export default async function Home() {
+  const categories = await getCategories('ar');
+  return <ArabicHomePage initialCategories={categories} />;
 }

@@ -13,7 +13,11 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
 
 
-export default function EnglishHome() {
+interface Props {
+  initialCategories?: { title: string, slug: string }[];
+}
+
+export default function EnglishHome({ initialCategories = [] }: Props) {
   const lang = 'en';
   const t = translations[lang];
   const [query, setQuery] = useState('');
@@ -111,29 +115,20 @@ export default function EnglishHome() {
     localStorage.removeItem('searchState_en');
   };
 
-  const [featuredCategories, setFeaturedCategories] = useState<{title: string, slug: string}[]>([]);
+  const [featuredCategories, setFeaturedCategories] = useState<{title: string, slug: string}[]>(initialCategories);
 
   useEffect(() => {
-    // Load cached categories first
-    const cachedCategories = localStorage.getItem('featuredCategories_en');
-    if (cachedCategories) {
-      try {
-        setFeaturedCategories(JSON.parse(cachedCategories));
-      } catch (e) {
-        console.error('Error parsing cached categories:', e);
-      }
-    }
+    if (initialCategories.length > 0) return;
 
     fetch(`/api/admin/categories?lang=${lang}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
           setFeaturedCategories(data);
-          localStorage.setItem('featuredCategories_en', JSON.stringify(data));
         }
       })
       .catch(() => {});
-  }, []);
+  }, [initialCategories, lang]);
 
   return (
     <div className="min-h-screen bg-transparent">

@@ -9,6 +9,7 @@ export const revalidate = 600;
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
+import { getSiteUrl } from '@/lib/utils';
 
 interface Props {
   params: { slug: string };
@@ -19,14 +20,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const author = await getAuthorBySlug(decodedSlug);
   if (!author) return { title: 'المؤلف غير موجود' };
 
+  const siteUrl = getSiteUrl();
+
   return {
     title: `كتب ومؤلفات ${author.name} - تحميل وقراءة PDF`,
     description: author.bio?.substring(0, 160) || `جميع كتب ومؤلفات ${author.name} متاحة للتحميل والقراءة مجاناً.`,
     alternates: {
-      canonical: `https://kono-elm.vercel.app/author/${params.slug}`,
+      canonical: `${siteUrl}/author/${params.slug}`,
       languages: {
-        'ar': `https://kono-elm.vercel.app/author/${params.slug}`,
-        'en': `https://kono-elm.vercel.app/en/author/${params.slug}`,
+        'ar': `${siteUrl}/author/${params.slug}`,
+        'en': `${siteUrl}/en/author/${params.slug}`,
       },
     },
   };

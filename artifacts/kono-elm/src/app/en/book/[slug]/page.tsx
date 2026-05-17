@@ -8,7 +8,7 @@ import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
-import { generateEnglishSlug } from '@/lib/utils';
+import { generateEnglishSlug, getSiteUrl } from '@/lib/utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
@@ -33,14 +33,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   title = title || `Download ${archiveDetails?.title || 'Book'} PDF - Read Online - Huda Library`;
   description = description || `Read and download ${archiveDetails?.title} by ${archiveDetails?.author || 'Unknown'} in PDF format for free.`;
 
+  const siteUrl = getSiteUrl();
+
   return {
     title,
     description: description.substring(0, 160),
     alternates: {
-      canonical: `https://kono-elm.vercel.app/en/book/${params.slug}`,
+      canonical: `${siteUrl}/en/book/${params.slug}`,
       languages: {
-        'ar': `https://kono-elm.vercel.app/book/${params.slug}`,
-        'en': `https://kono-elm.vercel.app/en/book/${params.slug}`,
+        'ar': `${siteUrl}/book/${params.slug}`,
+        'en': `${siteUrl}/en/book/${params.slug}`,
       },
     },
     openGraph: {
@@ -94,10 +96,12 @@ export default async function EnglishBookPage({ params }: Props) {
     }
   ];
 
+  const siteUrl = getSiteUrl();
+
   const breadcrumbs = [
-    { name: t.home, item: 'https://kono-elm.vercel.app/en' },
-    { name: displayCategory, item: `https://kono-elm.vercel.app/en/${categorySlug}` },
-    { name: displayTitle, item: `https://kono-elm.vercel.app/en/book/${params.slug}` }
+    { name: t.home, item: `${siteUrl}/en` },
+    { name: displayCategory, item: `${siteUrl}/en/${categorySlug}` },
+    { name: displayTitle, item: `${siteUrl}/en/book/${params.slug}` }
   ];
 
   return (
@@ -108,9 +112,9 @@ export default async function EnglishBookPage({ params }: Props) {
           author: displayAuthor,
           description: displayDescription || '',
           image: archiveBook?.coverImage,
-          url: `https://kono-elm.vercel.app/en/book/${params.slug}`,
+          url: `${siteUrl}/en/book/${params.slug}`,
           category: displayCategory,
-          categoryUrl: `https://kono-elm.vercel.app/en/${categorySlug}`
+          categoryUrl: `${siteUrl}/en/${categorySlug}`
         }}
         breadcrumbs={breadcrumbs}
         faq={faqItems}

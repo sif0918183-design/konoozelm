@@ -8,7 +8,7 @@ import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
-import { slugify } from '@/lib/utils';
+import { slugify, getSiteUrl } from '@/lib/utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { generateBookDescription } from '@/lib/groq';
@@ -46,14 +46,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   title = title || `تحميل كتاب ${archiveDetails?.title || 'كتاب'} PDF وقراءته أونلاين - مكتبة الهدى`;
   description = description || `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${archiveDetails?.author || 'غير معروف'} بصيغة PDF مجاناً.`;
 
+  const siteUrl = getSiteUrl();
+
   return {
     title,
     description: description.substring(0, 160),
     alternates: {
-      canonical: `https://kono-elm.vercel.app/book/${params.slug}`,
+      canonical: `${siteUrl}/book/${params.slug}`,
       languages: {
-        'ar': `https://kono-elm.vercel.app/book/${params.slug}`,
-        'en': `https://kono-elm.vercel.app/en/book/${params.slug}`,
+        'ar': `${siteUrl}/book/${params.slug}`,
+        'en': `${siteUrl}/en/book/${params.slug}`,
       },
     },
     openGraph: {
@@ -118,10 +120,12 @@ export default async function BookPage({ params }: Props) {
     }
   ];
 
+  const siteUrl = getSiteUrl();
+
   const breadcrumbs = [
-    { name: t.home, item: 'https://kono-elm.vercel.app/' },
-    { name: displayCategory, item: `https://kono-elm.vercel.app/${categorySlug}` },
-    { name: displayTitle, item: `https://kono-elm.vercel.app/book/${params.slug}` }
+    { name: t.home, item: `${siteUrl}/` },
+    { name: displayCategory, item: `${siteUrl}/${categorySlug}` },
+    { name: displayTitle, item: `${siteUrl}/book/${params.slug}` }
   ];
 
   return (
@@ -132,9 +136,9 @@ export default async function BookPage({ params }: Props) {
           author: displayAuthor,
           description: displayDescription || '',
           image: archiveBook?.coverImage,
-          url: `https://kono-elm.vercel.app/book/${params.slug}`,
+          url: `${siteUrl}/book/${params.slug}`,
           category: displayCategory,
-          categoryUrl: `https://kono-elm.vercel.app/${categorySlug}`
+          categoryUrl: `${siteUrl}/${categorySlug}`
         }}
         breadcrumbs={breadcrumbs}
         faq={faqItems}
