@@ -43,7 +43,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   title = title || `تحميل كتاب ${archiveDetails?.title || 'كتاب'} PDF وقراءته أونلاين - مكتبة الهدى`;
-  description = description || `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${archiveDetails?.author || 'غير معروف'} بصيغة PDF مجاناً.`;
+
+  if (!description) {
+    if (seoBook?.excerpt_p5 || seoBook?.excerpt_p9) {
+      const excerpt = (seoBook.excerpt_p5 || seoBook.excerpt_p9 || "").substring(0, 150);
+      description = `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${archiveDetails?.author || 'غير معروف'} بصيغة PDF مجاناً. مقتطف: ${excerpt}...`;
+    } else {
+      description = `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${archiveDetails?.author || 'غير معروف'} بصيغة PDF مجاناً.`;
+    }
+  }
 
   return {
     title,
@@ -188,6 +196,38 @@ export default async function BookPage({ params }: Props) {
                 </div>
               </div>
 
+              {/* Book Excerpts */}
+              {(seoBook?.excerpt_p5 || seoBook?.excerpt_p9) && (
+                <div className="pt-8 border-t border-gray-100">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6 border-r-4 border-gold-500 pr-4 flex items-center gap-2">
+                    <BookOpen className="w-6 h-6 text-gold-600" />
+                    {t.book_excerpts}
+                  </h2>
+                  <div className="space-y-6">
+                    {seoBook?.excerpt_p5 && (
+                      <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 relative">
+                        <span className="absolute -top-3 right-6 bg-gold-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+                          {t.page_n.replace('{n}', '5')}
+                        </span>
+                        <div className="text-gray-700 leading-relaxed italic">
+                          &quot;{seoBook.excerpt_p5}&quot;
+                        </div>
+                      </div>
+                    )}
+                    {seoBook?.excerpt_p9 && (
+                      <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 relative">
+                        <span className="absolute -top-3 right-6 bg-gold-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+                          {t.page_n.replace('{n}', '9')}
+                        </span>
+                        <div className="text-gray-700 leading-relaxed italic">
+                          &quot;{seoBook.excerpt_p9}&quot;
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Internal Linking: Related Content */}
               {otherBooks.length > 0 && (
                 <div className="pt-12 border-t border-gray-100">
@@ -220,6 +260,29 @@ export default async function BookPage({ params }: Props) {
 
           </div>
         </div>
+        {/* Schema.org JSON-LD */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Book",
+              "name": displayTitle,
+              "author": {
+                "@type": "Person",
+                "name": displayAuthor
+              },
+              "description": displayDescription,
+              "genre": displayCategory,
+              "image": archiveBook?.coverImage,
+              "abstract": seoBook?.excerpt_p5 || seoBook?.excerpt_p9,
+              "publisher": {
+                "@type": "Organization",
+                "name": "مكتبة الهدى"
+              }
+            })
+          }}
+        />
       </main>
     </div>
   );

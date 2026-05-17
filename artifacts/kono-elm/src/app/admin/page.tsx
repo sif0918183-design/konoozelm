@@ -134,6 +134,7 @@ export default function AdminDashboard() {
   const [totalBookCount, setTotalBookCount] = useState(0);
   const [categoryBookCounts, setCategoryBookCounts] = useState<Record<string, number>>({});
   const [isLoadingManagedBooks, setIsLoadingManagedBooks] = useState(false);
+  const [isExtractingExcerpt, setIsExtractingExcerpt] = useState<string | null>(null);
 
   const fetchCategories = useCallback(async () => {
     const res = await fetch(`/api/admin/categories?lang=${lang}`);
@@ -221,6 +222,27 @@ export default function AdminDashboard() {
       alert('Error connecting to API');
     } finally {
       setIsDeletingBook(null);
+    }
+  };
+
+  const handleExtractExcerpt = async (archiveId: string) => {
+    setIsExtractingExcerpt(archiveId);
+    try {
+      const res = await fetch('/api/admin/books/extract-excerpt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archiveId }),
+      });
+      if (res.ok) {
+        alert(lang === 'ar' ? 'تم استخراج المقتطفات بنجاح' : 'Excerpts extracted successfully');
+      } else {
+        const err = await res.json();
+        alert(lang === 'ar' ? 'فشل استخراج المقتطفات: ' + err.error : 'Failed to extract excerpts: ' + err.error);
+      }
+    } catch (e) {
+      alert('Error connecting to API');
+    } finally {
+      setIsExtractingExcerpt(null);
     }
   };
 
@@ -965,13 +987,23 @@ export default function AdminDashboard() {
                         <h4 className="font-bold text-gray-900 truncate" title={book.title}>{book.title}</h4>
                         <p className="text-xs text-gray-500 truncate">{book.author}</p>
                       </div>
-                      <button
-                        onClick={() => handleDeleteBook(book.archiveId)}
-                        disabled={isDeletingBook === book.archiveId}
-                        className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                      >
-                        {isDeletingBook === book.archiveId ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
-                      </button>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleExtractExcerpt(book.archiveId)}
+                          disabled={isExtractingExcerpt === book.archiveId}
+                          className="p-2 text-gray-300 hover:text-gold-600 hover:bg-gold-50 rounded-xl transition-all"
+                          title={lang === 'ar' ? 'استخراج مقتطفات' : 'Extract Excerpts'}
+                        >
+                          {isExtractingExcerpt === book.archiveId ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBook(book.archiveId)}
+                          disabled={isDeletingBook === book.archiveId}
+                          className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                        >
+                          {isDeletingBook === book.archiveId ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

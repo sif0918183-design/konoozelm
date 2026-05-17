@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { checkAuth } from '@/lib/admin-auth';
-import { getBookFiles } from '@/lib/archive-api';
+import { getBookFiles, fetchBookExcerpts } from '@/lib/archive-api';
 import { generateEnhancedSeoContent } from '@/lib/ai-content';
 import { saveSeoBook } from '@/lib/seo-data';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -32,6 +32,7 @@ export async function POST(request: Request) {
       const partsCount = files.length || 1;
 
       const seoContent = await generateEnhancedSeoContent(book.title, book.author, category, book.title, lang);
+      const excerpts = await fetchBookExcerpts(book.id, [5, 9]);
 
       const bookPayload = {
         slug: `${slugify(seoContent.title)}--${book.id}`,
@@ -44,7 +45,9 @@ export async function POST(request: Request) {
         seoTitle: seoContent.seoTitle,
         parts_count: partsCount,
         lang: lang,
-        is_english_verified: book.is_english_verified || false
+        is_english_verified: book.is_english_verified || false,
+        excerpt_p5: excerpts[5],
+        excerpt_p9: excerpts[9]
       };
 
       await saveSeoBook(bookPayload as any);

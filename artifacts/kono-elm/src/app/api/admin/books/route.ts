@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { checkAuth } from '@/lib/admin-auth';
 import { getSeoBooks, saveSeoBook, getBookByArchiveId, deleteSeoBook, getTotalBookCount, getCategoryBookCounts, getBooksByCategory } from '@/lib/seo-data';
+import { fetchBookExcerpts } from '@/lib/archive-api';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +84,14 @@ export async function POST(request: Request) {
 
   try {
     const book = await request.json();
+
+    // If saving a new book or update and excerpts are missing, try to fetch them
+    if (book.archiveId && (!book.excerpt_p5 || !book.excerpt_p9)) {
+      const excerpts = await fetchBookExcerpts(book.archiveId, [5, 9]);
+      book.excerpt_p5 = book.excerpt_p5 || excerpts[5];
+      book.excerpt_p9 = book.excerpt_p9 || excerpts[9];
+    }
+
     await saveSeoBook(book);
 
     // On-demand revalidation
