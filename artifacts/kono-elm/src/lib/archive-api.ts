@@ -192,15 +192,55 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
 }
 
 /**
- * Clean OCR text by removing noise
+ * Clean OCR text by removing noise and HTML entities
  */
 function cleanOcrText(text: string): string {
   if (!text) return '';
-  return text
+
+  // 1. Decode common HTML entities
+  let cleaned = text
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+    .replace(/&#x([a-fA-F0-9]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+
+  // 2. Remove OCR artifacts and noise
+  cleaned = cleaned
     .replace(/\[\d+\]/g, '') // Remove [1], [2] etc
-    .replace(/[^\u0600-\u06FFa-zA-Z0-9\s.,!?;:()""'']/g, ' ') // Keep only Arabic, English, numbers and basic punctuation
+    // Remove sequences of meaningless symbols or short garbled Latin in predominantly Arabic text
+    .replace(/[a-zA-Z]{1,2}(?=[ \u0600-\u06FF])/g, '')
+    // Remove isolated special characters that are likely OCR noise
+    .replace(/[~@#$%^*_=+{}|[\]\\/]/g, ' ')
+    // Keep only valid language characters and basic punctuation
+    .replace(/[^\u0600-\u06FFa-zA-Z0-9\s.,!?;:()""'']/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+
+  return cleaned;
+}
+
+/**
+ * Gracefully truncate text to a specified range, ending at a word boundary
+ */
+function truncateExcerpt(text: string, minLen = 700, maxLen = 1000): string {
+  if (!text || text.length <= maxLen) return text;
+
+  // Find a good place to cut (space, period, or comma) within the range
+  let cutIndex = maxLen;
+  const preferredCuts = ['. ', '، ', ' ', '\n'];
+
+  for (const char of preferredCuts) {
+    const lastIndex = text.lastIndexOf(char, maxLen);
+    if (lastIndex >= minLen) {
+      cutIndex = lastIndex;
+      break;
+    }
+  }
+
+  return text.substring(0, cutIndex).trim() + '...';
 }
 
 /**
@@ -240,7 +280,7 @@ export async function fetchBookExcerpts(identifier: string, pageNums: number[]):
           count++;
           if (pageNums.includes(count)) {
             const pageContent = match[2].replace(/<[^>]+>/g, ' '); // Strip all tags
-            excerpts[count] = cleanOcrText(pageContent);
+            excerpts[count] = truncateExcerpt(cleanOcrText(pageContent));
             console.log(`[fetchBookExcerpts] Extracted page ${count} from XML`);
           }
           if (count >= Math.max(...pageNums)) break;
@@ -264,7 +304,7 @@ export async function fetchBookExcerpts(identifier: string, pageNums: number[]):
 
           for (const pageNum of pageNums) {
             if (!excerpts[pageNum] && pages[pageNum - 1]) {
-              excerpts[pageNum] = cleanOcrText(pages[pageNum - 1]);
+              excerpts[pageNum] = truncateExcerpt(cleanOcrText(pages[pageNum - 1]));
               console.log(`[fetchBookExcerpts] Extracted page ${pageNum} from TXT fallback`);
             }
           }
