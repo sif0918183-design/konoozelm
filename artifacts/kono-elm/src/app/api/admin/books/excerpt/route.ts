@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { checkAuth } from '@/lib/admin-auth';
 import { getBookByArchiveId, saveSeoBook } from '@/lib/seo-data';
 import { fetchBookExcerpts } from '@/lib/archive-api';
+import { cleanExcerptWithAI } from '@/lib/groq';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,10 +24,24 @@ export async function POST(request: Request) {
       }, { status: 404 });
     }
 
+    // AI Cleaning
+    let excerpt_p5 = excerpts[5] || book.excerpt_p5;
+    let excerpt_p9 = excerpts[9] || book.excerpt_p9;
+    let status: 'cleaned' | 'raw' = 'raw';
+
+    try {
+      if (excerpt_p5) excerpt_p5 = await cleanExcerptWithAI(excerpt_p5, book.lang || 'ar');
+      if (excerpt_p9) excerpt_p9 = await cleanExcerptWithAI(excerpt_p9, book.lang || 'ar');
+      status = 'cleaned';
+    } catch (e) {
+      console.error('AI Cleaning failed in pipeline, saving raw:', e);
+    }
+
     const updatedBook = {
       ...book,
-      excerpt_p5: excerpts[5] || book.excerpt_p5,
-      excerpt_p9: excerpts[9] || book.excerpt_p9
+      excerpt_p5,
+      excerpt_p9,
+      excerpt_status: status
     };
 
     await saveSeoBook(updatedBook);

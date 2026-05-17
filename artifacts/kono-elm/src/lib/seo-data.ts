@@ -14,6 +14,7 @@ export interface SeoBook {
   is_english_verified?: boolean;
   excerpt_p5?: string;
   excerpt_p9?: string;
+  excerpt_status?: 'pending' | 'cleaned' | 'failed' | 'raw';
 }
 
 export interface Category {
@@ -74,7 +75,8 @@ export async function saveSeoBook(book: SeoBook) {
     lang: book.lang || 'ar',
     is_english_verified: book.is_english_verified || false,
     excerpt_p5: book.excerpt_p5,
-    excerpt_p9: book.excerpt_p9
+    excerpt_p9: book.excerpt_p9,
+    excerpt_status: book.excerpt_status || 'pending'
   };
 
   const { error } = await supabaseAdmin

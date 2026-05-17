@@ -135,6 +135,8 @@ export default function AdminDashboard() {
   const [categoryBookCounts, setCategoryBookCounts] = useState<Record<string, number>>({});
   const [isLoadingManagedBooks, setIsLoadingManagedBooks] = useState(false);
   const [isExtractingExcerpt, setIsExtractingExcerpt] = useState<string | null>(null);
+  const [isCleaningAI, setIsCleaningAI] = useState<string | null>(null);
+  const [isBulkCleaning, setIsBulkCleaning] = useState(false);
 
   const fetchCategories = useCallback(async () => {
     const res = await fetch(`/api/admin/categories?lang=${lang}`);
@@ -234,7 +236,8 @@ export default function AdminDashboard() {
         body: JSON.stringify({ archiveId }),
       });
       if (res.ok) {
-        alert(lang === 'ar' ? 'تم استخراج المقتطفات بنجاح' : 'Excerpts extracted successfully');
+        alert(lang === 'ar' ? 'تم استخراج وتجفيف المقتطفات بنجاح' : 'Excerpts extracted and cleaned successfully');
+        if (selectedCategoryForManagement) handleFetchManagedBooks(selectedCategoryForManagement);
       } else {
         const err = await res.json();
         alert(lang === 'ar' ? 'فشل استخراج المقتطفات: ' + err.error : 'Failed to extract excerpts: ' + err.error);
@@ -243,6 +246,48 @@ export default function AdminDashboard() {
       alert('Error connecting to API');
     } finally {
       setIsExtractingExcerpt(null);
+    }
+  };
+
+  const handleCleanAI = async (archiveId: string) => {
+    setIsCleaningAI(archiveId);
+    try {
+      const res = await fetch('/api/admin/books/clean-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archiveId }),
+      });
+      if (res.ok) {
+        alert(lang === 'ar' ? 'تم تنظيف المقتطف بنجاح' : 'Excerpt cleaned successfully');
+        if (selectedCategoryForManagement) handleFetchManagedBooks(selectedCategoryForManagement);
+      } else {
+        alert('Failed to clean excerpt');
+      }
+    } catch (e) {
+      alert('Error connecting to API');
+    } finally {
+      setIsCleaningAI(null);
+    }
+  };
+
+  const handleBulkCleanAI = async () => {
+    if (!confirm(lang === 'ar' ? 'هل تريد تنظيف جميع المقتطفات المعلقة؟' : 'Clean all pending excerpts?')) return;
+    setIsBulkCleaning(true);
+    try {
+      const res = await fetch('/api/admin/books/clean-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bulk: true, lang }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        alert(lang === 'ar' ? `تم تنظيف ${data.count} مقتطف بنجاح` : `Successfully cleaned ${data.count} excerpts`);
+        if (selectedCategoryForManagement) handleFetchManagedBooks(selectedCategoryForManagement);
+      }
+    } catch (e) {
+      alert('Error connecting to API');
+    } finally {
+      setIsBulkCleaning(false);
     }
   };
 
@@ -937,6 +982,14 @@ export default function AdminDashboard() {
               <h2 className="text-xl font-bold text-primary-900">{lang === 'ar' ? 'إدارة الكتب والمحتوى' : 'Content & Books Management'}</h2>
             </div>
             <div className="flex items-center gap-4">
+                <button
+                  onClick={handleBulkCleanAI}
+                  disabled={isBulkCleaning}
+                  className="bg-gold-500 text-primary-900 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gold-400 flex items-center gap-2"
+                >
+                  {isBulkCleaning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  {lang === 'ar' ? 'تنظيف جميع المقتطفات (AI)' : 'AI Clean All Excerpts'}
+                </button>
                 <div className="bg-primary-900 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
                     <span>{lang === 'ar' ? 'إجمالي الكتب:' : 'Total Books:'}</span>
                     <span className="text-gold-400 text-lg">{totalBookCount}</span>
@@ -984,10 +1037,24 @@ export default function AdminDashboard() {
                   {managedBooks.map(book => (
                     <div key={book.archiveId} className="bg-white p-4 rounded-2xl border border-gray-100 flex justify-between items-center group hover:border-red-200 transition-all">
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-bold text-gray-900 truncate" title={book.title}>{book.title}</h4>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-bold text-gray-900 truncate" title={book.title}>{book.title}</h4>
+                          {book.excerpt_status === 'cleaned' && <Sparkles className="w-3 h-3 text-gold-500" title="AI Cleaned" />}
+                          {book.excerpt_status === 'raw' && <AlertCircle className="w-3 h-3 text-orange-400" title="Raw Excerpt" />}
+                        </div>
                         <p className="text-xs text-gray-500 truncate">{book.author}</p>
                       </div>
                       <div className="flex gap-1">
+                        {(book.excerpt_p5 || book.excerpt_p9) && book.excerpt_status !== 'cleaned' && (
+                          <button
+                            onClick={() => handleCleanAI(book.archiveId)}
+                            disabled={isCleaningAI === book.archiveId}
+                            className="p-2 text-gold-400 hover:text-gold-600 hover:bg-gold-50 rounded-xl transition-all"
+                            title={lang === 'ar' ? 'تنظيف بالذكاء الاصطناعي' : 'Clean with AI'}
+                          >
+                            {isCleaningAI === book.archiveId ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                          </button>
+                        )}
                         <button
                           onClick={() => handleExtractExcerpt(book.archiveId)}
                           disabled={isExtractingExcerpt === book.archiveId}
