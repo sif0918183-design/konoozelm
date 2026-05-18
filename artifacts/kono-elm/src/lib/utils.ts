@@ -114,6 +114,15 @@ export function generateEnglishSlug(title: string): string {
 }
 
 /**
+ * Checks if the author's name is "Unknown" or similar variants.
+ */
+export const isAuthorUnknown = (author?: string) => {
+  if (!author) return true;
+  const unknownValues = ['غير معروف', 'unknown', 'n/a', 'none', '...', 'مؤلف غير معروف'];
+  return unknownValues.includes(author.toLowerCase().trim());
+};
+
+/**
  * Safely extracts the year from various formats (string, array, number)
  */
 export function normalizeYear(date: any): string | undefined {

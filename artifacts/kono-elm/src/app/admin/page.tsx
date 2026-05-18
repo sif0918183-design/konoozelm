@@ -131,6 +131,7 @@ export default function AdminDashboard() {
   const [managedBooks, setManagedBooks] = useState<SeoBook[]>([]);
   const [selectedCategoryForManagement, setSelectedCategoryForManagement] = useState<string | null>(null);
   const [isDeletingBook, setIsDeletingBook] = useState<string | null>(null);
+  const [isFixingDescription, setIsFixingDescription] = useState<string | null>(null);
   const [totalBookCount, setTotalBookCount] = useState(0);
   const [categoryBookCounts, setCategoryBookCounts] = useState<Record<string, number>>({});
   const [isLoadingManagedBooks, setIsLoadingManagedBooks] = useState(false);
@@ -221,6 +222,30 @@ export default function AdminDashboard() {
       alert('Error connecting to API');
     } finally {
       setIsDeletingBook(null);
+    }
+  };
+
+  const handleFixDescription = async (archiveId: string) => {
+    setIsFixingDescription(archiveId);
+    try {
+      const res = await fetch('/api/admin/books/fix-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archiveId, lang })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setManagedBooks(prev => prev.map(b =>
+          b.archiveId === archiveId ? { ...b, description: data.description } : b
+        ));
+        alert(lang === 'ar' ? 'تم تحديث وصف الكتاب بنجاح' : 'Book description updated successfully');
+      } else {
+        alert('Failed to fix description');
+      }
+    } catch (e) {
+      alert('Error connecting to API');
+    } finally {
+      setIsFixingDescription(null);
     }
   };
 
@@ -965,13 +990,23 @@ export default function AdminDashboard() {
                         <h4 className="font-bold text-gray-900 truncate" title={book.title}>{book.title}</h4>
                         <p className="text-xs text-gray-500 truncate">{book.author}</p>
                       </div>
-                      <button
-                        onClick={() => handleDeleteBook(book.archiveId)}
-                        disabled={isDeletingBook === book.archiveId}
-                        className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                      >
-                        {isDeletingBook === book.archiveId ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleFixDescription(book.archiveId)}
+                          disabled={isFixingDescription === book.archiveId}
+                          className="p-2 text-gray-300 hover:text-gold-600 hover:bg-gold-50 rounded-xl transition-all"
+                          title={lang === 'ar' ? 'تصحيح الوصف (إزالة المؤلف غير معروف)' : 'Fix Description (Remove Unknown Author)'}
+                        >
+                          {isFixingDescription === book.archiveId ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBook(book.archiveId)}
+                          disabled={isDeletingBook === book.archiveId}
+                          className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                        >
+                          {isDeletingBook === book.archiveId ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

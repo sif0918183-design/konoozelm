@@ -8,7 +8,7 @@ import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
-import { generateEnglishSlug, getSiteUrl } from '@/lib/utils';
+import { generateEnglishSlug, getSiteUrl, isAuthorUnknown } from '@/lib/utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
@@ -17,6 +17,24 @@ import BookSchema from '@/components/BookSchema';
 interface Props {
   params: { slug: string };
 }
+
+const cleanDescription = (description: string) => {
+  if (!description) return '';
+  // Remove common "Unknown Author" prefixes in English
+  const prefixes = [
+    /^The book (.*?) is written by Unknown/i,
+    /^The book (.*?) is written by غير معروف/i,
+    /^The book (.*?) by Unknown/i,
+    /^Author Unknown provides/i
+  ];
+
+  let cleaned = description;
+  // If it starts with "The book [Title] is written by Unknown", try to replace it
+  cleaned = cleaned.replace(/^The book (.*?) is written by (Unknown|غير معروف)\.?/i, 'The book $1 is a valuable work.');
+  cleaned = cleaned.replace(/^The book (.*?) by (Unknown|غير معروف) is/i, 'The book $1 is');
+
+  return cleaned;
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const parts = params.slug.split('--');
@@ -31,7 +49,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   let description = seoBook?.description;
 
   title = title || `Download ${archiveDetails?.title || 'Book'} PDF - Read Online - Huda Library`;
-  description = description || `Read and download ${archiveDetails?.title} by ${archiveDetails?.author || 'Unknown'} in PDF format for free.`;
+
+  const authorName = archiveDetails?.author;
+  const hasAuthor = !isAuthorUnknown(authorName);
+
+  description = description || (hasAuthor
+    ? `Read and download ${archiveDetails?.title} by ${authorName} in PDF format for free.`
+    : `Read and download ${archiveDetails?.title} in PDF format for free online.`);
 
   const siteUrl = getSiteUrl();
 
@@ -67,11 +91,16 @@ export default async function EnglishBookPage({ params }: Props) {
 
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const displayAuthor = seoBook?.author || archiveBook?.author || 'Unknown';
+  const hasAuthor = !isAuthorUnknown(displayAuthor);
   const authorSlug = generateEnglishSlug(displayAuthor);
   const displayCategory = seoBook?.category || 'General';
   const categorySlug = seoBook?.category_slug || generateEnglishSlug(displayCategory);
 
-  let displayDescription = seoBook?.description || `The book ${displayTitle} is one of the valuable and important works in its field. Author ${displayAuthor} provides a distinguished scientific and methodological vision. This book aims to facilitate access to accurate information for students of knowledge and researchers. You can now download a high-quality PDF version or read directly through your browser through our comprehensive electronic library.`;
+  let displayDescription = seoBook?.description
+    ? cleanDescription(seoBook.description)
+    : (hasAuthor
+        ? `The book ${displayTitle} is one of the valuable and important works in its field. Author ${displayAuthor} provides a distinguished scientific and methodological vision. This book aims to facilitate access to accurate information for students of knowledge and researchers. You can now download a high-quality PDF version or read directly through your browser through our comprehensive electronic library.`
+        : `The book ${displayTitle} is one of the valuable and important works in its field. It provides a distinguished scientific and methodological vision. This book aims to facilitate access to accurate information for students of knowledge and researchers. You can now download a high-quality PDF version or read directly through your browser through our comprehensive electronic library.`);
   let dynamicSeoTitle = seoBook?.seoTitle;
 
   // Internal Links - Restricted to same category as requested
@@ -84,7 +113,9 @@ export default async function EnglishBookPage({ params }: Props) {
   const faqItems = [
     {
       question: `What is the book ${displayTitle}?`,
-      answer: `The book ${displayTitle} is written by ${displayAuthor} and is categorized under ${displayCategory}. It is considered a valuable resource in its field.`
+      answer: hasAuthor
+        ? `The book ${displayTitle} is written by ${displayAuthor} and is categorized under ${displayCategory}. It is considered a valuable resource in its field.`
+        : `The book ${displayTitle} is categorized under ${displayCategory}. It is considered a valuable resource in its field providing deep knowledge for researchers.`
     },
     {
       question: `How can I download ${displayTitle} PDF?`,
@@ -161,13 +192,15 @@ export default async function EnglishBookPage({ params }: Props) {
               </div>
 
               <div className="space-y-4">
-                <Link href={`/en/author/${authorSlug}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gold-50 transition-colors">
-                  <User className="w-5 h-5 text-gold-600" />
-                  <div>
-                    <p className="text-xs text-gray-400">{t.author}</p>
-                    <p className="font-bold text-gray-900">{displayAuthor}</p>
-                  </div>
-                </Link>
+                {hasAuthor && (
+                  <Link href={`/en/author/${authorSlug}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gold-50 transition-colors">
+                    <User className="w-5 h-5 text-gold-600" />
+                    <div>
+                      <p className="text-xs text-gray-400">{t.author}</p>
+                      <p className="font-bold text-gray-900">{displayAuthor}</p>
+                    </div>
+                  </Link>
+                )}
                 <Link href={`/en/${categorySlug}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gold-50 transition-colors">
                   <Tag className="w-5 h-5 text-gold-600" />
                   <div>
@@ -249,7 +282,9 @@ export default async function EnglishBookPage({ params }: Props) {
                           <h4 className="font-bold text-gray-900 group-hover:text-primary-900 transition-colors line-clamp-4 break-words leading-snug" title={book.title}>
                             {book.title}
                           </h4>
-                          <p className="text-xs text-gray-500 truncate">{book.author}</p>
+                          {!isAuthorUnknown(book.author) && (
+                            <p className="text-xs text-gray-500 truncate">{book.author}</p>
+                          )}
                         </div>
                       </Link>
                     ))}

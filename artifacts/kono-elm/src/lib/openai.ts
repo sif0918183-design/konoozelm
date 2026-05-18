@@ -69,7 +69,7 @@ export async function generateBookDescription(title: string, author: string, lan
   const isEnglish = lang === 'en';
 
   const prompt = isEnglish ? `
-You are a professional SEO and library expert. Write a compelling, natural, and comprehensive SEO description for a book titled "${title}" by author "${author}".
+You are a professional SEO and library expert. Write a compelling, natural, and comprehensive SEO description for a book titled "${title}"${author && author !== 'Unknown' && author !== 'غير معروف' ? ` by author "${author}"` : ''}.
 
 Requirements:
 1. Style: The style must be very natural and human-like (critical for Google indexing), eloquent and suitable for scholarly content.
@@ -77,6 +77,7 @@ Requirements:
    - An introduction about the book's importance and value.
    - A brief and focused overview of the book's topic and main sections.
    - Naturally integrated keywords (e.g., Download PDF, Read Online, Islamic books, etc.).
+   - Important: If the author's name is not provided or is "Unknown", DO NOT mention that the author is unknown. Instead, focus entirely on the book and its value.
 3. Length: Between 200 to 400 words to ensure SEO performance.
 4. No AI mention: Start the description directly and do not mention being an AI assistant.
 5. Enhanced Title: Suggest a catchy SEO title that includes "Download & Read PDF" and sounds authoritative.
@@ -87,7 +88,7 @@ I want the result strictly in JSON format:
   "description": "Full description here"
 }
 ` : `
-أنت خبير SEO ومكتبات إسلامية محترف. قم بكتابة وصف جذاب، طبيعي، وشامل لمحركات البحث (SEO) لكتاب بعنوان "${title}" للمؤلف "${author}".
+أنت خبير SEO ومكتبات إسلامية محترف. قم بكتابة وصف جذاب، طبيعي، وشامل لمحركات البحث (SEO) لكتاب بعنوان "${title}"${author && author !== 'Unknown' && author !== 'غير معروف' ? ` للمؤلف "${author}"` : ''}.
 
 المتطلبات:
 1. الأسلوب: يجب أن يكون الأسلوب طبيعياً جداً ويشبه كتابة البشر (مهم جداً لقبول Google)، بليغاً ومناسباً للمحتوى الإسلامي.
@@ -95,6 +96,7 @@ I want the result strictly in JSON format:
    - مقدمة عن أهمية الكتاب وقيمته العلمية في التراث الإسلامي.
    - نبذة مختصرة ومركزة عن موضوع الكتاب وأهم الأبواب التي يتناولها.
    - كلمات مفتاحية مدمجة بصورة طبيعية تماماً (مثل: تحميل PDF، قراءة أونلاين، كتب إسلامية، إلخ).
+   - ملاحظة هامة: إذا كان اسم المؤلف غير متوفر أو "غير معروف"، فلا تذكر أبداً أن المؤلف غير معروف، بل ركز الوصف بالكامل على متن الكتاب وقيمته العلمية.
 3. الطول: بين 200 إلى 400 كلمة لضمان تفوقه في نتائج البحث.
 4. عدم ذكر الذكاء الاصطناعي: ابدأ الوصف مباشرة ولا تذكر أنك مساعد ذكي.
 5. العنوان المحسن: اقترح عنوان SEO جذاب يتضمن "تحميل وقراءة PDF" ويوحي بالموثوقية.
@@ -171,23 +173,25 @@ export async function normalizeTitle(title: string, author?: string, lang: strin
   const prompt = isEnglish ? `
 Standardize and improve the following book title to be suitable for SEO and a professional library.
 Original Title: "${title}"
-Author: "${author || 'Unknown'}"
+${author && author !== 'Unknown' && author !== 'غير معروف' ? `Author: "${author}"` : ''}
 
 Requirements:
 1. Remove any unnecessary additions (e.g., "pdf", "download", "clear copy").
 2. Add "Book" at the beginning if appropriate.
 3. Write the title completely and correctly.
-4. Return the result as JSON: {"normalizedTitle": "..."}
+4. Important: If the author's name is unknown, do not mention "Unknown Author" in the title.
+5. Return the result as JSON: {"normalizedTitle": "..."}
 ` : `
 قم بتوحيد وتحسين عنوان الكتاب التالي ليكون مناسباً لـ SEO ومكتبة احترافية.
 العنوان الأصلي: "${title}"
-المؤلف: "${author || 'غير معروف'}"
+${author && author !== 'Unknown' && author !== 'غير معروف' ? `المؤلف: "${author}"` : ''}
 
 المطلوب:
 1. إزالة أي زيادات غير ضرورية (مثل: "pdf", "تحميل", "نسخة واضحة").
 2. إضافة "كتاب" في البداية إذا كان مناسباً.
 3. كتابة العنوان كاملاً وصحيحاً.
-4. أعد النتيجة كـ JSON: {"normalizedTitle": "..."}
+4. ملاحظة هامة: إذا كان المؤلف غير معروف، فلا تذكر ذلك في العنوان أبداً.
+5. أعد النتيجة كـ JSON: {"normalizedTitle": "..."}
 `;
 
   try {
