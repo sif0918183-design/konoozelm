@@ -106,10 +106,12 @@ export default async function EnglishBookPage({ params }: Props) {
     }
   }
 
-  if (!seoBook) notFound();
+  let archiveId = seoBook?.archiveId || '';
+  if (!archiveId && isOldStyleSlug(params.slug)) {
+    archiveId = extractArchiveIdFromSlug(params.slug) || '';
+  }
 
-  const archiveId = seoBook.archiveId;
-  const archiveBook = await getBookDetails(archiveId);
+  const archiveBook = archiveId ? await getBookDetails(archiveId) : null;
 
   if (!archiveBook && !seoBook) notFound();
 
@@ -156,7 +158,7 @@ export default async function EnglishBookPage({ params }: Props) {
   const breadcrumbs = [
     { name: t.home, item: `${siteUrl}/en` },
     { name: displayCategory, item: `${siteUrl}/en/${categorySlug}` },
-    { name: displayTitle, item: `${siteUrl}/en/book/${seoBook.slug}` }
+    { name: displayTitle, item: `${siteUrl}/en/book/${seoBook?.slug || params.slug}` }
   ];
 
   return (
@@ -167,7 +169,7 @@ export default async function EnglishBookPage({ params }: Props) {
           author: displayAuthor,
           description: displayDescription || '',
           image: archiveBook?.coverImage,
-          url: `${siteUrl}/en/book/${seoBook.slug}`,
+          url: `${siteUrl}/en/book/${seoBook?.slug || params.slug}`,
           category: displayCategory,
           categoryUrl: `${siteUrl}/en/${categorySlug}`
         }}

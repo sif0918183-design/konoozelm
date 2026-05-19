@@ -23,6 +23,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Books, category title, and category slug are required' }, { status: 400 });
     }
 
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Supabase Admin Key missing' }, { status: 500 });
+    }
+
     // Local cache for slugs generated in THIS bulk request to prevent internal collisions
     const localSlugs = new Set<string>();
     const formattedResults = [];

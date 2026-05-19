@@ -86,6 +86,10 @@ export async function POST(request: Request) {
   try {
     const book = await request.json();
 
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Supabase Admin Key missing' }, { status: 500 });
+    }
+
     // Ensure clean slug if not provided or if it's an old style
     if (!book.slug || book.slug.includes('--')) {
         const baseSlug = generateCleanSlug(book.title, book.author);

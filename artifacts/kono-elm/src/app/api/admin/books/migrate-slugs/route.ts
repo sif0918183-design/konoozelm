@@ -17,6 +17,10 @@ export async function POST(request: Request) {
   try {
     const { lang = 'ar', limit = 100, last_id = 0 } = await request.json();
 
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Supabase Admin Key missing' }, { status: 500 });
+    }
+
     // 1. Fetch a batch of books
     const { data: books, error: fetchError } = await supabaseAdmin
       .from('seo_books')
@@ -37,7 +41,7 @@ export async function POST(request: Request) {
       const baseSlug = generateCleanSlug(book.title, book.author);
 
       // Efficient collision check for this specific migration item
-      const { data: collisions } = await supabaseAdmin
+      const { data: collisions } = await supabaseAdmin!
         .from('seo_books')
         .select('slug')
         .eq('lang', lang)
@@ -48,7 +52,7 @@ export async function POST(request: Request) {
       const uniqueSlug = resolveUniqueSlug(baseSlug, existingSlugs);
 
       if (uniqueSlug !== book.slug) {
-        const { error: updateError } = await supabaseAdmin
+        const { error: updateError } = await supabaseAdmin!
           .from('seo_books')
           .update({ slug: uniqueSlug })
           .eq('id', book.id);
