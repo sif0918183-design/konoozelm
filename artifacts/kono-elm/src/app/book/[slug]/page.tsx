@@ -21,19 +21,39 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  let seoBook = await getBookBySlug(params.slug, 'ar');
+  let seoBook = null;
   let archiveId = '';
 
-  if (!seoBook && isOldStyleSlug(params.slug)) {
-    archiveId = extractArchiveIdFromSlug(params.slug) || '';
-    seoBook = await getBookByArchiveId(archiveId, 'ar');
+  try {
+    seoBook = await getBookBySlug(params.slug, 'ar');
+  } catch (e) {
+    console.error('Error fetching seoBook by slug:', e);
   }
 
-  if (seoBook) {
+  if (!seoBook && isOldStyleSlug(params.slug)) {
+    const extractedId = extractArchiveIdFromSlug(params.slug);
+    if (extractedId) {
+      archiveId = extractedId;
+      try {
+        seoBook = await getBookByArchiveId(archiveId, 'ar');
+      } catch (e) {
+        console.error('Error fetching seoBook by archiveId:', e);
+      }
+    }
+  }
+
+  if (seoBook?.archiveId) {
     archiveId = seoBook.archiveId;
   }
 
-  const archiveDetails = archiveId ? await getBookDetails(archiveId) : null;
+  let archiveDetails = null;
+  if (archiveId) {
+    try {
+      archiveDetails = await getBookDetails(archiveId);
+    } catch (e) {
+      console.error('Error fetching archiveDetails:', e);
+    }
+  }
 
   if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
 
@@ -58,14 +78,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hasAuthor = !isAuthorUnknown(authorName);
 
   description = description || (hasAuthor
-    ? `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${authorName} بصيغة PDF مجاناً.`
-    : `قراءة وتحميل كتاب ${archiveDetails?.title} بصيغة PDF مجاناً أونلاين.`);
+    ? `قراءة وتحميل كتاب ${archiveDetails?.title || 'كتاب'} للمؤلف ${authorName || 'غير معروف'} بصيغة PDF مجاناً.`
+    : `قراءة وتحميل كتاب ${archiveDetails?.title || 'كتاب'} بصيغة PDF مجاناً أونلاين.`);
 
   const siteUrl = getSiteUrl();
 
   return {
-    title,
-    description: description.substring(0, 160),
+    title: title || 'Book Details',
+    description: (description || '').substring(0, 160),
     alternates: {
       canonical: `${siteUrl}/book/${seoBook?.slug || params.slug}`,
       languages: {
@@ -87,14 +107,24 @@ export default async function BookPage({ params }: Props) {
   const t = translations[lang];
 
   // 1. Try to find by slug first (New Style)
-  let seoBook = await getBookBySlug(params.slug, lang);
+  let seoBook = null;
+  try {
+    seoBook = await getBookBySlug(params.slug, lang);
+  } catch (e) {
+    console.error('Error in BookPage getBookBySlug:', e);
+  }
 
   // 2. If not found, check if it's an old-style slug with archiveId
   if (!seoBook && isOldStyleSlug(params.slug)) {
     const archiveId = extractArchiveIdFromSlug(params.slug);
     if (archiveId) {
-      seoBook = await getBookByArchiveId(archiveId, lang);
-      // If found by archiveId but slug is different, redirect to clean URL
+      try {
+        seoBook = await getBookByArchiveId(archiveId, lang);
+      } catch (e) {
+        console.error('Error in BookPage getBookByArchiveId:', e);
+      }
+
+      // Perform redirect outside try-catch to avoid catching Next.js redirect errors
       if (seoBook && seoBook.slug !== params.slug) {
         permanentRedirect(`/book/${seoBook.slug}`);
       }
@@ -106,9 +136,19 @@ export default async function BookPage({ params }: Props) {
     archiveId = extractArchiveIdFromSlug(params.slug) || '';
   }
 
-  const archiveBook = archiveId ? await getBookDetails(archiveId) : null;
+  let archiveBook = null;
+  if (archiveId) {
+    try {
+      archiveBook = await getBookDetails(archiveId);
+    } catch (e) {
+      console.error('Error in BookPage getBookDetails:', e);
+    }
+  }
 
-  if (!archiveBook && !seoBook) notFound();
+  if (!archiveBook && !seoBook) {
+    console.error(`Book not found: slug=${params.slug}, archiveId=${archiveId}`);
+    notFound();
+  }
 
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const displayAuthor = seoBook?.author || archiveBook?.author || 'غير معروف';
@@ -134,10 +174,24 @@ export default async function BookPage({ params }: Props) {
   }
 
   // Internal Links - Restricted to same category as requested
-  const otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, 'ar')
-    .then(books => books.filter(b => b.archiveId !== archiveId));
+  let otherBooks: any[] = [];
+  try {
+    otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, 'ar');
+    if (archiveId) {
+      otherBooks = otherBooks.filter(b => b.archiveId !== archiveId);
+    }
+  } catch (e) {
+    console.error('Error fetching otherBooks:', e);
+  }
 
-  const bookFiles = await getBookFiles(archiveId);
+  let bookFiles: any[] = [];
+  if (archiveId) {
+    try {
+      bookFiles = await getBookFiles(archiveId);
+    } catch (e) {
+      console.error('Error fetching bookFiles:', e);
+    }
+  }
 
   // Generate FAQ items
   const faqItems = [

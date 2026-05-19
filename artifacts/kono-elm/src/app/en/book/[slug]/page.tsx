@@ -38,19 +38,39 @@ const cleanDescription = (description: string) => {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  let seoBook = await getBookBySlug(params.slug, 'en');
+  let seoBook = null;
   let archiveId = '';
 
-  if (!seoBook && isOldStyleSlug(params.slug)) {
-    archiveId = extractArchiveIdFromSlug(params.slug) || '';
-    seoBook = await getBookByArchiveId(archiveId, 'en');
+  try {
+    seoBook = await getBookBySlug(params.slug, 'en');
+  } catch (e) {
+    console.error('Error fetching seoBook by slug (EN):', e);
   }
 
-  if (seoBook) {
+  if (!seoBook && isOldStyleSlug(params.slug)) {
+    const extractedId = extractArchiveIdFromSlug(params.slug);
+    if (extractedId) {
+      archiveId = extractedId;
+      try {
+        seoBook = await getBookByArchiveId(archiveId, 'en');
+      } catch (e) {
+        console.error('Error fetching seoBook by archiveId (EN):', e);
+      }
+    }
+  }
+
+  if (seoBook?.archiveId) {
     archiveId = seoBook.archiveId;
   }
 
-  const archiveDetails = archiveId ? await getBookDetails(archiveId) : null;
+  let archiveDetails = null;
+  if (archiveId) {
+    try {
+      archiveDetails = await getBookDetails(archiveId);
+    } catch (e) {
+      console.error('Error fetching archiveDetails (EN):', e);
+    }
+  }
 
   if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
 
@@ -63,14 +83,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hasAuthor = !isAuthorUnknown(authorName);
 
   description = description || (hasAuthor
-    ? `Read and download ${archiveDetails?.title} by ${authorName} in PDF format for free.`
-    : `Read and download ${archiveDetails?.title} in PDF format for free online.`);
+    ? `Read and download ${archiveDetails?.title || 'Book'} by ${authorName || 'Unknown'} in PDF format for free.`
+    : `Read and download ${archiveDetails?.title || 'Book'} in PDF format for free online.`);
 
   const siteUrl = getSiteUrl();
 
   return {
-    title,
-    description: description.substring(0, 160),
+    title: title || 'Book Details',
+    description: (description || '').substring(0, 160),
     alternates: {
       canonical: `${siteUrl}/en/book/${seoBook?.slug || params.slug}`,
       languages: {
@@ -92,14 +112,24 @@ export default async function EnglishBookPage({ params }: Props) {
   const t = translations[lang];
 
   // 1. Try to find by slug first (New Style)
-  let seoBook = await getBookBySlug(params.slug, lang);
+  let seoBook = null;
+  try {
+    seoBook = await getBookBySlug(params.slug, lang);
+  } catch (e) {
+    console.error('Error in EnglishBookPage getBookBySlug:', e);
+  }
 
   // 2. If not found, check if it's an old-style slug with archiveId
   if (!seoBook && isOldStyleSlug(params.slug)) {
     const archiveId = extractArchiveIdFromSlug(params.slug);
     if (archiveId) {
-      seoBook = await getBookByArchiveId(archiveId, lang);
-      // If found by archiveId but slug is different, redirect to clean URL
+      try {
+        seoBook = await getBookByArchiveId(archiveId, lang);
+      } catch (e) {
+        console.error('Error in EnglishBookPage getBookByArchiveId:', e);
+      }
+
+      // Perform redirect outside try-catch to avoid catching Next.js redirect errors
       if (seoBook && seoBook.slug !== params.slug) {
         permanentRedirect(`/en/book/${seoBook.slug}`);
       }
@@ -111,9 +141,19 @@ export default async function EnglishBookPage({ params }: Props) {
     archiveId = extractArchiveIdFromSlug(params.slug) || '';
   }
 
-  const archiveBook = archiveId ? await getBookDetails(archiveId) : null;
+  let archiveBook = null;
+  if (archiveId) {
+    try {
+      archiveBook = await getBookDetails(archiveId);
+    } catch (e) {
+      console.error('Error in EnglishBookPage getBookDetails:', e);
+    }
+  }
 
-  if (!archiveBook && !seoBook) notFound();
+  if (!archiveBook && !seoBook) {
+    console.error(`Book not found (EN): slug=${params.slug}, archiveId=${archiveId}`);
+    notFound();
+  }
 
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const displayAuthor = seoBook?.author || archiveBook?.author || 'Unknown';
@@ -130,10 +170,24 @@ export default async function EnglishBookPage({ params }: Props) {
   let dynamicSeoTitle = seoBook?.seoTitle;
 
   // Internal Links - Restricted to same category as requested
-  const otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, lang)
-    .then(books => books.filter(b => b.archiveId !== archiveId));
+  let otherBooks: any[] = [];
+  try {
+    otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, lang);
+    if (archiveId) {
+      otherBooks = otherBooks.filter(b => b.archiveId !== archiveId);
+    }
+  } catch (e) {
+    console.error('Error fetching otherBooks (EN):', e);
+  }
 
-  const bookFiles = await getBookFiles(archiveId);
+  let bookFiles: any[] = [];
+  if (archiveId) {
+    try {
+      bookFiles = await getBookFiles(archiveId);
+    } catch (e) {
+      console.error('Error fetching bookFiles (EN):', e);
+    }
+  }
 
   // Generate FAQ items
   const faqItems = [
