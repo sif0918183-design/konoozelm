@@ -130,8 +130,9 @@ export default async function EnglishBookPage({ params }: Props) {
       }
 
       // Perform redirect outside try-catch to avoid catching Next.js redirect errors
+      // Use encodeURIComponent to handle Arabic/Unicode characters in the Location header
       if (seoBook && seoBook.slug !== params.slug) {
-        permanentRedirect(`/en/book/${seoBook.slug}`);
+        permanentRedirect(`/en/book/${encodeURIComponent(seoBook.slug)}`);
       }
     }
   }
