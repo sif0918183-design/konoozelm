@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { checkAuth } from '@/lib/admin-auth';
 import { getSeoBooks, saveSeoBook, getBookByArchiveId, deleteSeoBook, getTotalBookCount, getCategoryBookCounts, getBooksByCategory } from '@/lib/seo-data';
+import { supabaseAdmin } from '@/lib/supabase';
+import { generateCleanSlug, resolveUniqueSlug } from '@/lib/slug-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +85,23 @@ export async function POST(request: Request) {
 
   try {
     const book = await request.json();
+
+    // Ensure clean slug if not provided or if it's an old style
+    if (!book.slug || book.slug.includes('--')) {
+        const baseSlug = generateCleanSlug(book.title, book.author);
+
+        // Efficiently check for existing slugs starting with the baseSlug
+        const { data: existingBooks } = await supabaseAdmin!
+          .from('seo_books')
+          .select('slug')
+          .eq('lang', book.lang || 'ar')
+          .ilike('slug', `${baseSlug}%`)
+          .neq('archive_id', book.archiveId);
+
+        const existingSlugs = new Set<string>(existingBooks?.map(b => b.slug) || []);
+        book.slug = resolveUniqueSlug(baseSlug, existingSlugs);
+    }
+
     await saveSeoBook(book);
 
     // On-demand revalidation

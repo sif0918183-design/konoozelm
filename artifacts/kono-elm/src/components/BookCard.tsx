@@ -94,8 +94,8 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
   };
 
   const detailsHref = lang === 'en'
-    ? (seoSlug ? `/en/book/${seoSlug}` : `/en/book/${slugify(book.title)}--${book.identifier}`)
-    : (seoSlug ? `/book/${seoSlug}` : `/book/${slugify(book.title)}--${book.identifier}`);
+    ? (seoSlug ? `/en/book/${seoSlug}` : `/en/book/old--${book.identifier}`)
+    : (seoSlug ? `/book/${seoSlug}` : `/book/old--${book.identifier}`);
 
   return (
     <div className={`group bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(15,46,34,0.12)] transition-all duration-500 border border-primary-900/5 hover:border-primary-900/20 flex flex-col h-full overflow-hidden relative ${lang === 'en' ? 'text-left' : 'text-right'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>

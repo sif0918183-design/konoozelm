@@ -1,14 +1,15 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, User, Tag, ChevronLeft, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
-import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor } from '@/lib/seo-data';
+import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug, getBookBySlug } from '@/lib/seo-data';
 import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
 import { generateEnglishSlug, getSiteUrl, isAuthorUnknown } from '@/lib/utils';
+import { isOldStyleSlug, extractArchiveIdFromSlug } from '@/lib/slug-utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
@@ -37,11 +38,19 @@ const cleanDescription = (description: string) => {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const parts = params.slug.split('--');
-  const archiveId = parts[parts.length - 1];
+  let seoBook = await getBookBySlug(params.slug, 'en');
+  let archiveId = '';
 
-  const seoBook = await getBookByArchiveId(archiveId, 'en');
-  const archiveDetails = await getBookDetails(archiveId);
+  if (!seoBook && isOldStyleSlug(params.slug)) {
+    archiveId = extractArchiveIdFromSlug(params.slug) || '';
+    seoBook = await getBookByArchiveId(archiveId, 'en');
+  }
+
+  if (seoBook) {
+    archiveId = seoBook.archiveId;
+  }
+
+  const archiveDetails = archiveId ? await getBookDetails(archiveId) : null;
 
   if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
 
@@ -63,10 +72,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description: description.substring(0, 160),
     alternates: {
-      canonical: `${siteUrl}/en/book/${params.slug}`,
+      canonical: `${siteUrl}/en/book/${seoBook?.slug || params.slug}`,
       languages: {
-        'ar': `${siteUrl}/book/${params.slug}`,
-        'en': `${siteUrl}/en/book/${params.slug}`,
+        'ar': `${siteUrl}/book/${seoBook?.slug || params.slug}`,
+        'en': `${siteUrl}/en/book/${seoBook?.slug || params.slug}`,
       },
     },
     openGraph: {
@@ -81,10 +90,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function EnglishBookPage({ params }: Props) {
   const lang = 'en';
   const t = translations[lang];
-  const parts = params.slug.split('--');
-  const archiveId = parts[parts.length - 1];
 
-  const seoBook = await getBookByArchiveId(archiveId, lang);
+  // 1. Try to find by slug first (New Style)
+  let seoBook = await getBookBySlug(params.slug, lang);
+
+  // 2. If not found, check if it's an old-style slug with archiveId
+  if (!seoBook && isOldStyleSlug(params.slug)) {
+    const archiveId = extractArchiveIdFromSlug(params.slug);
+    if (archiveId) {
+      seoBook = await getBookByArchiveId(archiveId, lang);
+      // If found by archiveId but slug is different, redirect to clean URL
+      if (seoBook && seoBook.slug !== params.slug) {
+        permanentRedirect(`/en/book/${seoBook.slug}`);
+      }
+    }
+  }
+
+  if (!seoBook) notFound();
+
+  const archiveId = seoBook.archiveId;
   const archiveBook = await getBookDetails(archiveId);
 
   if (!archiveBook && !seoBook) notFound();
@@ -132,7 +156,7 @@ export default async function EnglishBookPage({ params }: Props) {
   const breadcrumbs = [
     { name: t.home, item: `${siteUrl}/en` },
     { name: displayCategory, item: `${siteUrl}/en/${categorySlug}` },
-    { name: displayTitle, item: `${siteUrl}/en/book/${params.slug}` }
+    { name: displayTitle, item: `${siteUrl}/en/book/${seoBook.slug}` }
   ];
 
   return (
@@ -143,7 +167,7 @@ export default async function EnglishBookPage({ params }: Props) {
           author: displayAuthor,
           description: displayDescription || '',
           image: archiveBook?.coverImage,
-          url: `${siteUrl}/en/book/${params.slug}`,
+          url: `${siteUrl}/en/book/${seoBook.slug}`,
           category: displayCategory,
           categoryUrl: `${siteUrl}/en/${categorySlug}`
         }}
@@ -272,7 +296,7 @@ export default async function EnglishBookPage({ params }: Props) {
                     {otherBooks.map(book => (
                       <Link
                         key={book.archiveId}
-                        href={`/en/book/${book.slug}--${book.archiveId}`}
+                        href={`/en/book/${book.slug}`}
                         className="group p-4 bg-gray-50 rounded-2xl hover:bg-white hover:shadow-md border border-transparent hover:border-gold-200 transition-all flex items-center gap-4"
                       >
                         <div className="w-12 h-16 bg-white rounded-lg flex items-center justify-center border border-gray-100 flex-shrink-0">

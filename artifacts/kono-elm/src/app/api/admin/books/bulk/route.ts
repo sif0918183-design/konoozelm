@@ -6,6 +6,7 @@ import { generateEnhancedSeoContent } from '@/lib/ai-content';
 import { saveSeoBook } from '@/lib/seo-data';
 import { supabaseAdmin } from '@/lib/supabase';
 import { slugify } from '@/lib/utils';
+import { generateCleanSlug, resolveUniqueSlug } from '@/lib/slug-utils';
 
 export async function POST(request: Request) {
   if (!checkAuth()) {
@@ -22,6 +23,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Books, category title, and category slug are required' }, { status: 400 });
     }
 
+    // Local cache for slugs generated in THIS bulk request to prevent internal collisions
+    const localSlugs = new Set<string>();
+
     const results = await Promise.allSettled(books.map(async (book) => {
       // Basic timeout check per book (though allSettled will run them all)
       if (Date.now() - startTime > MAX_RUNTIME) {
@@ -33,8 +37,25 @@ export async function POST(request: Request) {
 
       const seoContent = await generateEnhancedSeoContent(book.title, book.author, category, book.title, lang);
 
+      const baseSlug = generateCleanSlug(seoContent.title, seoContent.author);
+
+      // Check for collisions in DB efficiently
+      const { data: existingDBBooks } = await supabaseAdmin!
+        .from('seo_books')
+        .select('slug')
+        .eq('lang', lang)
+        .ilike('slug', `${baseSlug}%`);
+
+      const dbSlugs = new Set<string>(existingDBBooks?.map(b => b.slug) || []);
+
+      // Merge with locally generated slugs for this batch
+      const combinedSlugs = new Set<string>([...dbSlugs, ...localSlugs]);
+
+      const uniqueSlug = resolveUniqueSlug(baseSlug, combinedSlugs);
+      localSlugs.add(uniqueSlug);
+
       const bookPayload = {
-        slug: `${slugify(seoContent.title)}--${book.id}`,
+        slug: uniqueSlug,
         title: seoContent.title,
         author: seoContent.author,
         description: seoContent.description,
