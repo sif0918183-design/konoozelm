@@ -3,7 +3,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, User, Tag, ChevronLeft, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
-import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug, getBookBySlug } from '@/lib/seo-data';
+import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getBookBySlug } from '@/lib/seo-data';
 import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
@@ -41,14 +41,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   let seoBook = null;
   let archiveId = '';
 
+  const decodedSlug = decodeURIComponent(params.slug).normalize('NFC');
+
   try {
-    seoBook = await getBookBySlug(params.slug, 'en');
+    seoBook = await getBookBySlug(decodedSlug, 'en');
   } catch (e) {
     console.error('Error fetching seoBook by slug (EN):', e);
   }
 
-  if (!seoBook && isOldStyleSlug(params.slug)) {
-    const extractedId = extractArchiveIdFromSlug(params.slug);
+  if (!seoBook && isOldStyleSlug(decodedSlug)) {
+    const extractedId = extractArchiveIdFromSlug(decodedSlug);
     if (extractedId) {
       archiveId = extractedId;
       try {
@@ -111,17 +113,20 @@ export default async function EnglishBookPage({ params }: Props) {
   const lang = 'en';
   const t = translations[lang];
 
+  // Decode the slug and normalize it
+  const decodedSlug = decodeURIComponent(params.slug).normalize('NFC');
+
   // 1. Try to find by slug first (New Style)
   let seoBook = null;
   try {
-    seoBook = await getBookBySlug(params.slug, lang);
+    seoBook = await getBookBySlug(decodedSlug, lang);
   } catch (e) {
     console.error('Error in EnglishBookPage getBookBySlug:', e);
   }
 
   // 2. If not found, check if it's an old-style slug with archiveId
-  if (!seoBook && isOldStyleSlug(params.slug)) {
-    const archiveId = extractArchiveIdFromSlug(params.slug);
+  if (!seoBook && isOldStyleSlug(decodedSlug)) {
+    const archiveId = extractArchiveIdFromSlug(decodedSlug);
     if (archiveId) {
       try {
         seoBook = await getBookByArchiveId(archiveId, lang);
@@ -130,8 +135,8 @@ export default async function EnglishBookPage({ params }: Props) {
       }
 
       // Perform redirect outside try-catch to avoid catching Next.js redirect errors
-      // Use encodeURIComponent to handle Arabic/Unicode characters in the Location header
-      if (seoBook && seoBook.slug !== params.slug) {
+      // Compare normalized versions to avoid infinite loops
+      if (seoBook && seoBook.slug.normalize('NFC') !== decodedSlug) {
         permanentRedirect(`/en/book/${encodeURIComponent(seoBook.slug)}`);
       }
     }

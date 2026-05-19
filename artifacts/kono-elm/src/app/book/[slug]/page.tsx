@@ -24,14 +24,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   let seoBook = null;
   let archiveId = '';
 
+  const decodedSlug = decodeURIComponent(params.slug).normalize('NFC');
+
   try {
-    seoBook = await getBookBySlug(params.slug, 'ar');
+    seoBook = await getBookBySlug(decodedSlug, 'ar');
   } catch (e) {
     console.error('Error fetching seoBook by slug:', e);
   }
 
-  if (!seoBook && isOldStyleSlug(params.slug)) {
-    const extractedId = extractArchiveIdFromSlug(params.slug);
+  if (!seoBook && isOldStyleSlug(decodedSlug)) {
+    const extractedId = extractArchiveIdFromSlug(decodedSlug);
     if (extractedId) {
       archiveId = extractedId;
       try {
@@ -106,17 +108,20 @@ export default async function BookPage({ params }: Props) {
   const lang = 'ar';
   const t = translations[lang];
 
+  // Decode the slug and normalize it (Arabic chars can have different forms)
+  const decodedSlug = decodeURIComponent(params.slug).normalize('NFC');
+
   // 1. Try to find by slug first (New Style)
   let seoBook = null;
   try {
-    seoBook = await getBookBySlug(params.slug, lang);
+    seoBook = await getBookBySlug(decodedSlug, lang);
   } catch (e) {
     console.error('Error in BookPage getBookBySlug:', e);
   }
 
   // 2. If not found, check if it's an old-style slug with archiveId
-  if (!seoBook && isOldStyleSlug(params.slug)) {
-    const archiveId = extractArchiveIdFromSlug(params.slug);
+  if (!seoBook && isOldStyleSlug(decodedSlug)) {
+    const archiveId = extractArchiveIdFromSlug(decodedSlug);
     if (archiveId) {
       try {
         seoBook = await getBookByArchiveId(archiveId, lang);
@@ -125,8 +130,8 @@ export default async function BookPage({ params }: Props) {
       }
 
       // Perform redirect outside try-catch to avoid catching Next.js redirect errors
-      // Use encodeURIComponent to handle Arabic characters in the Location header
-      if (seoBook && seoBook.slug !== params.slug) {
+      // Compare normalized versions to avoid infinite loops
+      if (seoBook && seoBook.slug.normalize('NFC') !== decodedSlug) {
         permanentRedirect(`/book/${encodeURIComponent(seoBook.slug)}`);
       }
     }

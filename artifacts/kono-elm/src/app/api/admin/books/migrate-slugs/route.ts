@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     }
 
     // 1. Fetch a batch of books
-    const { data: books, error: fetchError } = await supabaseAdmin
+    const { data: books, error: fetchError } = await supabaseAdmin!
       .from('seo_books')
       .select('id, archive_id, title, author, slug')
       .eq('lang', lang)
