@@ -1,57 +1,101 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { getDeterministicSuffix } from '@/lib/slug-utils';
+import { getDeterministicSuffix, getShortSlug } from '@/lib/slug-utils';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Migration API to populate the 'suffix' column for all existing books.
- * This is crucial for O(1) book lookup by the new deterministic slug format.
+ * Robust Migration API to populate the 'suffix' and 'slug' columns for all existing books.
+ * This ensures every book has a valid, non-null SEO link and a fast deterministic suffix.
  */
 export async function GET(request: Request) {
   if (!supabaseAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const limit = parseInt(searchParams.get('limit') || '100', 10);
+  const limit = parseInt(searchParams.get('limit') || '50', 10);
   const last_id = searchParams.get('last_id') || '0';
 
+  const report = {
+    total_processed: 0,
+    successfully_migrated: 0,
+    skipped_valid: 0,
+    failed: 0,
+    null_slugs_fixed: 0,
+    invalid_titles: 0,
+    errors: [] as string[]
+  };
+
   try {
-    // 1. Fetch books that don't have a suffix yet
-    let query = supabaseAdmin
+    // 1. Fetch books that NEED migration (suffix is missing OR slug is null/empty)
+    const { data: books, error: fetchError } = await supabaseAdmin
       .from('seo_books')
-      .select('id, archive_id, title')
-      .is('suffix', null)
+      .select('id, archive_id, title, slug, suffix, lang')
+      .or(`suffix.is.null,slug.is.null,slug.eq.''`)
       .gt('id', last_id)
       .order('id', { ascending: true })
       .limit(limit);
 
-    const { data: books, error } = await query;
+    if (fetchError) throw fetchError;
 
-    if (error) throw error;
     if (!books || books.length === 0) {
-      return NextResponse.json({ message: 'Migration complete or no books found.', count: 0 });
+      return NextResponse.json({ message: 'No more books need migration.', report });
     }
 
-    // 2. Calculate and update suffixes in batch
-    const updates = books.map(book => ({
-      id: book.id,
-      suffix: getDeterministicSuffix(book.archive_id)
-    }));
+    report.total_processed = books.length;
 
-    const { error: updateError } = await supabaseAdmin
-      .from('seo_books')
-      .upsert(updates);
+    // 2. Process books one by one for maximum resilience
+    for (const book of books) {
+      try {
+        const lang = (book.lang || 'ar') as 'ar' | 'en';
 
-    if (updateError) throw updateError;
+        // Generate a new deterministic slug
+        const generatedSlug = getShortSlug(book.title, book.archive_id, lang);
+        const generatedSuffix = getDeterministicSuffix(book.archive_id);
+
+        // Calculate a safe slug to avoid DB constraints (Not Null)
+        const safeSlug = generatedSlug?.trim()
+                        || book.slug?.trim()
+                        || `book-${book.archive_id || book.id}`;
+
+        if (!book.title || book.title.trim() === '') {
+           report.invalid_titles++;
+        }
+
+        if (!book.slug || book.slug === '') {
+           report.null_slugs_fixed++;
+        }
+
+        // Update the individual record
+        const { error: updateError } = await supabaseAdmin
+          .from('seo_books')
+          .update({
+            slug: safeSlug,
+            suffix: generatedSuffix
+          })
+          .eq('id', book.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        report.successfully_migrated++;
+
+      } catch (err: any) {
+        report.failed++;
+        report.errors.push(`Book ID ${book.id}: ${err.message}`);
+        console.error(`Migration failed for book ${book.id}:`, err.message);
+        // Continue to next book - DO NOT STOP the whole migration
+      }
+    }
 
     return NextResponse.json({
-      message: `Successfully migrated ${books.length} books.`,
-      count: books.length,
-      next_id: books[books.length - 1].id
+      message: `Batch complete. Migrated ${report.successfully_migrated} books.`,
+      next_id: books[books.length - 1].id,
+      report
     });
 
   } catch (err: any) {
-    console.error('Migration Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('Fatal Migration Error:', err);
+    return NextResponse.json({ error: err.message, report }, { status: 500 });
   }
 }
