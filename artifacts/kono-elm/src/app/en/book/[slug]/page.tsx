@@ -3,7 +3,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, User, Tag, ChevronLeft, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
-import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getBookBySlug, getBookBySuffix } from '@/lib/seo-data';
+import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getBookBySlug, getBookBySuffix, saveSeoBook } from '@/lib/seo-data';
 import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
@@ -127,10 +127,22 @@ export default async function EnglishBookPage({ params }: Props) {
     console.error('Lookup Error:', error);
   }
 
-  // 3. REDIRECT CHECK (Early Exit)
+  // 3. REDIRECT CHECK & JIT MIGRATION
   if (seoBook) {
     const idealSlug = getShortSlug(seoBook.title, seoBook.archiveId, lang);
-    if (decodedSlug !== idealSlug && !isNewDeterministicSlug(decodedSlug)) {
+    const isLegacy = decodedSlug.includes('--');
+
+    if (isLegacy || (decodedSlug !== idealSlug && !isNewDeterministicSlug(decodedSlug))) {
+       // JIT Migration
+       try {
+         await saveSeoBook({
+           ...seoBook,
+           slug: idealSlug,
+           suffix: extractSuffix(idealSlug) || undefined
+         });
+       } catch (e) {
+         console.error('JIT Migration failed:', e);
+       }
        permanentRedirect(`/en/book/${encodeURIComponent(idealSlug)}`);
     }
   }

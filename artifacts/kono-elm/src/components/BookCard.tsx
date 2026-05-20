@@ -94,9 +94,14 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
     setShowDownloadModal(true);
   };
 
+  // Only use new deterministic slug format if the book has been "blessed" (migrated in DB)
+  // Otherwise, use legacy format to avoid 404s for books not yet in seo_books
+  const idealSlug = getShortSlug(book.title, book.identifier, lang);
+  const finalSlug = seoSlug || (initialSeoSlug ? initialSeoSlug : `${slugify(book.title)}--${book.identifier}`);
+
   const detailsHref = lang === 'en'
-    ? `/en/book/${encodeURIComponent(seoSlug || getShortSlug(book.title, book.identifier, lang))}`
-    : `/book/${encodeURIComponent(seoSlug || getShortSlug(book.title, book.identifier, lang))}`;
+    ? `/en/book/${encodeURIComponent(finalSlug)}`
+    : `/book/${encodeURIComponent(finalSlug)}`;
 
   return (
     <div className={`group bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(15,46,34,0.12)] transition-all duration-500 border border-primary-900/5 hover:border-primary-900/20 flex flex-col h-full overflow-hidden relative ${lang === 'en' ? 'text-left' : 'text-right'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>

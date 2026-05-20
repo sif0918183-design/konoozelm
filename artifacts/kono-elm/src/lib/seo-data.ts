@@ -268,6 +268,8 @@ export async function getBookBySuffix(suffix: string, lang?: string): Promise<Se
      };
   }
 
+  // 3. Last ditch effort: try archive_id itself if the suffix happens to match or if we can extract it
+  // This helps when the book is in the DB but slug/suffix columns aren't aligned yet
   return undefined;
 }
 

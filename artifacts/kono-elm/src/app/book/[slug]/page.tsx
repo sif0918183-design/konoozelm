@@ -3,7 +3,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, Download, User, Tag, ChevronRight, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
-import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug, getBookBySlug, getBookBySuffix } from '@/lib/seo-data';
+import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug, getBookBySlug, getBookBySuffix, saveSeoBook } from '@/lib/seo-data';
 import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
@@ -122,14 +122,25 @@ export default async function BookPage({ params }: Props) {
     console.error('Lookup Error:', error);
   }
 
-  // 3. REDIRECT CHECK (Early Exit)
+  // 3. REDIRECT CHECK & JIT MIGRATION
   if (seoBook) {
     const idealSlug = getShortSlug(seoBook.title, seoBook.archiveId, lang);
-    if (decodedSlug !== idealSlug && !isNewDeterministicSlug(decodedSlug)) {
+    const isLegacy = decodedSlug.includes('--');
+
+    // If it's a legacy URL or matches but missing suffix in DB, we migrate and redirect
+    if (isLegacy || (decodedSlug !== idealSlug && !isNewDeterministicSlug(decodedSlug))) {
+       // JIT Migration: Update DB to the new slug format so subsequent lookups succeed
+       try {
+         await saveSeoBook({
+           ...seoBook,
+           slug: idealSlug,
+           suffix: extractSuffix(idealSlug) || undefined
+         });
+       } catch (e) {
+         console.error('JIT Migration failed:', e);
+       }
        permanentRedirect(`/book/${encodeURIComponent(idealSlug)}`);
     }
-  } else if (decodedSlug.includes('--')) {
-     // If it's a legacy URL but not in our DB, we'll try Archive.org first
   }
 
   // 4. DATA FETCHING
