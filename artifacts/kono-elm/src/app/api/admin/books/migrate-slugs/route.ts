@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     const results = [];
 
     for (const book of books) {
-      const baseSlug = generateCleanSlug(book.title, book.author);
+      const baseSlug = generateCleanSlug(book.title, book.author, book.archive_id);
 
       // Efficient collision check for this specific migration item
       const { data: collisions } = await supabaseAdmin!

@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
         const seoContent = await generateEnhancedSeoContent(book.title, book.author, category, book.title, lang);
 
-        const baseSlug = generateCleanSlug(seoContent.title, seoContent.author);
+        const baseSlug = generateCleanSlug(seoContent.title, seoContent.author, book.id);
 
         // Check for collisions in DB efficiently
         const { data: existingDBBooks } = await supabaseAdmin!

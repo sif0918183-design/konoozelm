@@ -92,7 +92,7 @@ export async function POST(request: Request) {
 
     // Ensure clean slug if not provided or if it's an old style
     if (!book.slug || book.slug.includes('--')) {
-        const baseSlug = generateCleanSlug(book.title, book.author);
+        const baseSlug = generateCleanSlug(book.title, book.author, book.archiveId);
 
         // Efficiently check for existing slugs starting with the baseSlug
         const { data: existingBooks } = await supabaseAdmin!

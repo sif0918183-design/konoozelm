@@ -1,52 +1,95 @@
 import { slugify } from './utils';
 
 /**
- * Generates a clean slug from a book title and optionally an author.
- * Removes junk patterns and ensures a professional format.
+ * Generates a production-grade clean slug from a book title and optionally an author.
+ * Removes junk patterns, IDs, uploader names, and ensures a professional format.
  */
-export function generateCleanSlug(title: string, author?: string): string {
-  if (!title) return 'book';
+export function generateCleanSlug(title: string, author?: string, archiveId?: string): string {
+  if (!title) return archiveId || 'book';
 
-  // 1. Remove common junk patterns from title
+  // 1. Initial cleanup before slugifying
   let cleaned = title
-    .replace(/\(.*?\)/g, '') // Remove parenthetical content
-    .replace(/\[.*?\]/g, '') // Remove bracketed content
-    .replace(/--.*$/, '') // Remove everything after double hyphen
-    .replace(/_[0-9]{6,}/g, '') // Remove long numeric strings
-    .replace(/[0-9]{8,}/g, '') // Remove long numeric strings without underscore
+    .replace(/\(.*?\)/g, ' ') // Remove parenthetical content
+    .replace(/\[.*?\]/g, ' ') // Remove bracketed content
+    .replace(/--.*$/, '')     // Remove everything after double hyphen
+    .replace(/_[0-9]{4,}/g, ' ') // Remove long numeric strings like _20180101
     .trim();
 
-  // 2. Use the standard slugify utility
+  // 2. Initial slugify
   let slug = slugify(cleaned);
 
-  // 3. Final cleanup of common Archive.org username patterns if they leaked through
-  const junkUsers = ['ozkorallh', 'archive', 'ymail', 'gmail', 'hotmail', 'yahoo', 'y-mail'];
-  junkUsers.forEach(user => {
-    const regex = new RegExp(`^${user}-|-${user}-|-${user}$|^${user}$`, 'i');
-    slug = slug.replace(regex, '');
-  });
+  // 3. Remove common noisy prefixes (Repeated until none left)
+  const prefixes = [
+    'book-', 'kitab-', 'archive-', 'pdf-', 'full-book-',
+    'تحميل-كتاب-', 'تحميل-', 'كتاب-', 'قراءة-كتاب-', 'قراءة-'
+  ];
 
-  // 4. Remove any trailing numbers that look like timestamps (e.g., -201801) or random IDs
-  slug = slug.replace(/-[0-9]{4,}$/, '');
-
-  // 5. If author is provided and slug is too short or common, we might want to append author later
-  // but for now let's just ensure we have something.
-
-  // 6. Ensure no double hyphens and trimmed
-  slug = slug.replace(/-+/g, '-').replace(/^-+|-+$/g, '');
-
-  if (!slug || slug.length < 3) {
-    // If slug is too short after cleaning, try to use title again with less aggressive cleaning
-    // or fallback to author
-    if (author && author !== 'غير معروف' && author.toLowerCase() !== 'unknown') {
-        const authorSlug = slugify(author);
-        if (authorSlug) {
-            slug = slug ? `${slug}-${authorSlug}` : authorSlug;
-        }
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const prefix of prefixes) {
+      const p = slugify(prefix);
+      if (slug.startsWith(p)) {
+        slug = slug.substring(p.length);
+        changed = true;
+      }
     }
   }
 
-  return slug || 'book';
+  // 4. Professional cleanup of common Archive.org junk and uploader patterns
+  const junkPatterns = [
+    'ozkorallh', 'archive', 'ymail', 'gmail', 'hotmail', 'yahoo', 'y-mail',
+    'bwb', 'agv', 'alexandrina', 'google', 'internet', 'library', 'download',
+    'copy', 'scan', 'version', 'edition', 'high-quality', 'full-text', 'team',
+    'uploaded', 'collection'
+  ];
+
+  let parts = slug.split('-');
+  parts = parts.filter(part => {
+    // Remove long numeric junk (IDs/Timestamps)
+    if (/^[0-9]{4,}$/.test(part)) return false;
+    // Remove common uploader/junk words
+    if (junkPatterns.includes(part.toLowerCase())) return false;
+    // Remove very short numeric junk at the end if it's likely a year or part
+    return true;
+  });
+
+  slug = parts.join('-');
+
+  // 5. Basic word deduplication (e.g. sahih-bukhari-sahih -> sahih-bukhari)
+  const words = slug.split('-');
+  const uniqueWords = [];
+  for (const word of words) {
+    if (!uniqueWords.includes(word)) {
+      uniqueWords.push(word);
+    }
+  }
+  slug = uniqueWords.join('-');
+
+  // 6. Handle Author Fallback for short slugs
+  if ((!slug || slug.length < 4) && author && !['غير معروف', 'unknown'].includes(author.toLowerCase())) {
+    const authorSlug = slugify(author);
+    if (authorSlug) {
+      slug = slug ? `${slug}-${authorSlug}` : authorSlug;
+    }
+  }
+
+  // 7. Length Limit (60-90 chars) with smart truncation
+  const MAX_LENGTH = 80;
+  if (slug.length > MAX_LENGTH) {
+    const truncated = slug.substring(0, MAX_LENGTH);
+    const lastHyphen = truncated.lastIndexOf('-');
+    slug = lastHyphen > 30 ? truncated.substring(0, lastHyphen) : truncated;
+  }
+
+  // 8. Final clean and Fallback
+  slug = slug.replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+
+  if (!slug || slug.length < 3) {
+    return archiveId ? slugify(archiveId) : 'book';
+  }
+
+  return slug;
 }
 
 /**
