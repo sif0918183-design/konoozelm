@@ -58,7 +58,7 @@ export function generateCleanSlug(title: string, author?: string, archiveId?: st
 
   // 5. Basic word deduplication (e.g. sahih-bukhari-sahih -> sahih-bukhari)
   const words = slug.split('-');
-  const uniqueWords = [];
+  const uniqueWords: string[] = [];
   for (const word of words) {
     if (!uniqueWords.includes(word)) {
       uniqueWords.push(word);

@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'No more books found to migrate', done: true });
     }
 
-    const results = [];
+    const results: any[] = [];
 
     for (const book of books) {
       const baseSlug = generateCleanSlug(book.title, book.author, book.archive_id);

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     // Local cache for slugs generated in THIS bulk request to prevent internal collisions
     const localSlugs = new Set<string>();
-    const formattedResults = [];
+    const formattedResults: any[] = [];
 
     // Use a sequential loop to prevent race conditions in slug generation within the same batch
     for (const book of books) {
