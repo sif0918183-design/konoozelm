@@ -131,6 +131,7 @@ export default async function BookPage({ params }: Props) {
     if (isLegacy || (decodedSlug !== idealSlug && !isNewDeterministicSlug(decodedSlug))) {
        // JIT Migration: Update DB to the new slug format so subsequent lookups succeed
        try {
+         console.log(`[JIT] Migrating: ${decodedSlug} -> ${idealSlug}`);
          await saveSeoBook({
            ...seoBook,
            slug: idealSlug,

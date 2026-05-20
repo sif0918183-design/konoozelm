@@ -58,10 +58,10 @@ export async function getSeoBooks(lang: string = 'ar'): Promise<SeoBook[]> {
 export async function saveSeoBook(book: SeoBook) {
   if (!supabaseAdmin) {
     console.error('❌ Cannot save book: SUPABASE_SERVICE_ROLE_KEY is missing');
-    throw new Error('Service Role Key missing - checks Vercel Env Vars');
+    throw new Error('Service Role Key missing');
   }
 
-  const payload = {
+  const payload: any = {
     slug: book.slug,
     title: book.title,
     author: book.author,
@@ -76,13 +76,37 @@ export async function saveSeoBook(book: SeoBook) {
     suffix: book.suffix || getDeterministicSuffix(book.archiveId)
   };
 
-  const { error } = await supabaseAdmin
-    .from('seo_books')
-    .upsert(payload, { onConflict: 'archive_id' });
+  try {
+    const { error } = await supabaseAdmin
+      .from('seo_books')
+      .upsert(payload, { onConflict: 'archive_id' });
 
-  if (error) {
-    console.error('Supabase Save Error (Book):', error);
-    throw error;
+    if (error) {
+      // Resilience: If 'suffix' column is missing in DB, retry without it.
+      // This is crucial for environments where migrations are still pending.
+      const isMissingColumn = error.code === 'PGRST204' ||
+                             error.message?.toLowerCase().includes('suffix') ||
+                             error.message?.toLowerCase().includes('column');
+
+      if (isMissingColumn) {
+        console.warn('⚠️ [Supabase] Column "suffix" not found. Retrying update without it...');
+        const { suffix, ...fallbackPayload } = payload;
+        const { error: retryError } = await supabaseAdmin
+          .from('seo_books')
+          .upsert(fallbackPayload, { onConflict: 'archive_id' });
+
+        if (retryError) {
+          console.error('[Supabase] Retry failed:', retryError);
+          throw new Error(retryError.message);
+        }
+        console.log('[Supabase] Successfully updated book record via fallback (no suffix column).');
+        return;
+      }
+      throw new Error(error.message);
+    }
+  } catch (err: any) {
+    console.error('Supabase Save Error:', err);
+    throw err;
   }
 }
 
@@ -242,34 +266,47 @@ export async function getBookBySuffix(suffix: string, lang?: string): Promise<Se
   if (!supabase || !suffix) return undefined;
 
   // 1. Try to find by dedicated suffix column (O(1) indexed)
-  let query = supabase.from('seo_books').select('*').eq('suffix', suffix);
-  if (lang) query = query.eq('lang', lang);
+  try {
+    const { data, error } = await supabase
+      .from('seo_books')
+      .select('*')
+      .eq('suffix', suffix)
+      .eq('lang', lang || 'ar')
+      .maybeSingle();
 
-  const { data, error } = await query.maybeSingle();
+    if (data) {
+      return {
+        ...data,
+        archiveId: data.archive_id,
+        seoTitle: data.seo_title
+      };
+    }
 
-  if (data) {
-    return {
-      ...data,
-      archiveId: data.archive_id,
-      seoTitle: data.seo_title
-    };
-  }
+    if (error && (error.code === 'PGRST204' || error.message?.toLowerCase().includes('suffix'))) {
+       // Silent skip to fallback
+    } else if (error) {
+       console.error('Suffix lookup error:', error);
+    }
+  } catch (e) {}
 
-  // 2. Fallback for legacy data (O(N) unindexed)
-  let fallbackQuery = supabase.from('seo_books').select('*').ilike('slug', `%-${suffix}`);
-  if (lang) fallbackQuery = fallbackQuery.eq('lang', lang);
+  // 2. Fallback: Search by end of slug
+  try {
+    const { data: fallbackData } = await supabase
+      .from('seo_books')
+      .select('*')
+      .ilike('slug', `%-${suffix}`)
+      .eq('lang', lang || 'ar')
+      .maybeSingle();
 
-  const { data: fallbackData } = await fallbackQuery.maybeSingle();
-  if (fallbackData) {
-     return {
-       ...fallbackData,
-       archiveId: fallbackData.archive_id,
-       seoTitle: fallbackData.seo_title
-     };
-  }
+    if (fallbackData) {
+       return {
+         ...fallbackData,
+         archiveId: fallbackData.archive_id,
+         seoTitle: fallbackData.seo_title
+       };
+    }
+  } catch (e) {}
 
-  // 3. Last ditch effort: try archive_id itself if the suffix happens to match or if we can extract it
-  // This helps when the book is in the DB but slug/suffix columns aren't aligned yet
   return undefined;
 }
 
