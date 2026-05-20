@@ -15,8 +15,10 @@ export function getDeterministicSuffix(archiveId: string): string {
     hash = hash & hash; // Convert to 32bit integer
   }
 
-  // Convert to positive hex and take 6 chars
-  const hex = Math.abs(hash).toString(36).substring(0, 6).padEnd(6, '0');
+  // Convert to positive base36 and take exactly 6 chars
+  // We use absolute value and then pad/slice to ensure 6 chars
+  const fullHash = Math.abs(hash).toString(36);
+  const hex = fullHash.substring(0, 6).padEnd(6, '0');
   return hex;
 }
 
@@ -25,15 +27,19 @@ export function getDeterministicSuffix(archiveId: string): string {
  * Format: [first-2-3-words]-[6-char-suffix]
  */
 export function getShortSlug(title: string, archiveId: string, lang: 'ar' | 'en' = 'ar'): string {
-  if (!title) return getDeterministicSuffix(archiveId);
+  const suffix = getDeterministicSuffix(archiveId);
+
+  if (!title || title.trim() === '') {
+    return `book-${suffix}`;
+  }
 
   // 1. Basic cleaning using existing utils
   let cleaned = lang === 'en' ? generateEnglishSlug(title) : slugify(title);
 
-  // 2. Filter out "useless" short words (optional but helps keep it clean)
+  // 2. Filter out "useless" short words
   const uselessWords = lang === 'en'
-    ? ['a', 'an', 'the', 'of', 'in', 'on', 'at', 'by', 'for', 'with', 'about', 'and', 'or']
-    : ['من', 'في', 'عن', 'على', 'إلى', 'مع', 'هذا', 'هذه', 'تم', 'منذ'];
+    ? ['a', 'an', 'the', 'of', 'in', 'on', 'at', 'by', 'for', 'with', 'about', 'and', 'or', 'to']
+    : ['من', 'في', 'عن', 'على', 'إلى', 'مع', 'هذا', 'هذه', 'تم', 'منذ', 'و'];
 
   let words = cleaned.split('-').filter(word => word.length > 1 && !uselessWords.includes(word));
 
@@ -42,39 +48,28 @@ export function getShortSlug(title: string, archiveId: string, lang: 'ar' | 'en'
     words = cleaned.split('-').filter(Boolean);
   }
 
-  // 3. Take first 2-3 words
-  const shortTitle = words.slice(0, 3).join('-');
+  // If still no words, use "book"
+  if (words.length === 0) {
+    return `book-${suffix}`;
+  }
 
-  // 4. Append suffix
-  const suffix = getDeterministicSuffix(archiveId);
+  // 3. Take first 3 words
+  const shortTitle = words.slice(0, 3).join('-');
 
   return `${shortTitle}-${suffix}`;
 }
 
 /**
- * Extracts Archive ID from a slug.
- * Supports:
- * - New format: title-words-suffix (where suffix is 6 chars)
- * - Old format: title--archiveId
+ * Checks if a slug is already in the new deterministic format.
+ * Format: [anything]-[6 chars suffix]
  */
-export function extractArchiveId(slug: string): string | null {
-  if (!slug) return null;
+export function isNewDeterministicSlug(slug: string): boolean {
+  if (!slug) return false;
 
-  // Check for old format: title--archiveId
-  if (slug.includes('--')) {
-    const parts = slug.split('--');
-    return parts[parts.length - 1];
-  }
+  // Pattern: [words]-[6 chars of a-z0-9]
+  // Must end with -[6 chars]
+  const pattern = /-[a-z0-9]{6}$/;
 
-  // For new format, we might not be able to "extract" the ID from the 6-char suffix alone
-  // because the suffix is a hash.
-  // However, the page logic usually has the full slug and we need to find the book.
-  // In the new system, we should probably store the mapping or
-  // the slug itself contains the Archive ID in the legacy case.
-
-  // If it's the new format, we can't extract the full Archive ID from the 6-char hash.
-  // This means the dynamic route [slug] MUST be able to find the book.
-  // The requirement said: "الحفاظ على جميع الروابط القديمة عبر 301 redirects".
-
-  return null;
+  // Also check it doesn't contain the old legacy marker "--"
+  return pattern.test(slug) && !slug.includes('--');
 }

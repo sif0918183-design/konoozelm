@@ -9,7 +9,7 @@ import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
 import { slugify, getSiteUrl, isAuthorUnknown } from '@/lib/utils';
-import { getShortSlug } from '@/lib/slug-utils';
+import { getShortSlug, isNewDeterministicSlug } from '@/lib/slug-utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { generateBookDescription } from '@/lib/groq';
@@ -134,9 +134,13 @@ export default async function BookPage({ params }: Props) {
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const finalArchiveId = (seoBook?.archiveId || archiveBook?.identifier || archiveId) as string;
 
-  // 3. SEO URL Normalization: Redirect to ideal slug
+  // 3. SEO URL Normalization: Redirect ONLY if necessary
+  const currentSlugDecoded = decodeURIComponent(params.slug);
   const idealSlug = getShortSlug(displayTitle, finalArchiveId, lang);
-  if (params.slug !== idealSlug) {
+
+  // Protect against infinite loops:
+  // If slug is already new format OR already matches ideal, skip redirect
+  if (currentSlugDecoded !== idealSlug && !isNewDeterministicSlug(params.slug)) {
     // Permanent 301 redirect to the new clean URL
     // CRITICAL: encodeURIComponent for Arabic support
     permanentRedirect(`/book/${encodeURIComponent(idealSlug)}`);
