@@ -1,4 +1,5 @@
 import { getSeoBooks, getCategories, getAuthors } from '@/lib/seo-data';
+import { getShortSlug } from '@/lib/slug-utils';
 
 export async function GET(request: Request) {
   const { host } = new URL(request.url);
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
   </url>`).join('')}
   ${arBooks.map(book => `
   <url>
-    <loc>${BASE_URL}/book/${book.slug}--${book.archiveId}</loc>
+    <loc>${BASE_URL}/book/${encodeURIComponent(getShortSlug(book.title, book.archiveId, 'ar'))}</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`).join('')}
@@ -71,7 +72,7 @@ export async function GET(request: Request) {
   </url>`).join('')}
   ${enBooks.map(book => `
   <url>
-    <loc>${BASE_URL}/en/book/${book.slug}--${book.archiveId}</loc>
+    <loc>${BASE_URL}/en/book/${encodeURIComponent(getShortSlug(book.title, book.archiveId, 'en'))}</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`).join('')}
