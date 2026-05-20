@@ -146,6 +146,8 @@ export default async function EnglishBookPage({ params }: Props) {
        }
        permanentRedirect(`/en/book/${encodeURIComponent(idealSlug)}`);
     }
+  } else if (decodedSlug.includes('--')) {
+    // If it's a legacy URL but not in our DB, we'll continue and see if Archive has it
   }
 
   // 4. DATA FETCHING

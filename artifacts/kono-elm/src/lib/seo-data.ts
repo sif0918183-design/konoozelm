@@ -289,7 +289,7 @@ export async function getBookBySuffix(suffix: string, lang?: string): Promise<Se
     }
   } catch (e) {}
 
-  // 2. Fallback: Search by end of slug
+  // 2. Fallback: Search by end of slug (handles legacy slugs in DB)
   try {
     const { data: fallbackData } = await supabase
       .from('seo_books')
@@ -304,6 +304,30 @@ export async function getBookBySuffix(suffix: string, lang?: string): Promise<Se
          archiveId: fallbackData.archive_id,
          seoTitle: fallbackData.seo_title
        };
+    }
+  } catch (e) {}
+
+  // 3. Last Ditch: Try to match the suffix with the end of archive_id
+  // This is a safety net for books that were added with messy archive IDs
+  // that haven't been properly slugified yet.
+  try {
+    const { data: idData } = await supabase
+      .from('seo_books')
+      .select('*')
+      .ilike('archive_id', `%${suffix}%`)
+      .eq('lang', lang || 'ar')
+      .limit(5); // Take a few to find the best match
+
+    if (idData && idData.length > 0) {
+      // Find the one where getDeterministicSuffix(archive_id) actually matches our suffix
+      const match = idData.find(b => getDeterministicSuffix(b.archive_id) === suffix);
+      if (match) {
+        return {
+          ...match,
+          archiveId: match.archive_id,
+          seoTitle: match.seo_title
+        };
+      }
     }
   } catch (e) {}
 
