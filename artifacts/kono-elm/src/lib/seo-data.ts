@@ -232,6 +232,27 @@ export async function getBookByArchiveId(id: string, lang?: string): Promise<Seo
   };
 }
 
+/**
+ * Finds a book by its deterministic 6-character suffix.
+ */
+export async function getBookBySuffix(suffix: string, lang?: string): Promise<SeoBook | undefined> {
+  if (!supabase || !suffix) return undefined;
+
+  // Suffix is the last 6 chars of the slug.
+  // We use ilike '%-suffix' to find it efficiently.
+  let query = supabase.from('seo_books').select('*').ilike('slug', `%-${suffix}`);
+  if (lang) query = query.eq('lang', lang);
+
+  const { data, error } = await query.maybeSingle();
+
+  if (error || !data) return undefined;
+  return {
+    ...data,
+    archiveId: data.archive_id,
+    seoTitle: data.seo_title
+  };
+}
+
 export async function getBookBySlug(slug: string, lang?: string): Promise<SeoBook | undefined> {
   if (!supabase) return undefined;
   let query = supabase.from('seo_books').select('*').eq('slug', slug);

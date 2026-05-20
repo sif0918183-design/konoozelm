@@ -3,13 +3,13 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, Download, User, Tag, ChevronRight, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
-import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug, getBookBySlug } from '@/lib/seo-data';
+import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug, getBookBySlug, getBookBySuffix } from '@/lib/seo-data';
 import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
 import { slugify, getSiteUrl, isAuthorUnknown } from '@/lib/utils';
-import { getShortSlug, isNewDeterministicSlug } from '@/lib/slug-utils';
+import { getShortSlug, isNewDeterministicSlug, extractSuffix } from '@/lib/slug-utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { generateBookDescription } from '@/lib/groq';
@@ -23,24 +23,29 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   let archiveId: string | undefined;
 
-  // 1. Try to find book by exact slug in database (new format)
-  const seoBookBySlug = await getBookBySlug(params.slug, 'ar');
-  if (seoBookBySlug) {
-    archiveId = seoBookBySlug.archiveId;
-  } else if (params.slug.includes('--')) {
-    // 2. Extract from legacy format: title--archiveId
-    const parts = params.slug.split('--');
-    archiveId = parts[parts.length - 1];
-  } else {
-    // 3. Last resort: try suffix from new format if we can somehow find it
-    // But better to just try getting details from Archive if it's a known identifier
-    archiveId = params.slug.split('-').pop();
+  // 1. Try to find book by exact slug or suffix
+  const decodedSlug = decodeURIComponent(params.slug);
+  let seoBook = await getBookBySlug(decodedSlug, 'ar');
+
+  if (!seoBook) {
+    const suffix = extractSuffix(decodedSlug);
+    if (suffix) {
+      seoBook = await getBookBySuffix(suffix, 'ar');
+    }
+  }
+
+  if (seoBook) {
+    archiveId = seoBook.archiveId;
+  } else if (decodedSlug.includes('--')) {
+    // 2. Legacy format: title--archiveId
+    archiveId = decodedSlug.split('--').pop();
   }
 
   if (!archiveId) return { title: 'Book Not Found' };
 
-  const seoBook = seoBookBySlug || await getBookByArchiveId(archiveId, 'ar');
   const archiveDetails = await getBookDetails(archiveId);
+
+  if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
 
   if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
 
@@ -95,21 +100,25 @@ export default async function BookPage({ params }: Props) {
 
   let seoBook;
   let archiveId: string | null = null;
+  const decodedSlug = decodeURIComponent(params.slug);
 
   try {
-    // 1. Try to find by exact slug
-    seoBook = await getBookBySlug(params.slug, lang);
+    // 1. Primary lookup: By exact slug or deterministic suffix
+    seoBook = await getBookBySlug(decodedSlug, lang);
+
+    if (!seoBook) {
+      const suffix = extractSuffix(decodedSlug);
+      if (suffix) {
+        seoBook = await getBookBySuffix(suffix, lang);
+      }
+    }
 
     if (seoBook) {
       archiveId = seoBook.archiveId;
     } else {
-      // 2. Fallback to legacy format or extract possible ID
-      if (params.slug.includes('--')) {
-        const parts = params.slug.split('--');
-        archiveId = parts[parts.length - 1];
-      } else {
-        // Try if the last part is a valid Archive ID (for books not in seo_books yet)
-        archiveId = params.slug.split('-').pop() || null;
+      // 2. Legacy format: title--archiveId
+      if (decodedSlug.includes('--')) {
+        archiveId = decodedSlug.split('--').pop() || null;
       }
 
       if (archiveId) {

@@ -73,3 +73,12 @@ export function isNewDeterministicSlug(slug: string): boolean {
   // Also check it doesn't contain the old legacy marker "--"
   return pattern.test(slug) && !slug.includes('--');
 }
+
+/**
+ * Extracts the 6-character deterministic suffix from a slug.
+ */
+export function extractSuffix(slug: string): string | null {
+  if (!slug) return null;
+  const match = slug.match(/-([a-z0-9]{6})$/);
+  return match ? match[1] : null;
+}
