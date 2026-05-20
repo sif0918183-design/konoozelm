@@ -41,7 +41,7 @@ export async function GET(request: Request) {
   </url>`).join('')}
   ${arBooks.map(book => `
   <url>
-    <loc>${BASE_URL}/book/${book.slug}--${book.archiveId}</loc>
+    <loc>${BASE_URL}/book/${book.slug}</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`).join('')}
@@ -71,7 +71,7 @@ export async function GET(request: Request) {
   </url>`).join('')}
   ${enBooks.map(book => `
   <url>
-    <loc>${BASE_URL}/en/book/${book.slug}--${book.archiveId}</loc>
+    <loc>${BASE_URL}/en/book/${book.slug}</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`).join('')}

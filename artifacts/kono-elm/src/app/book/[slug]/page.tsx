@@ -1,14 +1,15 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, Download, User, Tag, ChevronRight, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
-import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug } from '@/lib/seo-data';
+import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug, getBookBySlug } from '@/lib/seo-data';
 import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
 import { slugify, getSiteUrl, isAuthorUnknown } from '@/lib/utils';
+import { isOldStyleSlug, extractArchiveIdFromSlug } from '@/lib/slug-utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { generateBookDescription } from '@/lib/groq';
@@ -20,11 +21,41 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const parts = params.slug.split('--');
-  const archiveId = parts[parts.length - 1];
+  let seoBook = null;
+  let archiveId = '';
 
-  const seoBook = await getBookByArchiveId(archiveId, 'ar');
-  const archiveDetails = await getBookDetails(archiveId);
+  const decodedSlug = decodeURIComponent(params.slug).normalize('NFC');
+
+  try {
+    seoBook = await getBookBySlug(decodedSlug, 'ar');
+  } catch (e) {
+    console.error('Error fetching seoBook by slug:', e);
+  }
+
+  if (!seoBook && isOldStyleSlug(decodedSlug)) {
+    const extractedId = extractArchiveIdFromSlug(decodedSlug);
+    if (extractedId) {
+      archiveId = extractedId;
+      try {
+        seoBook = await getBookByArchiveId(archiveId, 'ar');
+      } catch (e) {
+        console.error('Error fetching seoBook by archiveId:', e);
+      }
+    }
+  }
+
+  if (seoBook?.archiveId) {
+    archiveId = seoBook.archiveId;
+  }
+
+  let archiveDetails = null;
+  if (archiveId) {
+    try {
+      archiveDetails = await getBookDetails(archiveId);
+    } catch (e) {
+      console.error('Error fetching archiveDetails:', e);
+    }
+  }
 
   if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
 
@@ -49,19 +80,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hasAuthor = !isAuthorUnknown(authorName);
 
   description = description || (hasAuthor
-    ? `قراءة وتحميل كتاب ${archiveDetails?.title} للمؤلف ${authorName} بصيغة PDF مجاناً.`
-    : `قراءة وتحميل كتاب ${archiveDetails?.title} بصيغة PDF مجاناً أونلاين.`);
+    ? `قراءة وتحميل كتاب ${archiveDetails?.title || 'كتاب'} للمؤلف ${authorName || 'غير معروف'} بصيغة PDF مجاناً.`
+    : `قراءة وتحميل كتاب ${archiveDetails?.title || 'كتاب'} بصيغة PDF مجاناً أونلاين.`);
 
   const siteUrl = getSiteUrl();
 
   return {
-    title,
-    description: description.substring(0, 160),
+    title: title || 'Book Details',
+    description: (description || '').substring(0, 160),
     alternates: {
-      canonical: `${siteUrl}/book/${params.slug}`,
+      canonical: `${siteUrl}/book/${seoBook?.slug || params.slug}`,
       languages: {
-        'ar': `${siteUrl}/book/${params.slug}`,
-        'en': `${siteUrl}/en/book/${params.slug}`,
+        'ar': `${siteUrl}/book/${seoBook?.slug || params.slug}`,
+        'en': `${siteUrl}/en/book/${seoBook?.slug || params.slug}`,
       },
     },
     openGraph: {
@@ -76,13 +107,54 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function BookPage({ params }: Props) {
   const lang = 'ar';
   const t = translations[lang];
-  const parts = params.slug.split('--');
-  const archiveId = parts[parts.length - 1];
 
-  const seoBook = await getBookByArchiveId(archiveId, lang);
-  const archiveBook = await getBookDetails(archiveId);
+  // Decode the slug and normalize it (Arabic chars can have different forms)
+  const decodedSlug = decodeURIComponent(params.slug).normalize('NFC');
 
-  if (!archiveBook && !seoBook) notFound();
+  // 1. Try to find by slug first (New Style)
+  let seoBook = null;
+  try {
+    seoBook = await getBookBySlug(decodedSlug, lang);
+  } catch (e) {
+    console.error('Error in BookPage getBookBySlug:', e);
+  }
+
+  // 2. If not found, check if it's an old-style slug with archiveId
+  if (!seoBook && isOldStyleSlug(decodedSlug)) {
+    const archiveId = extractArchiveIdFromSlug(decodedSlug);
+    if (archiveId) {
+      try {
+        seoBook = await getBookByArchiveId(archiveId, lang);
+      } catch (e) {
+        console.error('Error in BookPage getBookByArchiveId:', e);
+      }
+
+      // Perform redirect outside try-catch to avoid catching Next.js redirect errors
+      // Compare normalized versions to avoid infinite loops
+      if (seoBook && seoBook.slug.normalize('NFC') !== decodedSlug) {
+        permanentRedirect(`/book/${encodeURIComponent(seoBook.slug)}`);
+      }
+    }
+  }
+
+  let archiveId = seoBook?.archiveId || '';
+  if (!archiveId && isOldStyleSlug(params.slug)) {
+    archiveId = extractArchiveIdFromSlug(params.slug) || '';
+  }
+
+  let archiveBook = null;
+  if (archiveId) {
+    try {
+      archiveBook = await getBookDetails(archiveId);
+    } catch (e) {
+      console.error('Error in BookPage getBookDetails:', e);
+    }
+  }
+
+  if (!archiveBook && !seoBook) {
+    console.error(`Book not found: slug=${params.slug}, archiveId=${archiveId}`);
+    notFound();
+  }
 
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const displayAuthor = seoBook?.author || archiveBook?.author || 'غير معروف';
@@ -108,10 +180,24 @@ export default async function BookPage({ params }: Props) {
   }
 
   // Internal Links - Restricted to same category as requested
-  const otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, 'ar')
-    .then(books => books.filter(b => b.archiveId !== archiveId));
+  let otherBooks: any[] = [];
+  try {
+    otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, 'ar');
+    if (archiveId) {
+      otherBooks = otherBooks.filter(b => b.archiveId !== archiveId);
+    }
+  } catch (e) {
+    console.error('Error fetching otherBooks:', e);
+  }
 
-  const bookFiles = await getBookFiles(archiveId);
+  let bookFiles: any[] = [];
+  if (archiveId) {
+    try {
+      bookFiles = await getBookFiles(archiveId);
+    } catch (e) {
+      console.error('Error fetching bookFiles:', e);
+    }
+  }
 
   // Generate FAQ items
   const faqItems = [
@@ -136,7 +222,7 @@ export default async function BookPage({ params }: Props) {
   const breadcrumbs = [
     { name: t.home, item: `${siteUrl}/` },
     { name: displayCategory, item: `${siteUrl}/${categorySlug}` },
-    { name: displayTitle, item: `${siteUrl}/book/${params.slug}` }
+    { name: displayTitle, item: `${siteUrl}/book/${seoBook?.slug || params.slug}` }
   ];
 
   return (
@@ -147,7 +233,7 @@ export default async function BookPage({ params }: Props) {
           author: displayAuthor,
           description: displayDescription || '',
           image: archiveBook?.coverImage,
-          url: `${siteUrl}/book/${params.slug}`,
+          url: `${siteUrl}/book/${seoBook?.slug || params.slug}`,
           category: displayCategory,
           categoryUrl: `${siteUrl}/${categorySlug}`
         }}
@@ -275,7 +361,7 @@ export default async function BookPage({ params }: Props) {
                     {otherBooks.map(book => (
                       <Link
                         key={book.archiveId}
-                        href={`/book/${book.slug}--${book.archiveId}`}
+                        href={`/book/${book.slug}`}
                         className="group p-4 bg-gray-50 rounded-2xl hover:bg-white hover:shadow-md border border-transparent hover:border-gold-200 transition-all flex items-center gap-4"
                       >
                         <div className="w-12 h-16 bg-white rounded-lg flex items-center justify-center border border-gray-100 flex-shrink-0">

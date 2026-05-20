@@ -1,14 +1,15 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, User, Tag, ChevronLeft, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
-import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor } from '@/lib/seo-data';
+import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getBookBySlug } from '@/lib/seo-data';
 import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
 import { generateEnglishSlug, getSiteUrl, isAuthorUnknown } from '@/lib/utils';
+import { isOldStyleSlug, extractArchiveIdFromSlug } from '@/lib/slug-utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
@@ -37,11 +38,41 @@ const cleanDescription = (description: string) => {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const parts = params.slug.split('--');
-  const archiveId = parts[parts.length - 1];
+  let seoBook = null;
+  let archiveId = '';
 
-  const seoBook = await getBookByArchiveId(archiveId, 'en');
-  const archiveDetails = await getBookDetails(archiveId);
+  const decodedSlug = decodeURIComponent(params.slug).normalize('NFC');
+
+  try {
+    seoBook = await getBookBySlug(decodedSlug, 'en');
+  } catch (e) {
+    console.error('Error fetching seoBook by slug (EN):', e);
+  }
+
+  if (!seoBook && isOldStyleSlug(decodedSlug)) {
+    const extractedId = extractArchiveIdFromSlug(decodedSlug);
+    if (extractedId) {
+      archiveId = extractedId;
+      try {
+        seoBook = await getBookByArchiveId(archiveId, 'en');
+      } catch (e) {
+        console.error('Error fetching seoBook by archiveId (EN):', e);
+      }
+    }
+  }
+
+  if (seoBook?.archiveId) {
+    archiveId = seoBook.archiveId;
+  }
+
+  let archiveDetails = null;
+  if (archiveId) {
+    try {
+      archiveDetails = await getBookDetails(archiveId);
+    } catch (e) {
+      console.error('Error fetching archiveDetails (EN):', e);
+    }
+  }
 
   if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
 
@@ -54,19 +85,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hasAuthor = !isAuthorUnknown(authorName);
 
   description = description || (hasAuthor
-    ? `Read and download ${archiveDetails?.title} by ${authorName} in PDF format for free.`
-    : `Read and download ${archiveDetails?.title} in PDF format for free online.`);
+    ? `Read and download ${archiveDetails?.title || 'Book'} by ${authorName || 'Unknown'} in PDF format for free.`
+    : `Read and download ${archiveDetails?.title || 'Book'} in PDF format for free online.`);
 
   const siteUrl = getSiteUrl();
 
   return {
-    title,
-    description: description.substring(0, 160),
+    title: title || 'Book Details',
+    description: (description || '').substring(0, 160),
     alternates: {
-      canonical: `${siteUrl}/en/book/${params.slug}`,
+      canonical: `${siteUrl}/en/book/${seoBook?.slug || params.slug}`,
       languages: {
-        'ar': `${siteUrl}/book/${params.slug}`,
-        'en': `${siteUrl}/en/book/${params.slug}`,
+        'ar': `${siteUrl}/book/${seoBook?.slug || params.slug}`,
+        'en': `${siteUrl}/en/book/${seoBook?.slug || params.slug}`,
       },
     },
     openGraph: {
@@ -81,13 +112,54 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function EnglishBookPage({ params }: Props) {
   const lang = 'en';
   const t = translations[lang];
-  const parts = params.slug.split('--');
-  const archiveId = parts[parts.length - 1];
 
-  const seoBook = await getBookByArchiveId(archiveId, lang);
-  const archiveBook = await getBookDetails(archiveId);
+  // Decode the slug and normalize it
+  const decodedSlug = decodeURIComponent(params.slug).normalize('NFC');
 
-  if (!archiveBook && !seoBook) notFound();
+  // 1. Try to find by slug first (New Style)
+  let seoBook = null;
+  try {
+    seoBook = await getBookBySlug(decodedSlug, lang);
+  } catch (e) {
+    console.error('Error in EnglishBookPage getBookBySlug:', e);
+  }
+
+  // 2. If not found, check if it's an old-style slug with archiveId
+  if (!seoBook && isOldStyleSlug(decodedSlug)) {
+    const archiveId = extractArchiveIdFromSlug(decodedSlug);
+    if (archiveId) {
+      try {
+        seoBook = await getBookByArchiveId(archiveId, lang);
+      } catch (e) {
+        console.error('Error in EnglishBookPage getBookByArchiveId:', e);
+      }
+
+      // Perform redirect outside try-catch to avoid catching Next.js redirect errors
+      // Compare normalized versions to avoid infinite loops
+      if (seoBook && seoBook.slug.normalize('NFC') !== decodedSlug) {
+        permanentRedirect(`/en/book/${encodeURIComponent(seoBook.slug)}`);
+      }
+    }
+  }
+
+  let archiveId = seoBook?.archiveId || '';
+  if (!archiveId && isOldStyleSlug(params.slug)) {
+    archiveId = extractArchiveIdFromSlug(params.slug) || '';
+  }
+
+  let archiveBook = null;
+  if (archiveId) {
+    try {
+      archiveBook = await getBookDetails(archiveId);
+    } catch (e) {
+      console.error('Error in EnglishBookPage getBookDetails:', e);
+    }
+  }
+
+  if (!archiveBook && !seoBook) {
+    console.error(`Book not found (EN): slug=${params.slug}, archiveId=${archiveId}`);
+    notFound();
+  }
 
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const displayAuthor = seoBook?.author || archiveBook?.author || 'Unknown';
@@ -104,10 +176,24 @@ export default async function EnglishBookPage({ params }: Props) {
   let dynamicSeoTitle = seoBook?.seoTitle;
 
   // Internal Links - Restricted to same category as requested
-  const otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, lang)
-    .then(books => books.filter(b => b.archiveId !== archiveId));
+  let otherBooks: any[] = [];
+  try {
+    otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, lang);
+    if (archiveId) {
+      otherBooks = otherBooks.filter(b => b.archiveId !== archiveId);
+    }
+  } catch (e) {
+    console.error('Error fetching otherBooks (EN):', e);
+  }
 
-  const bookFiles = await getBookFiles(archiveId);
+  let bookFiles: any[] = [];
+  if (archiveId) {
+    try {
+      bookFiles = await getBookFiles(archiveId);
+    } catch (e) {
+      console.error('Error fetching bookFiles (EN):', e);
+    }
+  }
 
   // Generate FAQ items
   const faqItems = [
@@ -132,7 +218,7 @@ export default async function EnglishBookPage({ params }: Props) {
   const breadcrumbs = [
     { name: t.home, item: `${siteUrl}/en` },
     { name: displayCategory, item: `${siteUrl}/en/${categorySlug}` },
-    { name: displayTitle, item: `${siteUrl}/en/book/${params.slug}` }
+    { name: displayTitle, item: `${siteUrl}/en/book/${seoBook?.slug || params.slug}` }
   ];
 
   return (
@@ -143,7 +229,7 @@ export default async function EnglishBookPage({ params }: Props) {
           author: displayAuthor,
           description: displayDescription || '',
           image: archiveBook?.coverImage,
-          url: `${siteUrl}/en/book/${params.slug}`,
+          url: `${siteUrl}/en/book/${seoBook?.slug || params.slug}`,
           category: displayCategory,
           categoryUrl: `${siteUrl}/en/${categorySlug}`
         }}
@@ -272,7 +358,7 @@ export default async function EnglishBookPage({ params }: Props) {
                     {otherBooks.map(book => (
                       <Link
                         key={book.archiveId}
-                        href={`/en/book/${book.slug}--${book.archiveId}`}
+                        href={`/en/book/${book.slug}`}
                         className="group p-4 bg-gray-50 rounded-2xl hover:bg-white hover:shadow-md border border-transparent hover:border-gold-200 transition-all flex items-center gap-4"
                       >
                         <div className="w-12 h-16 bg-white rounded-lg flex items-center justify-center border border-gray-100 flex-shrink-0">
