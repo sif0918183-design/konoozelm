@@ -16,10 +16,9 @@ export function getDeterministicSuffix(archiveId: string): string {
   }
 
   // Convert to positive base36 and take exactly 6 chars
-  // We use absolute value and then pad/slice to ensure 6 chars
   const fullHash = Math.abs(hash).toString(36);
-  const hex = fullHash.substring(0, 6).padEnd(6, '0');
-  return hex;
+  const suffix = fullHash.substring(0, 6).padEnd(6, '0');
+  return suffix;
 }
 
 /**
@@ -61,17 +60,18 @@ export function getShortSlug(title: string, archiveId: string, lang: 'ar' | 'en'
 
 /**
  * Checks if a slug is already in the new deterministic format.
- * Format: [anything]-[6 chars suffix]
+ * Pattern: [words]-[6 chars of a-z0-9]
  */
 export function isNewDeterministicSlug(slug: string): boolean {
   if (!slug) return false;
 
-  // Pattern: [words]-[6 chars of a-z0-9]
-  // Must end with -[6 chars]
+  const decoded = decodeURIComponent(slug);
+
+  // Pattern: must end with -[6 chars]
   const pattern = /-[a-z0-9]{6}$/;
 
-  // Also check it doesn't contain the old legacy marker "--"
-  return pattern.test(slug) && !slug.includes('--');
+  // Must match pattern and NOT contain legacy marker "--"
+  return pattern.test(decoded) && !decoded.includes('--');
 }
 
 /**
@@ -79,6 +79,7 @@ export function isNewDeterministicSlug(slug: string): boolean {
  */
 export function extractSuffix(slug: string): string | null {
   if (!slug) return null;
-  const match = slug.match(/-([a-z0-9]{6})$/);
+  const decoded = decodeURIComponent(slug);
+  const match = decoded.match(/-([a-z0-9]{6})$/);
   return match ? match[1] : null;
 }

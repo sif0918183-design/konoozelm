@@ -37,16 +37,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (seoBook) {
     archiveId = seoBook.archiveId;
   } else if (decodedSlug.includes('--')) {
-    // 2. Legacy format: title--archiveId
     archiveId = decodedSlug.split('--').pop();
   }
 
   if (!archiveId) return { title: 'Book Not Found' };
 
   const archiveDetails = await getBookDetails(archiveId);
-
-  if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
-
   if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
 
   let title = seoBook?.seoTitle;
@@ -97,13 +93,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function BookPage({ params }: Props) {
   const lang = 'ar';
   const t = translations[lang];
+  const decodedSlug = decodeURIComponent(params.slug);
 
   let seoBook;
   let archiveId: string | null = null;
-  const decodedSlug = decodeURIComponent(params.slug);
 
+  // 1. PRIMARY LOOKUP: Precise & Fast
   try {
-    // 1. Primary lookup: By exact slug or deterministic suffix
     seoBook = await getBookBySlug(decodedSlug, lang);
 
     if (!seoBook) {
@@ -115,26 +111,34 @@ export default async function BookPage({ params }: Props) {
 
     if (seoBook) {
       archiveId = seoBook.archiveId;
-    } else {
-      // 2. Legacy format: title--archiveId
-      if (decodedSlug.includes('--')) {
-        archiveId = decodedSlug.split('--').pop() || null;
-      }
-
+    } else if (decodedSlug.includes('--')) {
+      // 2. LEGACY FALLBACK: Extract from title--id
+      archiveId = decodedSlug.split('--').pop() || null;
       if (archiveId) {
         seoBook = await getBookByArchiveId(archiveId, lang);
       }
     }
   } catch (error) {
-    console.error('Error fetching book from Supabase:', error);
+    console.error('Lookup Error:', error);
   }
 
+  // 3. REDIRECT CHECK (Early Exit)
+  if (seoBook) {
+    const idealSlug = getShortSlug(seoBook.title, seoBook.archiveId, lang);
+    if (decodedSlug !== idealSlug && !isNewDeterministicSlug(decodedSlug)) {
+       permanentRedirect(`/book/${encodeURIComponent(idealSlug)}`);
+    }
+  } else if (decodedSlug.includes('--')) {
+     // If it's a legacy URL but not in our DB, we'll try Archive.org first
+  }
+
+  // 4. DATA FETCHING
   let archiveBook;
   if (archiveId) {
     try {
       archiveBook = await getBookDetails(archiveId);
     } catch (error) {
-      console.error('Error fetching book from Archive.org:', error);
+      console.error('Archive Error:', error);
     }
   }
 
@@ -143,16 +147,10 @@ export default async function BookPage({ params }: Props) {
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const finalArchiveId = (seoBook?.archiveId || archiveBook?.identifier || archiveId) as string;
 
-  // 3. SEO URL Normalization: Redirect ONLY if necessary
-  const currentSlugDecoded = decodeURIComponent(params.slug);
+  // Final redirect check for books found only on Archive
   const idealSlug = getShortSlug(displayTitle, finalArchiveId, lang);
-
-  // Protect against infinite loops:
-  // If slug is already new format OR already matches ideal, skip redirect
-  if (currentSlugDecoded !== idealSlug && !isNewDeterministicSlug(params.slug)) {
-    // Permanent 301 redirect to the new clean URL
-    // CRITICAL: encodeURIComponent for Arabic support
-    permanentRedirect(`/book/${encodeURIComponent(idealSlug)}`);
+  if (decodedSlug !== idealSlug && (decodedSlug.includes('--') || !isNewDeterministicSlug(decodedSlug))) {
+     permanentRedirect(`/book/${encodeURIComponent(idealSlug)}`);
   }
   const displayAuthor = seoBook?.author || archiveBook?.author || 'غير معروف';
   const hasAuthor = !isAuthorUnknown(displayAuthor);

@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin } from './supabase';
+import { getDeterministicSuffix } from './slug-utils';
 
 export interface SeoBook {
   slug: string;
@@ -12,6 +13,7 @@ export interface SeoBook {
   parts_count?: number;
   lang?: string;
   is_english_verified?: boolean;
+  suffix?: string;
 }
 
 export interface Category {
@@ -70,7 +72,8 @@ export async function saveSeoBook(book: SeoBook) {
     seo_title: book.seoTitle,
     parts_count: book.parts_count || 1,
     lang: book.lang || 'ar',
-    is_english_verified: book.is_english_verified || false
+    is_english_verified: book.is_english_verified || false,
+    suffix: book.suffix || getDeterministicSuffix(book.archiveId)
   };
 
   const { error } = await supabaseAdmin
@@ -238,19 +241,34 @@ export async function getBookByArchiveId(id: string, lang?: string): Promise<Seo
 export async function getBookBySuffix(suffix: string, lang?: string): Promise<SeoBook | undefined> {
   if (!supabase || !suffix) return undefined;
 
-  // Suffix is the last 6 chars of the slug.
-  // We use ilike '%-suffix' to find it efficiently.
-  let query = supabase.from('seo_books').select('*').ilike('slug', `%-${suffix}`);
+  // 1. Try to find by dedicated suffix column (O(1) indexed)
+  let query = supabase.from('seo_books').select('*').eq('suffix', suffix);
   if (lang) query = query.eq('lang', lang);
 
   const { data, error } = await query.maybeSingle();
 
-  if (error || !data) return undefined;
-  return {
-    ...data,
-    archiveId: data.archive_id,
-    seoTitle: data.seo_title
-  };
+  if (data) {
+    return {
+      ...data,
+      archiveId: data.archive_id,
+      seoTitle: data.seo_title
+    };
+  }
+
+  // 2. Fallback for legacy data (O(N) unindexed)
+  let fallbackQuery = supabase.from('seo_books').select('*').ilike('slug', `%-${suffix}`);
+  if (lang) fallbackQuery = fallbackQuery.eq('lang', lang);
+
+  const { data: fallbackData } = await fallbackQuery.maybeSingle();
+  if (fallbackData) {
+     return {
+       ...fallbackData,
+       archiveId: fallbackData.archive_id,
+       seoTitle: fallbackData.seo_title
+     };
+  }
+
+  return undefined;
 }
 
 export async function getBookBySlug(slug: string, lang?: string): Promise<SeoBook | undefined> {
