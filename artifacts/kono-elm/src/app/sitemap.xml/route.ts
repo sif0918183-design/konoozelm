@@ -42,7 +42,7 @@ export async function GET(request: Request) {
   </url>`).join('')}
   ${arBooks.map(book => `
   <url>
-    <loc>${BASE_URL}/book/${encodeURIComponent(getShortSlug(book.title, book.archiveId, 'ar'))}</loc>
+    <loc>${BASE_URL}/book/${encodeURIComponent(book.new_slug || getShortSlug(book.title, book.archiveId, 'ar'))}</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`).join('')}
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
   </url>`).join('')}
   ${enBooks.map(book => `
   <url>
-    <loc>${BASE_URL}/en/book/${encodeURIComponent(getShortSlug(book.title, book.archiveId, 'en'))}</loc>
+    <loc>${BASE_URL}/en/book/${encodeURIComponent(book.new_slug || getShortSlug(book.title, book.archiveId, 'en'))}</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`).join('')}

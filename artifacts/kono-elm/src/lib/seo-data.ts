@@ -3,6 +3,7 @@ import { getDeterministicSuffix } from './slug-utils';
 
 export interface SeoBook {
   slug: string;
+  new_slug?: string;
   title: string;
   author: string;
   description: string;
@@ -61,8 +62,12 @@ export async function saveSeoBook(book: SeoBook) {
     throw new Error('Service Role Key missing');
   }
 
+  const generatedSuffix = getDeterministicSuffix(book.archiveId);
+  const generatedSlug = getShortSlug(book.title, book.archiveId, (book.lang as 'ar' | 'en') || 'ar');
+
   const payload: any = {
-    slug: book.slug,
+    slug: book.slug || generatedSlug,
+    new_slug: book.new_slug || generatedSlug,
     title: book.title,
     author: book.author,
     description: book.description,
@@ -73,7 +78,7 @@ export async function saveSeoBook(book: SeoBook) {
     parts_count: book.parts_count || 1,
     lang: book.lang || 'ar',
     is_english_verified: book.is_english_verified || false,
-    suffix: book.suffix || getDeterministicSuffix(book.archiveId)
+    suffix: book.suffix || generatedSuffix
   };
 
   try {
@@ -289,7 +294,25 @@ export async function getBookBySuffix(suffix: string, lang?: string): Promise<Se
     }
   } catch (e) {}
 
-  // 2. Fallback: Search by end of slug (handles legacy slugs in DB)
+  // 2. Try matching against new_slug column
+  try {
+    const { data } = await supabase
+      .from('seo_books')
+      .select('*')
+      .ilike('new_slug', `%-${suffix}`)
+      .eq('lang', lang || 'ar')
+      .maybeSingle();
+
+    if (data) {
+       return {
+         ...data,
+         archiveId: data.archive_id,
+         seoTitle: data.seo_title
+       };
+    }
+  } catch (e) {}
+
+  // 3. Fallback: Search by end of old slug
   try {
     const { data: fallbackData } = await supabase
       .from('seo_books')
@@ -336,6 +359,26 @@ export async function getBookBySuffix(suffix: string, lang?: string): Promise<Se
 
 export async function getBookBySlug(slug: string, lang?: string): Promise<SeoBook | undefined> {
   if (!supabase) return undefined;
+
+  // 1. Search by new_slug first
+  try {
+    const { data } = await supabase
+      .from('seo_books')
+      .select('*')
+      .eq('new_slug', slug)
+      .eq('lang', lang || 'ar')
+      .maybeSingle();
+
+    if (data) {
+      return {
+        ...data,
+        archiveId: data.archive_id,
+        seoTitle: data.seo_title
+      };
+    }
+  } catch (e) {}
+
+  // 2. Fallback to old slug
   let query = supabase.from('seo_books').select('*').eq('slug', slug);
   if (lang) query = query.eq('lang', lang);
 

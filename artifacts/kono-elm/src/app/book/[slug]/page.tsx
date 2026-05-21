@@ -71,14 +71,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const siteUrl = getSiteUrl();
 
+  const arIdeal = getShortSlug(title || archiveDetails?.title || '', archiveId, 'ar');
+  const enIdeal = getShortSlug(title || archiveDetails?.title || '', archiveId, 'en');
+
   return {
     title,
     description: description.substring(0, 160),
     alternates: {
-      canonical: `${siteUrl}/book/${encodeURIComponent(getShortSlug(title || archiveDetails?.title || '', archiveId, 'ar'))}`,
+      canonical: `${siteUrl}/book/${encodeURIComponent(seoBook?.new_slug || arIdeal)}`,
       languages: {
-        'ar': `${siteUrl}/book/${encodeURIComponent(getShortSlug(title || archiveDetails?.title || '', archiveId, 'ar'))}`,
-        'en': `${siteUrl}/en/book/${encodeURIComponent(getShortSlug(title || archiveDetails?.title || '', archiveId, 'en'))}`,
+        'ar': `${siteUrl}/book/${encodeURIComponent(seoBook?.new_slug || arIdeal)}`,
+        'en': `${siteUrl}/en/book/${encodeURIComponent(seoBook?.new_slug || enIdeal)}`,
       },
     },
     openGraph: {
@@ -125,16 +128,16 @@ export default async function BookPage({ params }: Props) {
   // 3. REDIRECT CHECK & JIT MIGRATION
   if (seoBook) {
     const idealSlug = getShortSlug(seoBook.title, seoBook.archiveId, lang);
-    const isLegacy = decodedSlug.includes('--');
+    const isLegacy = decodedSlug.includes('--') || (seoBook.slug === decodedSlug && seoBook.new_slug && seoBook.new_slug !== decodedSlug);
 
-    // If it's a legacy URL or matches but missing suffix in DB, we migrate and redirect
+    // If it's a legacy URL or matches old slug but new exists, migrate and redirect
     if (isLegacy || (decodedSlug !== idealSlug && !isNewDeterministicSlug(decodedSlug))) {
-       // JIT Migration: Update DB to the new slug format so subsequent lookups succeed
+       // JIT Migration: Update new_slug column
        try {
-         console.log(`[JIT] Migrating: ${decodedSlug} -> ${idealSlug}`);
+         console.log(`[JIT] Migrating to new_slug: ${decodedSlug} -> ${idealSlug}`);
          await saveSeoBook({
            ...seoBook,
-           slug: idealSlug,
+           new_slug: idealSlug,
            suffix: extractSuffix(idealSlug) || undefined
          });
        } catch (e) {

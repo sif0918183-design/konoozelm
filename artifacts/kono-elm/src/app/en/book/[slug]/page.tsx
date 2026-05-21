@@ -76,14 +76,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const siteUrl = getSiteUrl();
 
+  const arIdeal = getShortSlug(title || archiveDetails?.title || '', archiveId, 'ar');
+  const enIdeal = getShortSlug(title || archiveDetails?.title || '', archiveId, 'en');
+
   return {
     title,
     description: description.substring(0, 160),
     alternates: {
-      canonical: `${siteUrl}/en/book/${encodeURIComponent(getShortSlug(title || archiveDetails?.title || '', archiveId, 'en'))}`,
+      canonical: `${siteUrl}/en/book/${encodeURIComponent(seoBook?.new_slug || enIdeal)}`,
       languages: {
-        'ar': `${siteUrl}/book/${encodeURIComponent(getShortSlug(title || archiveDetails?.title || '', archiveId, 'ar'))}`,
-        'en': `${siteUrl}/en/book/${encodeURIComponent(getShortSlug(title || archiveDetails?.title || '', archiveId, 'en'))}`,
+        'ar': `${siteUrl}/book/${encodeURIComponent(seoBook?.new_slug || arIdeal)}`,
+        'en': `${siteUrl}/en/book/${encodeURIComponent(seoBook?.new_slug || enIdeal)}`,
       },
     },
     openGraph: {
@@ -130,15 +133,15 @@ export default async function EnglishBookPage({ params }: Props) {
   // 3. REDIRECT CHECK & JIT MIGRATION
   if (seoBook) {
     const idealSlug = getShortSlug(seoBook.title, seoBook.archiveId, lang);
-    const isLegacy = decodedSlug.includes('--');
+    const isLegacy = decodedSlug.includes('--') || (seoBook.slug === decodedSlug && seoBook.new_slug && seoBook.new_slug !== decodedSlug);
 
     if (isLegacy || (decodedSlug !== idealSlug && !isNewDeterministicSlug(decodedSlug))) {
        // JIT Migration
        try {
-         console.log(`[JIT-EN] Migrating: ${decodedSlug} -> ${idealSlug}`);
+         console.log(`[JIT-EN] Migrating to new_slug: ${decodedSlug} -> ${idealSlug}`);
          await saveSeoBook({
            ...seoBook,
-           slug: idealSlug,
+           new_slug: idealSlug,
            suffix: extractSuffix(idealSlug) || undefined
          });
        } catch (e) {

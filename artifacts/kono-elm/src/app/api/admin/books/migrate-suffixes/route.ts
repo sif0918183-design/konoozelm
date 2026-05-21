@@ -26,11 +26,11 @@ export async function GET(request: Request) {
   };
 
   try {
-    // 1. Fetch books that NEED migration (suffix is missing OR slug is null/empty)
+    // 1. Fetch books that NEED migration (suffix is missing OR new_slug is null/empty)
     const { data: books, error: fetchError } = await supabaseAdmin
       .from('seo_books')
-      .select('id, archive_id, title, slug, suffix, lang')
-      .or(`suffix.is.null,slug.is.null,slug.eq.''`)
+      .select('id, archive_id, title, slug, new_slug, suffix, lang')
+      .or(`suffix.is.null,new_slug.is.null,new_slug.eq.''`)
       .gt('id', last_id)
       .order('id', { ascending: true })
       .limit(limit);
@@ -65,11 +65,11 @@ export async function GET(request: Request) {
            report.null_slugs_fixed++;
         }
 
-        // Update the individual record
+        // Update the individual record (populating new_slug, keeping old slug intact)
         const { error: updateError } = await supabaseAdmin
           .from('seo_books')
           .update({
-            slug: safeSlug,
+            new_slug: safeSlug,
             suffix: generatedSuffix
           })
           .eq('id', book.id);
