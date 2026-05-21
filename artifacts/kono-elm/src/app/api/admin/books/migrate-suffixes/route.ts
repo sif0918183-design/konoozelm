@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const startFrom = parseInt(searchParams.get('start_from') || '0', 10);
-  const batchSize = 10;
+  const batchSize = parseInt(searchParams.get('limit') || '100', 10);
 
   try {
     // 1. Get total counts for reporting
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
       .from('seo_books')
       .select('*', { count: 'exact', head: true });
 
-    // 2. Fetch the next batch of 10 books that need migration
+    // 2. Fetch the next batch of books that need migration
     let query = supabaseAdmin
       .from('seo_books')
       .select('id, archive_id, title, slug, new_slug, suffix, lang')
