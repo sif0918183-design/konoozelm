@@ -1,7 +1,9 @@
 import { supabase, supabaseAdmin } from './supabase';
+import { getDeterministicSuffix, getShortSlug } from './slug-utils';
 
 export interface SeoBook {
   slug: string;
+  new_slug?: string;
   title: string;
   author: string;
   description: string;
@@ -12,6 +14,7 @@ export interface SeoBook {
   parts_count?: number;
   lang?: string;
   is_english_verified?: boolean;
+  suffix?: string;
 }
 
 export interface Category {
@@ -56,11 +59,15 @@ export async function getSeoBooks(lang: string = 'ar'): Promise<SeoBook[]> {
 export async function saveSeoBook(book: SeoBook) {
   if (!supabaseAdmin) {
     console.error('❌ Cannot save book: SUPABASE_SERVICE_ROLE_KEY is missing');
-    throw new Error('Service Role Key missing - checks Vercel Env Vars');
+    throw new Error('Service Role Key missing');
   }
 
-  const payload = {
-    slug: book.slug,
+  const generatedSuffix = getDeterministicSuffix(book.archiveId);
+  const generatedSlug = getShortSlug(book.title, book.archiveId, (book.lang as 'ar' | 'en') || 'ar');
+
+  const payload: any = {
+    slug: book.slug || generatedSlug,
+    new_slug: book.new_slug || generatedSlug,
     title: book.title,
     author: book.author,
     description: book.description,
@@ -70,16 +77,41 @@ export async function saveSeoBook(book: SeoBook) {
     seo_title: book.seoTitle,
     parts_count: book.parts_count || 1,
     lang: book.lang || 'ar',
-    is_english_verified: book.is_english_verified || false
+    is_english_verified: book.is_english_verified || false,
+    suffix: book.suffix || generatedSuffix
   };
 
-  const { error } = await supabaseAdmin
-    .from('seo_books')
-    .upsert(payload, { onConflict: 'archive_id' });
+  try {
+    const { error } = await supabaseAdmin
+      .from('seo_books')
+      .upsert(payload, { onConflict: 'archive_id' });
 
-  if (error) {
-    console.error('Supabase Save Error (Book):', error);
-    throw error;
+    if (error) {
+      // Resilience: If 'suffix' column is missing in DB, retry without it.
+      // This is crucial for environments where migrations are still pending.
+      const isMissingColumn = error.code === 'PGRST204' ||
+                             error.message?.toLowerCase().includes('suffix') ||
+                             error.message?.toLowerCase().includes('column');
+
+      if (isMissingColumn) {
+        console.warn('⚠️ [Supabase] Column "suffix" not found. Retrying update without it...');
+        const { suffix, ...fallbackPayload } = payload;
+        const { error: retryError } = await supabaseAdmin
+          .from('seo_books')
+          .upsert(fallbackPayload, { onConflict: 'archive_id' });
+
+        if (retryError) {
+          console.error('[Supabase] Retry failed:', retryError);
+          throw new Error(retryError.message);
+        }
+        console.log('[Supabase] Successfully updated book record via fallback (no suffix column).');
+        return;
+      }
+      throw new Error(error.message);
+    }
+  } catch (err: any) {
+    console.error('Supabase Save Error:', err);
+    throw err;
   }
 }
 
@@ -232,8 +264,121 @@ export async function getBookByArchiveId(id: string, lang?: string): Promise<Seo
   };
 }
 
+/**
+ * Finds a book by its deterministic 6-character suffix.
+ */
+export async function getBookBySuffix(suffix: string, lang?: string): Promise<SeoBook | undefined> {
+  if (!supabase || !suffix) return undefined;
+
+  // 1. Try to find by dedicated suffix column (O(1) indexed)
+  try {
+    const { data, error } = await supabase
+      .from('seo_books')
+      .select('*')
+      .eq('suffix', suffix)
+      .eq('lang', lang || 'ar')
+      .maybeSingle();
+
+    if (data) {
+      return {
+        ...data,
+        archiveId: data.archive_id,
+        seoTitle: data.seo_title
+      };
+    }
+
+    if (error && (error.code === 'PGRST204' || error.message?.toLowerCase().includes('suffix'))) {
+       // Silent skip to fallback
+    } else if (error) {
+       console.error('Suffix lookup error:', error);
+    }
+  } catch (e) {}
+
+  // 2. Try matching against new_slug column
+  try {
+    const { data } = await supabase
+      .from('seo_books')
+      .select('*')
+      .ilike('new_slug', `%-${suffix}`)
+      .eq('lang', lang || 'ar')
+      .maybeSingle();
+
+    if (data) {
+       return {
+         ...data,
+         archiveId: data.archive_id,
+         seoTitle: data.seo_title
+       };
+    }
+  } catch (e) {}
+
+  // 3. Fallback: Search by end of old slug
+  try {
+    const { data: fallbackData } = await supabase
+      .from('seo_books')
+      .select('*')
+      .ilike('slug', `%-${suffix}`)
+      .eq('lang', lang || 'ar')
+      .maybeSingle();
+
+    if (fallbackData) {
+       return {
+         ...fallbackData,
+         archiveId: fallbackData.archive_id,
+         seoTitle: fallbackData.seo_title
+       };
+    }
+  } catch (e) {}
+
+  // 3. Last Ditch: Try to match the suffix with the end of archive_id
+  // This is a safety net for books that were added with messy archive IDs
+  // that haven't been properly slugified yet.
+  try {
+    const { data: idData } = await supabase
+      .from('seo_books')
+      .select('*')
+      .ilike('archive_id', `%${suffix}%`)
+      .eq('lang', lang || 'ar')
+      .limit(5); // Take a few to find the best match
+
+    if (idData && idData.length > 0) {
+      // Find the one where getDeterministicSuffix(archive_id) actually matches our suffix
+      const match = idData.find(b => getDeterministicSuffix(b.archive_id) === suffix);
+      if (match) {
+        return {
+          ...match,
+          archiveId: match.archive_id,
+          seoTitle: match.seo_title
+        };
+      }
+    }
+  } catch (e) {}
+
+  return undefined;
+}
+
 export async function getBookBySlug(slug: string, lang?: string): Promise<SeoBook | undefined> {
   if (!supabase) return undefined;
+
+  // 1. Search by new_slug first
+  try {
+    const { data } = await supabase
+      .from('seo_books')
+      .select('*')
+      .eq('new_slug', slug)
+      .eq('lang', lang || 'ar')
+      .maybeSingle();
+
+    if (data) {
+      return {
+        ...data,
+        archiveId: data.archive_id,
+        seoTitle: data.seo_title
+      };
+    }
+  } catch (e) {}
+
+  // 2. Fallback to old slug
   let query = supabase.from('seo_books').select('*').eq('slug', slug);
   if (lang) query = query.eq('lang', lang);
 

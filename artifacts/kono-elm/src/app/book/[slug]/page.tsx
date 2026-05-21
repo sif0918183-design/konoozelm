@@ -1,14 +1,15 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, Download, User, Tag, ChevronRight, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
-import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug } from '@/lib/seo-data';
+import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug, getBookBySlug, getBookBySuffix, saveSeoBook } from '@/lib/seo-data';
 import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
 import BookCard from '@/components/BookCard';
 import { slugify, getSiteUrl, isAuthorUnknown } from '@/lib/utils';
+import { getShortSlug, isNewDeterministicSlug, extractSuffix } from '@/lib/slug-utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { generateBookDescription } from '@/lib/groq';
@@ -20,12 +21,28 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const parts = params.slug.split('--');
-  const archiveId = parts[parts.length - 1];
+  let archiveId: string | undefined;
 
-  const seoBook = await getBookByArchiveId(archiveId, 'ar');
+  // 1. Try to find book by exact slug or suffix
+  const decodedSlug = decodeURIComponent(params.slug);
+  let seoBook = await getBookBySlug(decodedSlug, 'ar');
+
+  if (!seoBook) {
+    const suffix = extractSuffix(decodedSlug);
+    if (suffix) {
+      seoBook = await getBookBySuffix(suffix, 'ar');
+    }
+  }
+
+  if (seoBook) {
+    archiveId = seoBook.archiveId;
+  } else if (decodedSlug.includes('--')) {
+    archiveId = decodedSlug.split('--').pop();
+  }
+
+  if (!archiveId) return { title: 'Book Not Found' };
+
   const archiveDetails = await getBookDetails(archiveId);
-
   if (!seoBook && !archiveDetails) return { title: 'Book Not Found' };
 
   let title = seoBook?.seoTitle;
@@ -54,14 +71,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const siteUrl = getSiteUrl();
 
+  const arIdeal = getShortSlug(title || archiveDetails?.title || '', archiveId, 'ar');
+  const enIdeal = getShortSlug(title || archiveDetails?.title || '', archiveId, 'en');
+
   return {
     title,
     description: description.substring(0, 160),
     alternates: {
-      canonical: `${siteUrl}/book/${params.slug}`,
+      canonical: `${siteUrl}/book/${encodeURIComponent(seoBook?.new_slug || arIdeal)}`,
       languages: {
-        'ar': `${siteUrl}/book/${params.slug}`,
-        'en': `${siteUrl}/en/book/${params.slug}`,
+        'ar': `${siteUrl}/book/${encodeURIComponent(seoBook?.new_slug || arIdeal)}`,
+        'en': `${siteUrl}/en/book/${encodeURIComponent(seoBook?.new_slug || enIdeal)}`,
       },
     },
     openGraph: {
@@ -76,15 +96,79 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function BookPage({ params }: Props) {
   const lang = 'ar';
   const t = translations[lang];
-  const parts = params.slug.split('--');
-  const archiveId = parts[parts.length - 1];
+  const decodedSlug = decodeURIComponent(params.slug);
 
-  const seoBook = await getBookByArchiveId(archiveId, lang);
-  const archiveBook = await getBookDetails(archiveId);
+  let seoBook;
+  let archiveId: string | null = null;
+
+  // 1. PRIMARY LOOKUP: Precise & Fast
+  try {
+    seoBook = await getBookBySlug(decodedSlug, lang);
+
+    if (!seoBook) {
+      const suffix = extractSuffix(decodedSlug);
+      if (suffix) {
+        seoBook = await getBookBySuffix(suffix, lang);
+      }
+    }
+
+    if (seoBook) {
+      archiveId = seoBook.archiveId;
+    } else if (decodedSlug.includes('--')) {
+      // 2. LEGACY FALLBACK: Extract from title--id
+      archiveId = decodedSlug.split('--').pop() || null;
+      if (archiveId) {
+        seoBook = await getBookByArchiveId(archiveId, lang);
+      }
+    }
+  } catch (error) {
+    console.error('Lookup Error:', error);
+  }
+
+  // 3. REDIRECT CHECK & JIT MIGRATION
+  if (seoBook) {
+    const idealSlug = getShortSlug(seoBook.title, seoBook.archiveId, lang);
+    const isLegacy = decodedSlug.includes('--') || (seoBook.slug === decodedSlug && seoBook.new_slug && seoBook.new_slug !== decodedSlug);
+
+    // If it's a legacy URL or matches old slug but new exists, migrate and redirect
+    if (isLegacy || (decodedSlug !== idealSlug && !isNewDeterministicSlug(decodedSlug))) {
+       // JIT Migration: Update new_slug column
+       try {
+         console.log(`[JIT] Migrating to new_slug: ${decodedSlug} -> ${idealSlug}`);
+         await saveSeoBook({
+           ...seoBook,
+           new_slug: idealSlug,
+           suffix: extractSuffix(idealSlug) || undefined
+         });
+       } catch (e) {
+         console.error('JIT Migration failed:', e);
+       }
+       permanentRedirect(`/book/${encodeURIComponent(idealSlug)}`);
+    }
+  } else if (decodedSlug.includes('--')) {
+    // If it's a legacy URL but not in our DB, we'll continue and see if Archive has it
+  }
+
+  // 4. DATA FETCHING
+  let archiveBook;
+  if (archiveId) {
+    try {
+      archiveBook = await getBookDetails(archiveId);
+    } catch (error) {
+      console.error('Archive Error:', error);
+    }
+  }
 
   if (!archiveBook && !seoBook) notFound();
 
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
+  const finalArchiveId = (seoBook?.archiveId || archiveBook?.identifier || archiveId) as string;
+
+  // Final redirect check for books found only on Archive
+  const idealSlug = getShortSlug(displayTitle, finalArchiveId, lang);
+  if (decodedSlug !== idealSlug && (decodedSlug.includes('--') || !isNewDeterministicSlug(decodedSlug))) {
+     permanentRedirect(`/book/${encodeURIComponent(idealSlug)}`);
+  }
   const displayAuthor = seoBook?.author || archiveBook?.author || 'غير معروف';
   const hasAuthor = !isAuthorUnknown(displayAuthor);
   const authorSlug = slugify(displayAuthor);
@@ -109,9 +193,9 @@ export default async function BookPage({ params }: Props) {
 
   // Internal Links - Restricted to same category as requested
   const otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, 'ar')
-    .then(books => books.filter(b => b.archiveId !== archiveId));
+    .then(books => books.filter(b => b.archiveId !== finalArchiveId));
 
-  const bookFiles = await getBookFiles(archiveId);
+  const bookFiles = await getBookFiles(finalArchiveId);
 
   // Generate FAQ items
   const faqItems = [
@@ -136,7 +220,7 @@ export default async function BookPage({ params }: Props) {
   const breadcrumbs = [
     { name: t.home, item: `${siteUrl}/` },
     { name: displayCategory, item: `${siteUrl}/${categorySlug}` },
-    { name: displayTitle, item: `${siteUrl}/book/${params.slug}` }
+    { name: displayTitle, item: `${siteUrl}/book/${encodeURIComponent(idealSlug)}` }
   ];
 
   return (
@@ -147,7 +231,7 @@ export default async function BookPage({ params }: Props) {
           author: displayAuthor,
           description: displayDescription || '',
           image: archiveBook?.coverImage,
-          url: `${siteUrl}/book/${params.slug}`,
+          url: `${siteUrl}/book/${encodeURIComponent(idealSlug)}`,
           category: displayCategory,
           categoryUrl: `${siteUrl}/${categorySlug}`
         }}
@@ -275,7 +359,7 @@ export default async function BookPage({ params }: Props) {
                     {otherBooks.map(book => (
                       <Link
                         key={book.archiveId}
-                        href={`/book/${book.slug}--${book.archiveId}`}
+                        href={`/book/${encodeURIComponent(getShortSlug(book.title, book.archiveId, lang))}`}
                         className="group p-4 bg-gray-50 rounded-2xl hover:bg-white hover:shadow-md border border-transparent hover:border-gold-200 transition-all flex items-center gap-4"
                       >
                         <div className="w-12 h-16 bg-white rounded-lg flex items-center justify-center border border-gray-100 flex-shrink-0">

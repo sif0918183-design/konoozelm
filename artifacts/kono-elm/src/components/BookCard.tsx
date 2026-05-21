@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Book as BookIcon, Download, Loader2, Layers, BookOpen } from 'lucide-react';
 import { slugify } from '@/lib/utils';
+import { getShortSlug } from '@/lib/slug-utils';
 import { type Book, type BookFile, getBookFiles } from '@/lib/archive-api';
 import { cn } from '@/lib/utils';
 import BookPartsDialog from './BookPartsDialog';
@@ -93,9 +94,14 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
     setShowDownloadModal(true);
   };
 
+  // Use new_slug if available, otherwise generate the deterministic short slug.
+  // This ensures we strictly use the new URL structure for all internal links.
+  const idealSlug = getShortSlug(book.title, book.identifier, lang);
+  const finalSlug = seoSlug || idealSlug;
+
   const detailsHref = lang === 'en'
-    ? (seoSlug ? `/en/book/${seoSlug}` : `/en/book/${slugify(book.title)}--${book.identifier}`)
-    : (seoSlug ? `/book/${seoSlug}` : `/book/${slugify(book.title)}--${book.identifier}`);
+    ? `/en/book/${encodeURIComponent(finalSlug)}`
+    : `/book/${encodeURIComponent(finalSlug)}`;
 
   return (
     <div className={`group bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(15,46,34,0.12)] transition-all duration-500 border border-primary-900/5 hover:border-primary-900/20 flex flex-col h-full overflow-hidden relative ${lang === 'en' ? 'text-left' : 'text-right'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
