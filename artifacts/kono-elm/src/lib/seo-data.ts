@@ -1,5 +1,5 @@
 import { supabase, supabaseAdmin } from './supabase';
-import { getDeterministicSuffix } from './slug-utils';
+import { getDeterministicSuffix, getShortSlug } from './slug-utils';
 
 export interface SeoBook {
   slug: string;
