@@ -6,6 +6,9 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get('url');
   const archiveId = searchParams.get('archiveId');
+  const timestamp = new Date().toISOString();
+
+  console.log(`[${timestamp}] PDF Proxy Request: archiveId=${archiveId}, url=${url ? 'present' : 'absent'}`);
 
   if (!url && !archiveId) {
     return new NextResponse('URL or archiveId is required', { status: 400 });
@@ -14,21 +17,28 @@ export async function GET(request: NextRequest) {
   let targetUrl = '';
 
   if (archiveId) {
-    // If archiveId is provided, we construct the PDF URL
-    // We assume the PDF has the same name as the identifier, which is common in Archive.org
+    // Standard Archive.org PDF path
     targetUrl = `https://archive.org/download/${archiveId}/${archiveId}.pdf`;
   } else if (url) {
     try {
       targetUrl = decodeURIComponent(url);
       const parsedUrl = new URL(targetUrl);
 
-      if (!parsedUrl.hostname.endsWith('archive.org')) {
+      // Support archive.org and its iaXXXXXX subdomains
+      const isArchiveDomain = parsedUrl.hostname === 'archive.org' ||
+                             parsedUrl.hostname.endsWith('.archive.org');
+
+      if (!isArchiveDomain) {
+        console.warn(`[${timestamp}] Forbidden domain: ${parsedUrl.hostname}`);
         return new NextResponse('Forbidden: Only archive.org URLs are allowed', { status: 403 });
       }
     } catch (e) {
+      console.error(`[${timestamp}] Invalid URL: ${url}`);
       return new NextResponse('Invalid URL', { status: 400 });
     }
   }
+
+  console.log(`[${timestamp}] Proxying to: ${targetUrl}`);
 
   try {
     const range = request.headers.get('range');
@@ -38,16 +48,30 @@ export async function GET(request: NextRequest) {
 
     if (range) {
       headers['Range'] = range;
+      console.log(`[${timestamp}] Range request: ${range}`);
     }
 
     const response = await fetch(targetUrl, {
       headers,
       redirect: 'follow',
+      cache: 'no-store', // We manage caching via response headers
     });
 
+    console.log(`[${timestamp}] Archive.org response: ${response.status} ${response.statusText}`);
+
+    // If we tried by archiveId and got 404, we don't return 404 immediately if the caller might want to retry with URL
+    // But since this is a server-side route, we just return what we got.
+
     if (!response.ok && response.status !== 206) {
-      console.error(`Archive.org fetch failed: ${response.status} ${response.statusText} for ${targetUrl}`);
-      return new NextResponse(`Error fetching from Archive.org: ${response.status}`, { status: response.status });
+      console.error(`[${timestamp}] Archive.org fetch failed: ${response.status} for ${targetUrl}`);
+      // Return a response with the same status but allow the client to see it's from the proxy
+      return new NextResponse(`Error fetching from Archive.org: ${response.status}`, {
+        status: response.status,
+        headers: {
+          'X-Proxy-Error': 'Archive response not OK',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     }
 
     const responseHeaders = new Headers();
@@ -93,9 +117,12 @@ export async function GET(request: NextRequest) {
       status: response.status,
       headers: responseHeaders,
     });
-  } catch (error) {
-    console.error('PDF Proxy Critical Error:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+  } catch (error: any) {
+    console.error(`[${timestamp}] PDF Proxy Critical Error:`, error);
+    return new NextResponse(`Internal Server Error: ${error.message}`, {
+      status: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' }
+    });
   }
 }
 

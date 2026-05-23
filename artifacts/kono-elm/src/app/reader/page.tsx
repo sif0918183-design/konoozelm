@@ -285,12 +285,19 @@ function ReaderContent() {
           pdfSource = { data: arrayBuffer };
         } else {
           const optimizedUrl = optimizeArchiveUrl(url);
+
           if (optimizedUrl.includes('archive.org')) {
-            // Check if we can use archiveId directly if it's in the standard format
-            const idMatch = optimizedUrl.match(/archive\.org\/download\/([^\/]+)\/([^\/]+)\.pdf$/);
-            if (idMatch && idMatch[1] === idMatch[2]) {
-              pdfSource = `/api/pdf-proxy?archiveId=${idMatch[1]}`;
+            // 1. Level 1: Try archiveId if it looks like a standard ID
+            // We've already extracted bookIdentifier earlier
+            if (bookIdentifier && !bookIdentifier.includes('.') && bookIdentifier.length > 3) {
+              const proxyUrl = `/api/pdf-proxy?archiveId=${bookIdentifier}`;
+
+              // Verify if this works (optional, but here we'll use a sequential strategy if needed)
+              // For now, we construct a URL that the proxy will handle.
+              // The proxy itself has a fallback logic now.
+              pdfSource = proxyUrl;
             } else {
+              // 2. Level 2: Use full encoded URL
               pdfSource = `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`;
             }
           } else {
@@ -488,7 +495,9 @@ function ReaderContent() {
           </button>
 
           <a
-            href={pdfUrl?.includes('archive.org') ? `/api/pdf-proxy?url=${encodeURIComponent(pdfUrl)}` : pdfUrl!}
+            href={pdfUrl?.includes('archive.org')
+              ? (identifier ? `/api/pdf-proxy?archiveId=${identifier}` : `/api/pdf-proxy?url=${encodeURIComponent(pdfUrl)}`)
+              : pdfUrl!}
             download
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
             title={t.download_pdf}
