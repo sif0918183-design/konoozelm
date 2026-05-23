@@ -222,6 +222,7 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
           fileName={selectedFile.name}
           bookTitle={book.title}
           fileSize={selectedFile.size}
+          archiveId={book.identifier}
         />
       )}
     </div>
