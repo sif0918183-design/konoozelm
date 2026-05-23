@@ -209,6 +209,9 @@ function ReaderContent() {
         } else {
           const optUrl = optimizeArchiveUrl(url);
           if (optUrl.includes('archive.org')) {
+             // Retry Strategy:
+             // 0: Try discovery via archiveId (Best for mixed names)
+             // 1: Try manual URL proxy (Best if discovery fails but URL is valid)
              if (retryAttempt === 0 && bookIdentifier) {
                 pdfSource = `/api/pdf-proxy?archiveId=${bookIdentifier}`;
              } else {

@@ -8,7 +8,7 @@ interface ArchiveFile {
 }
 
 interface ArchiveMetadata {
-  files: ArchiveFile[];
+  files?: ArchiveFile[];
 }
 
 export async function GET(request: NextRequest) {
@@ -17,26 +17,26 @@ export async function GET(request: NextRequest) {
   const archiveId = searchParams.get('archiveId');
   const filename = searchParams.get('filename') || 'book.pdf';
 
+  const FETCH_TIMEOUT = 9000; // slightly longer for download
+
   if (!url && !archiveId) {
     return new NextResponse('URL or archiveId is required', { status: 400 });
   }
 
   let finalUrl = '';
 
-  // 1. Try to discover URL via Metadata API if archiveId is provided
+  // 1. Discovery
   if (archiveId) {
     try {
       const metaRes = await fetch(`https://archive.org/metadata/${archiveId}`, {
         cache: 'no-store',
-        signal: AbortSignal.timeout(8000)
+        signal: AbortSignal.timeout(6000)
       });
 
       if (metaRes.ok) {
         const data: ArchiveMetadata = await metaRes.json();
         if (data.files && data.files.length > 0) {
           const pdfFiles = data.files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
-
-          // Selection logic identical to pdf-proxy for consistency
           const bestFile =
             pdfFiles.find(f => f.format === 'Text PDF' || f.format === 'Additional PDF') ||
             pdfFiles.find(f => !f.name.toLowerCase().includes('_text') && !f.name.toLowerCase().includes('_bw')) ||
@@ -48,17 +48,16 @@ export async function GET(request: NextRequest) {
         }
       }
     } catch (e) {
-      console.error('Metadata discovery failed for download:', e);
+      console.error('Download discovery error:', e);
     }
   }
 
-  // 2. Fallback to manual URL
+  // 2. Fallback
   if (!finalUrl && url) {
     finalUrl = decodeURIComponent(url);
   }
 
   if (!finalUrl) {
-    // Final fallback: try to guess if we have archiveId
     if (archiveId) {
       finalUrl = `https://archive.org/download/${archiveId}/${archiveId}.pdf`;
     } else {
@@ -68,8 +67,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const parsedUrl = new URL(finalUrl);
-    if (!parsedUrl.hostname.endsWith('archive.org')) {
-      return new NextResponse('Forbidden: Only archive.org URLs are allowed', { status: 403 });
+    if (!parsedUrl.hostname.includes('archive.org')) {
+      return new NextResponse('Forbidden', { status: 403 });
     }
 
     const response = await fetch(finalUrl, {
@@ -77,36 +76,32 @@ export async function GET(request: NextRequest) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
         'Referer': 'https://archive.org/',
       },
-      redirect: 'follow'
+      redirect: 'follow',
+      cache: 'no-store',
+      // No timeout here because it's a stream download and can take time,
+      // but the initial connection might still be subject to Vercel limits.
     });
 
     if (!response.ok) {
-      return new NextResponse(`Failed to fetch file: ${response.statusText}`, { status: response.status });
+      return new NextResponse(`Upstream failed: ${response.status}`, { status: response.status === 404 ? 404 : 502 });
     }
 
-    const fileStream = response.body;
     const headers = new Headers();
     headers.set('Content-Type', 'application/pdf');
 
     const contentLength = response.headers.get('content-length');
     if (contentLength) headers.set('Content-Length', contentLength);
 
-    const acceptRanges = response.headers.get('accept-ranges');
-    if (acceptRanges) headers.set('Accept-Ranges', acceptRanges);
-
-    // Force download with the provided filename, supporting UTF-8 (Arabic characters)
-    const encodedFilename = encodeURIComponent(filename);
+    const safeFilename = filename.replace(/["\\]/g, '');
+    const encodedFilename = encodeURIComponent(safeFilename);
     headers.set('Content-Disposition', `attachment; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`);
-
-    // Add CORS headers for the download action
     headers.set('Access-Control-Allow-Origin', '*');
 
-    return new NextResponse(fileStream, {
+    return new NextResponse(response.body, {
       status: 200,
       headers,
     });
-  } catch (error) {
-    console.error('Download Proxy Error:', error);
-    return new NextResponse(`Error downloading file: ${error instanceof Error ? error.message : 'Unknown error'}`, { status: 500 });
+  } catch (error: any) {
+    return new NextResponse(`Download Error: ${error.message}`, { status: 500 });
   }
 }
