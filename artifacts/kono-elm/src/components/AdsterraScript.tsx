@@ -2,7 +2,6 @@
 
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
 /**
  * Toggle this constant to enable or disable the Adsterra Social Bar script.
@@ -11,31 +10,30 @@ const ENABLE_ADSTERRA = true;
 
 export default function AdsterraScript() {
   const pathname = usePathname();
-  const [shouldRender, setShouldRender] = useState(false);
 
-  useEffect(() => {
-    if (!ENABLE_ADSTERRA) {
-      setShouldRender(false);
-      return;
-    }
+  if (!ENABLE_ADSTERRA) return null;
 
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    const isExcludedPath = pathname.includes('/admin') || pathname.includes('/edit');
+  // Handle exclusions (development environment and specific paths)
+  // We use process.env.NODE_ENV to ensure consistency between SSR and CSR
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
-    if (isLocalhost || isExcludedPath) {
-      setShouldRender(false);
-    } else {
-      setShouldRender(true);
-    }
-  }, [pathname]);
+  // Exclude admin and edit routes
+  const isExcludedPath =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/edit') ||
+    pathname.includes('/admin/') ||
+    pathname.includes('/edit/');
 
-  if (!shouldRender) return null;
+  if (isDevelopment || isExcludedPath) {
+    return null;
+  }
 
   return (
     <Script
+      id="adsterra-social-bar"
       src="https://pl29421747.effectivecpmnetwork.com/50/21/19/502119867360dcf8fb64639f085d4a66.js"
       strategy="afterInteractive"
+      data-cfasync="false"
     />
   );
 }
