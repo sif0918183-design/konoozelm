@@ -295,6 +295,9 @@ function ReaderContent() {
           cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
           cMapPacked: true,
           standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+          disableRange: false,
+          disableStream: false,
+          disableAutoFetch: false,
         });
         const pdfDoc = await loadingTask.promise;
         setPdf(pdfDoc);
