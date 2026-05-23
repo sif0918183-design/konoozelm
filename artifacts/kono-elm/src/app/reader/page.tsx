@@ -285,9 +285,17 @@ function ReaderContent() {
           pdfSource = { data: arrayBuffer };
         } else {
           const optimizedUrl = optimizeArchiveUrl(url);
-          pdfSource = optimizedUrl.includes('archive.org')
-            ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
-            : optimizedUrl;
+          if (optimizedUrl.includes('archive.org')) {
+            // Check if we can use archiveId directly if it's in the standard format
+            const idMatch = optimizedUrl.match(/archive\.org\/download\/([^\/]+)\/([^\/]+)\.pdf$/);
+            if (idMatch && idMatch[1] === idMatch[2]) {
+              pdfSource = `/api/pdf-proxy?archiveId=${idMatch[1]}`;
+            } else {
+              pdfSource = `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`;
+            }
+          } else {
+            pdfSource = optimizedUrl;
+          }
         }
 
         const loadingTask = pdfjsLib.getDocument({
@@ -480,7 +488,7 @@ function ReaderContent() {
           </button>
 
           <a
-            href={pdfUrl!}
+            href={pdfUrl?.includes('archive.org') ? `/api/pdf-proxy?url=${encodeURIComponent(pdfUrl)}` : pdfUrl!}
             download
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
             title={t.download_pdf}

@@ -15,6 +15,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { generateBookDescription } from '@/lib/groq';
 import Logo from '@/components/Logo';
 import BookSchema from '@/components/BookSchema';
+import Footer from '@/components/Footer';
 
 interface Props {
   params: { slug: string };
@@ -383,6 +384,7 @@ export default async function BookPage({ params }: Props) {
           </div>
         </article>
       </main>
+      <Footer lang="ar" />
     </div>
   );
 }
