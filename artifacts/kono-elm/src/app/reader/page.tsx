@@ -11,7 +11,9 @@ import {
   ArrowRight,
   Download,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  ExternalLink,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addToRecentBooks } from '@/lib/recent-books';
@@ -79,6 +81,13 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
 
   const renderPage = async () => {
     if (isRendered || isRendering) return;
+
+    // Use image fallback if identifier is available
+    if (identifier) {
+      setIsRendering(true);
+      return;
+    }
+
     if (!pdf || !canvasRef.current) return;
 
     try {
@@ -113,7 +122,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
   };
 
   useEffect(() => {
-    if (isRendered || isRendering) {
+    if (!identifier && (isRendered || isRendering)) {
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
       }
@@ -128,7 +137,11 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [scale]);
+  }, [scale, identifier]);
+
+  const imageUrl = identifier
+    ? `https://archive.org/download/${identifier}/page/n${pageNumber - 1}.jpg`
+    : null;
 
   return (
     <div
@@ -143,8 +156,9 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
           !isRendered && "flex items-center justify-center bg-gray-50 border border-gray-100"
         )}
         style={{
-          width: 'auto',
+          width: identifier ? `${600 * scale}px` : 'auto',
           maxWidth: '95vw',
+          aspectRatio: identifier ? '1/1.4' : 'auto'
         }}
       >
         {!isRendered && (
@@ -154,13 +168,35 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
           </div>
         )}
 
-        <canvas
-          ref={canvasRef}
-          className={cn(
-            "max-w-full h-auto transition-opacity duration-500",
-            isRendered ? "opacity-100" : "opacity-0"
-          )}
-        />
+        {identifier ? (
+          (isRendering || isRendered) && (
+            <img
+              src={imageUrl!}
+              alt={`Page ${pageNumber}`}
+              className={cn(
+                "w-full h-full object-contain transition-opacity duration-500",
+                isRendered ? "opacity-100" : "opacity-0"
+              )}
+              onLoad={() => {
+                setIsRendered(true);
+                setIsRendering(false);
+              }}
+              onError={() => {
+                setIsRendering(false);
+                setIsRendered(false);
+              }}
+              loading="lazy"
+            />
+          )
+        ) : (
+          <canvas
+            ref={canvasRef}
+            className={cn(
+              "max-w-full h-auto transition-opacity duration-500",
+              isRendered ? "opacity-100" : "opacity-0"
+            )}
+          />
+        )}
       </div>
       <div className="mt-2 text-xs text-gray-400 font-mono">
         {pageNumber}
@@ -183,6 +219,7 @@ function ReaderContent() {
   const bookTitle = searchParams.get('title') || t.loading;
 
   const [pdf, setPdf] = useState<any>(null);
+  const [identifier, setIdentifier] = useState<string | null>(null);
   const [pageNum, setPageNum] = useState(1);
   const [numPages, setNumPages] = useState(0);
   const [scale, setScale] = useState(1.5);
@@ -190,6 +227,98 @@ function ReaderContent() {
   const [isInitialScrollDone, setIsInitialScrollDone] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const initPdf = async (url: string) => {
+    const idMatch = url.match(/archive\.org\/download\/([^\/]+)/) || url.match(/archive\.org\/details\/([^\/]+)/);
+    const bookIdentifier = idMatch ? idMatch[1] : null;
+    setIdentifier(bookIdentifier);
+
+    try {
+      const pdfjsLib = (window as any).pdfjsLib;
+      if (!pdfjsLib) throw new Error('PDF.js not loaded');
+
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
+
+      const cachedResponse = await getCachedPDF(url);
+      let pdfSource: any;
+
+      if (cachedResponse) {
+        const blob = await cachedResponse.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        pdfSource = { data: arrayBuffer };
+      } else {
+        const optimizedUrl = optimizeArchiveUrl(url);
+        pdfSource = optimizedUrl.includes('archive.org')
+          ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
+          : optimizedUrl;
+      }
+
+      const loadingTask = pdfjsLib.getDocument({
+        ...(typeof pdfSource === 'string' ? { url: pdfSource } : pdfSource),
+        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+        cMapPacked: true,
+        standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+        disableRange: false,
+        disableStream: false,
+      });
+
+      const pdfDoc = await loadingTask.promise;
+      setPdf(pdfDoc);
+      setNumPages(pdfDoc.numPages);
+
+      const savedPage = localStorage.getItem(`page_${url}`);
+      if (savedPage) {
+        const page = parseInt(savedPage);
+        if (page > 0 && page <= pdfDoc.numPages) {
+          setPageNum(page);
+        }
+      }
+
+      addToRecentBooks({
+        identifier: url,
+        title: bookTitle,
+        url: url,
+        lastRead: new Date().toISOString(),
+        currentPage: parseInt(savedPage || '1'),
+        totalPages: pdfDoc.numPages
+      });
+
+      setIsLoading(false);
+    } catch (err: any) {
+      console.error('Error initializing PDF:', err);
+
+      const recentBooks = JSON.parse(localStorage.getItem('recentBooks') || '[]');
+      const bookData = recentBooks.find((b: any) => b.url === url);
+
+      if (bookData && bookData.totalPages > 0) {
+         setNumPages(bookData.totalPages);
+         const savedPage = localStorage.getItem(`page_${url}`);
+         setPageNum(parseInt(savedPage || '1'));
+         setIsLoading(false);
+      } else if (bookIdentifier) {
+         // If PDF fails but we have identifier, try to get page count from archive metadata API
+         try {
+           const metaRes = await fetch(`https://archive.org/metadata/${bookIdentifier}`);
+           if (metaRes.ok) {
+             const metadata = await metaRes.json();
+             const pages = parseInt(metadata.metadata?.imagecount || metadata.metadata?.pages || '0');
+             if (pages > 0) {
+               setNumPages(pages);
+               const savedPage = localStorage.getItem(`page_${url}`);
+               setPageNum(parseInt(savedPage || '1'));
+               setIsLoading(false);
+               return;
+             }
+           }
+         } catch (e) {}
+         setError(err.message?.includes('404') ? t.error_pdf_404 : t.error_pdf_general);
+         setIsLoading(false);
+      } else {
+         setError(err.message?.includes('404') ? t.error_pdf_404 : t.error_pdf_general);
+         setIsLoading(false);
+      }
+    }
+  };
 
   useEffect(() => {
     if (!pdfUrl) {
@@ -208,76 +337,14 @@ function ReaderContent() {
           script.src = PDFJS_CDN;
           script.onload = () => initPdf(pdfUrl);
           script.onerror = () => {
-            console.error('Failed to load PDF.js script');
-            setError(t.error_pdf_lib);
-            setIsLoading(false);
+            initPdf(pdfUrl);
           };
           document.head.appendChild(script);
         } else {
           initPdf(pdfUrl);
         }
       } catch (err) {
-        console.error('Error loading PDF.js:', err);
         setError(t.error_pdf_lib);
-        setIsLoading(false);
-      }
-    };
-
-    const initPdf = async (url: string) => {
-      try {
-        const pdfjsLib = (window as any).pdfjsLib;
-        if (!pdfjsLib) throw new Error('PDF.js not loaded');
-
-        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
-
-        const cachedResponse = await getCachedPDF(url);
-        let pdfSource: any;
-
-        if (cachedResponse) {
-          const blob = await cachedResponse.blob();
-          const arrayBuffer = await blob.arrayBuffer();
-          pdfSource = { data: arrayBuffer };
-        } else {
-          const optimizedUrl = optimizeArchiveUrl(url);
-          pdfSource = optimizedUrl.includes('archive.org')
-            ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
-            : optimizedUrl;
-        }
-
-        const loadingTask = pdfjsLib.getDocument({
-          ...(typeof pdfSource === 'string' ? { url: pdfSource } : pdfSource),
-          cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-          cMapPacked: true,
-          standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
-          disableRange: false,
-          disableStream: false,
-        });
-
-        const pdfDoc = await loadingTask.promise;
-        setPdf(pdfDoc);
-        setNumPages(pdfDoc.numPages);
-
-        const savedPage = localStorage.getItem(`page_${url}`);
-        if (savedPage) {
-          const page = parseInt(savedPage);
-          if (page > 0 && page <= pdfDoc.numPages) {
-            setPageNum(page);
-          }
-        }
-
-        addToRecentBooks({
-          identifier: url,
-          title: bookTitle,
-          url: url,
-          lastRead: new Date().toISOString(),
-          currentPage: parseInt(savedPage || '1'),
-          totalPages: pdfDoc.numPages
-        });
-
-        setIsLoading(false);
-      } catch (err: any) {
-        console.error('Error initializing PDF:', err);
-        setError(err.message?.includes('404') ? t.error_pdf_404 : t.error_pdf_general);
         setIsLoading(false);
       }
     };
@@ -303,13 +370,11 @@ function ReaderContent() {
     }
   }, [isLoading, numPages, pageNum, isInitialScrollDone]);
 
-  const lastStorageUpdate = useRef<number>(0);
   const onPageVisible = useCallback((page: number) => {
     if (!isInitialScrollDone) return;
     setPageNum(page);
     const now = Date.now();
-    if (pdfUrl && now - lastStorageUpdate.current > 2000) {
-      lastStorageUpdate.current = now;
+    if (pdfUrl) {
       localStorage.setItem(`page_${pdfUrl}`, page.toString());
       addToRecentBooks({
         identifier: pdfUrl,
@@ -338,19 +403,44 @@ function ReaderContent() {
   }
 
   if (error) {
+    const archiveDetailsUrl = identifier ? `https://archive.org/details/${identifier}` : null;
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50 p-4 text-center" dir={isEnglish ? 'ltr' : 'rtl'}>
         <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md border border-red-100">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2">{isEnglish ? 'Sorry, an error occurred' : 'عذراً، حدث خطأ أثناء تحميل الكتاب'}</h2>
           <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => router.back()}
-            className="w-full bg-primary-900 text-white font-bold py-3 rounded-xl hover:bg-primary-800 transition-colors"
-          >
-            {t.back_to_home}
-          </button>
-          <p className="mt-4 text-xs text-gray-400">{isEnglish ? 'This might be due to security restrictions (CORS) or an invalid link.' : 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.'}</p>
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center justify-center gap-2 w-full bg-primary-900 text-white font-bold py-3 rounded-xl hover:bg-primary-800 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              {isEnglish ? 'Try Again' : 'حاول مرة أخرى'}
+            </button>
+
+            {archiveDetailsUrl && (
+              <a
+                href={archiveDetailsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                {isEnglish ? 'View on Archive.org' : 'مشاهدة في أرشيف.أورج'}
+              </a>
+            )}
+
+            <button
+              onClick={() => router.back()}
+              className="w-full text-gray-500 font-bold py-2 text-sm"
+            >
+              {t.back_to_home}
+            </button>
+          </div>
+
+          <p className="mt-6 text-xs text-gray-400">{isEnglish ? 'This might be due to security restrictions (CORS) or an invalid link.' : 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.'}</p>
         </div>
       </div>
     );
@@ -428,7 +518,7 @@ function ReaderContent() {
               <PageItem
                 pageNumber={i + 1}
                 pdf={pdf}
-                identifier={null}
+                identifier={identifier}
                 scale={scale}
                 isNightMode={isNightMode}
                 onVisible={onPageVisible}
