@@ -10,51 +10,65 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Security check: Only allow archive.org domains to prevent SSRF
-    const decodedUrl = decodeURIComponent(url);
-    const parsedUrl = new URL(decodedUrl);
+    const parsedUrl = new URL(url);
 
     if (!parsedUrl.hostname.endsWith('archive.org')) {
-      return new NextResponse('Forbidden: Only archive.org URLs are allowed', { status: 403 });
+      return new NextResponse('Forbidden', { status: 403 });
     }
 
-    const response = await fetch(decodedUrl, {
+    const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://hudalibrary.com/',
       },
       redirect: 'follow',
     });
 
     if (!response.ok) {
-      return new NextResponse(`Failed to fetch file from Archive.org: ${response.statusText}`, { status: response.status });
+      // Try metadata discovery if direct link fails
+      const idMatch = url.match(/archive\.org\/download\/([^\/]+)/);
+      if (idMatch) {
+        const identifier = idMatch[1];
+        const metadataRes = await fetch(`https://archive.org/metadata/${identifier}`);
+        if (metadataRes.ok) {
+          const metadata = await metadataRes.json();
+          const pdfFile = metadata.files?.find((f: any) => f.name.toLowerCase().endsWith('.pdf'));
+          if (pdfFile) {
+             const newRes = await fetch(`https://archive.org/download/${identifier}/${pdfFile.name}`, {
+                headers: { 'User-Agent': 'Mozilla/5.0' },
+                redirect: 'follow'
+             });
+             if (newRes.ok) {
+                return streamResponse(newRes, filename);
+             }
+          }
+        }
+      }
+      return new NextResponse(`Failed: ${response.status}`, { status: response.status });
     }
 
-    // Use readable stream for efficiency with large PDF files
-    const fileStream = response.body;
-
-    const headers = new Headers();
-    // Use the content-type from the response if available, fallback to application/pdf
-    headers.set('Content-Type', response.headers.get('content-type') || 'application/pdf');
-
-    // Forward relevant headers from Archive.org
-    const headersToForward = ['content-length', 'accept-ranges', 'last-modified', 'etag'];
-    headersToForward.forEach(header => {
-      const val = response.headers.get(header);
-      if (val) headers.set(header, val);
-    });
-
-    // Force download with the provided filename, supporting UTF-8 (Arabic characters)
-    const encodedFilename = encodeURIComponent(filename);
-    headers.set('Content-Disposition', `attachment; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`);
-    headers.set('Access-Control-Allow-Origin', '*');
-
-    return new NextResponse(fileStream, {
-      status: 200,
-      headers,
-    });
+    return streamResponse(response, filename);
   } catch (error) {
     console.error('Download Proxy Error:', error);
-    return new NextResponse(`Error downloading file: ${error instanceof Error ? error.message : 'Unknown error'}`, { status: 500 });
+    return new NextResponse('Error', { status: 500 });
   }
+}
+
+function streamResponse(response: Response, filename: string) {
+  const headers = new Headers();
+  headers.set('Content-Type', response.headers.get('content-type') || 'application/pdf');
+
+  const headersToForward = ['content-length', 'accept-ranges', 'last-modified', 'etag'];
+  headersToForward.forEach(header => {
+    const val = response.headers.get(header);
+    if (val) headers.set(header, val);
+  });
+
+  const encodedFilename = encodeURIComponent(filename);
+  headers.set('Content-Disposition', `attachment; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`);
+  headers.set('Access-Control-Allow-Origin', '*');
+
+  return new NextResponse(response.body, {
+    status: 200,
+    headers,
+  });
 }
