@@ -4,7 +4,6 @@ import '../globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import LanguageRedirector from '@/components/LanguageRedirector';
 import DocumentLanguageSetter from '@/components/DocumentLanguageSetter';
-import AdsterraScript from '../../components/AdsterraScript';
 
 const tajawal = Tajawal({
   subsets: ['arabic', 'latin'],
@@ -57,7 +56,6 @@ export default function EnglishLayout({
         <LanguageRedirector />
         <DocumentLanguageSetter />
         {children}
-        <AdsterraScript />
         <script
           dangerouslySetInnerHTML={{
             __html: `

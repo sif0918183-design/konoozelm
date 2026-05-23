@@ -1,10 +1,12 @@
 
-> kono-elm@1.0.0 dev /app/artifacts/kono-elm
-> next dev
+> kono-elm@1.0.0 start /app/artifacts/kono-elm
+> next start
 
- ⚠ Port 3000 is in use, trying 3001 instead.
   ▲ Next.js 14.2.18
-  - Local:        http://localhost:3001
+  - Local:        http://localhost:3000
 
  ✓ Starting...
- ✓ Ready in 3s
+ ✓ Ready in 424ms
+⚠️ SUPABASE_SERVICE_ROLE_KEY is missing! Admin operations will fail.
+ ⚠ For production Image Optimization with Next.js, the optional 'sharp' package is strongly recommended. Run 'npm i sharp', and Next.js will use it automatically for Image Optimization.
+Read more: https://nextjs.org/docs/messages/sharp-missing-in-production
