@@ -27,7 +27,7 @@ export default function Footer({ lang = 'ar' }: FooterProps) {
 
         <div className="mb-8 flex flex-col items-center gap-4">
           <p className="text-gray-500 text-sm max-w-md mx-auto leading-relaxed italic">
-            "{t.footer_text}"
+            &quot;{t.footer_text}&quot;
           </p>
 
           <a
