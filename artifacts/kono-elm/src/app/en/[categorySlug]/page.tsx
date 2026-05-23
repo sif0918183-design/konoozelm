@@ -12,6 +12,7 @@ import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
 import { getSiteUrl } from '@/lib/utils';
+import Footer from '@/components/Footer';
 
 interface Props {
   params: { categorySlug: string };
@@ -114,6 +115,7 @@ export default async function EnglishCategoryPage({ params }: Props) {
           </div>
         )}
       </main>
+      <Footer lang="en" />
     </div>
   );
 }
