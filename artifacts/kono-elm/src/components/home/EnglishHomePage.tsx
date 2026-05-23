@@ -11,6 +11,7 @@ import { translations } from '@/lib/translations';
 import Link from 'next/link';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
+import Footer from '@/components/Footer';
 
 
 interface Props {
@@ -306,24 +307,7 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-100 py-16 mt-auto">
-        <div className="max-w-6xl mx-auto px-4 text-center flex flex-col items-center">
-          <Logo lang="en" className="mb-6 scale-75 md:scale-90" />
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('show-pwa-install-prompt'))}
-            className="mb-6 text-primary-900/40 hover:text-primary-900 text-xs font-bold transition-colors border border-primary-900/10 px-3 py-1 rounded-full"
-          >
-            {t.pwa_install_title}
-          </button>
-          <p className="text-gray-500 text-sm max-w-md mx-auto leading-relaxed">
-            {t.footer_text}
-          </p>
-          <div className="mt-8 pt-8 border-t border-gray-50 text-gray-400 text-xs">
-            {t.rights_reserved.replace('{year}', new Date().getFullYear().toString())}
-          </div>
-        </div>
-      </footer>
+      <Footer lang="en" />
     </div>
   );
 }

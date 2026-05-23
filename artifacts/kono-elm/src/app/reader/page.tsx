@@ -11,7 +11,9 @@ import {
   ArrowRight,
   Download,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  ExternalLink,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addToRecentBooks } from '@/lib/recent-books';
@@ -43,10 +45,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
       (entries) => {
         const entry = entries[0];
         if (entry.isIntersecting) {
-          // Fast Page Detection: Trigger as soon as the page occupies a significant part of the viewport center
-          // We use rootMargin to create a narrow detection band in the middle of the screen
           onVisible(pageNumber);
-
           if (!isRendered && !isRendering) {
             renderPage();
           }
@@ -54,7 +53,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
       },
       {
         threshold: 0,
-        rootMargin: '-45% 0px -45% 0px' // Only trigger for pages in the middle 10% of the screen
+        rootMargin: '-45% 0px -45% 0px'
       }
     );
 
@@ -66,7 +65,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
           }
         }
       },
-      { threshold: 0, rootMargin: '1200px 0px' } // Rendering uses a wider margin
+      { threshold: 0, rootMargin: '1200px 0px' }
     );
 
     if (containerRef.current) {
@@ -83,6 +82,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
   const renderPage = async () => {
     if (isRendered || isRendering) return;
 
+    // Use image fallback if identifier is available
     if (identifier) {
       setIsRendering(true);
       return;
@@ -121,7 +121,6 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
     }
   };
 
-  // Re-render on scale change only for canvas mode
   useEffect(() => {
     if (!identifier && (isRendered || isRendering)) {
       if (renderTaskRef.current) {
@@ -183,7 +182,6 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
                 setIsRendering(false);
               }}
               onError={() => {
-                // Fallback to canvas if image fails (unlikely for archive.org but good practice)
                 setIsRendering(false);
                 setIsRendered(false);
               }}
@@ -230,9 +228,98 @@ function ReaderContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  const initPdf = async (url: string) => {
+    const idMatch = url.match(/archive\.org\/download\/([^\/]+)/) || url.match(/archive\.org\/details\/([^\/]+)/);
+    const bookIdentifier = idMatch ? idMatch[1] : null;
+    setIdentifier(bookIdentifier);
 
-  // Initialize PDF.js and Load Document
+    try {
+      const pdfjsLib = (window as any).pdfjsLib;
+      if (!pdfjsLib) throw new Error('PDF.js not loaded');
+
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
+
+      const cachedResponse = await getCachedPDF(url);
+      let pdfSource: any;
+
+      if (cachedResponse) {
+        const blob = await cachedResponse.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        pdfSource = { data: arrayBuffer };
+      } else {
+        const optimizedUrl = optimizeArchiveUrl(url);
+        pdfSource = optimizedUrl.includes('archive.org')
+          ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
+          : optimizedUrl;
+      }
+
+      const loadingTask = pdfjsLib.getDocument({
+        ...(typeof pdfSource === 'string' ? { url: pdfSource } : pdfSource),
+        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+        cMapPacked: true,
+        standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+        disableRange: false,
+        disableStream: false,
+      });
+
+      const pdfDoc = await loadingTask.promise;
+      setPdf(pdfDoc);
+      setNumPages(pdfDoc.numPages);
+
+      const savedPage = localStorage.getItem(`page_${url}`);
+      if (savedPage) {
+        const page = parseInt(savedPage);
+        if (page > 0 && page <= pdfDoc.numPages) {
+          setPageNum(page);
+        }
+      }
+
+      addToRecentBooks({
+        identifier: url,
+        title: bookTitle,
+        url: url,
+        lastRead: new Date().toISOString(),
+        currentPage: parseInt(savedPage || '1'),
+        totalPages: pdfDoc.numPages
+      });
+
+      setIsLoading(false);
+    } catch (err: any) {
+      console.error('Error initializing PDF:', err);
+
+      const recentBooks = JSON.parse(localStorage.getItem('recentBooks') || '[]');
+      const bookData = recentBooks.find((b: any) => b.url === url);
+
+      if (bookData && bookData.totalPages > 0) {
+         setNumPages(bookData.totalPages);
+         const savedPage = localStorage.getItem(`page_${url}`);
+         setPageNum(parseInt(savedPage || '1'));
+         setIsLoading(false);
+      } else if (bookIdentifier) {
+         // If PDF fails but we have identifier, try to get page count from archive metadata API
+         try {
+           const metaRes = await fetch(`https://archive.org/metadata/${bookIdentifier}`);
+           if (metaRes.ok) {
+             const metadata = await metaRes.json();
+             const pages = parseInt(metadata.metadata?.imagecount || metadata.metadata?.pages || '0');
+             if (pages > 0) {
+               setNumPages(pages);
+               const savedPage = localStorage.getItem(`page_${url}`);
+               setPageNum(parseInt(savedPage || '1'));
+               setIsLoading(false);
+               return;
+             }
+           }
+         } catch (e) {}
+         setError(err.message?.includes('404') ? t.error_pdf_404 : t.error_pdf_general);
+         setIsLoading(false);
+      } else {
+         setError(err.message?.includes('404') ? t.error_pdf_404 : t.error_pdf_general);
+         setIsLoading(false);
+      }
+    }
+  };
+
   useEffect(() => {
     if (!pdfUrl) {
       setError(t.error_no_pdf);
@@ -250,92 +337,15 @@ function ReaderContent() {
           script.src = PDFJS_CDN;
           script.onload = () => initPdf(pdfUrl);
           script.onerror = () => {
-            console.error('Failed to load PDF.js script, attempting offline fallback');
-            initPdf(pdfUrl); // Try initPdf anyway to trigger offline fallback logic
+            initPdf(pdfUrl);
           };
           document.head.appendChild(script);
         } else {
           initPdf(pdfUrl);
         }
       } catch (err) {
-        console.error('Error loading PDF.js:', err);
         setError(t.error_pdf_lib);
         setIsLoading(false);
-      }
-    };
-
-    const initPdf = async (url: string) => {
-      // Extract identifier immediately for image fallback
-      const idMatch = url.match(/archive\.org\/download\/([^\/]+)/);
-      const bookIdentifier = idMatch ? idMatch[1] : null;
-      setIdentifier(bookIdentifier);
-
-      try {
-        const pdfjsLib = (window as any).pdfjsLib;
-        if (!pdfjsLib) throw new Error('PDF.js not loaded');
-
-        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
-
-        const cachedResponse = await getCachedPDF(url);
-        let pdfSource: any;
-
-        if (cachedResponse) {
-          const blob = await cachedResponse.blob();
-          const arrayBuffer = await blob.arrayBuffer();
-          pdfSource = { data: arrayBuffer };
-        } else {
-          const optimizedUrl = optimizeArchiveUrl(url);
-          pdfSource = optimizedUrl.includes('archive.org')
-            ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
-            : optimizedUrl;
-        }
-
-        const loadingTask = pdfjsLib.getDocument({
-          ...(typeof pdfSource === 'string' ? { url: pdfSource } : pdfSource),
-          cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-          cMapPacked: true,
-          standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
-        });
-        const pdfDoc = await loadingTask.promise;
-        setPdf(pdfDoc);
-        setNumPages(pdfDoc.numPages);
-
-        const savedPage = localStorage.getItem(`page_${url}`);
-        if (savedPage) {
-          const page = parseInt(savedPage);
-          if (page > 0 && page <= pdfDoc.numPages) {
-            setPageNum(page);
-          }
-        } else {
-          setPageNum(1);
-        }
-
-        addToRecentBooks({
-          identifier: url,
-          title: bookTitle,
-          url: url,
-          lastRead: new Date().toISOString(),
-          currentPage: parseInt(savedPage || '1'),
-          totalPages: pdfDoc.numPages
-        });
-
-        setIsLoading(false);
-      } catch (err: any) {
-        console.error('Error initializing PDF, trying offline fallback:', err);
-
-        // Offline Fallback: Try to get metadata from recentBooks if we have an identifier
-        const recentBooks = JSON.parse(localStorage.getItem('recentBooks') || '[]');
-        const bookData = recentBooks.find((b: any) => b.url === url);
-
-        if (bookData && bookData.totalPages > 0 && bookIdentifier) {
-          setNumPages(bookData.totalPages);
-          const savedPage = localStorage.getItem(`page_${url}`);
-          setPageNum(parseInt(savedPage || '1'));
-          setIsLoading(false);
-        } else {
-          setError(err.message?.includes('404') ? t.error_pdf_404 : t.error_pdf_general);
-          setIsLoading(false);
-        }
       }
     };
 
@@ -345,18 +355,13 @@ function ReaderContent() {
     setIsNightMode(savedNightMode);
   }, [pdfUrl, bookTitle]);
 
-  // Initial scroll to saved page
   useEffect(() => {
     if (!isLoading && numPages > 0 && pageNum > 1 && !isInitialScrollDone) {
       const timer = setTimeout(() => {
         const pageElement = document.getElementById(`page-${pageNum}`);
         if (pageElement) {
           pageElement.scrollIntoView({ behavior: 'auto', block: 'start' });
-          // Use a longer timeout or multiple checks to ensure it actually scrolled
-          // Before marking initial scroll as done
           setTimeout(() => setIsInitialScrollDone(true), 500);
-        } else {
-          // If element not found yet, don't mark as done, it will retry
         }
       }, 800);
       return () => clearTimeout(timer);
@@ -365,17 +370,11 @@ function ReaderContent() {
     }
   }, [isLoading, numPages, pageNum, isInitialScrollDone]);
 
-  const lastStorageUpdate = useRef<number>(0);
   const onPageVisible = useCallback((page: number) => {
     if (!isInitialScrollDone) return;
-
-    // Update UI immediately
     setPageNum(page);
-
-    // Throttle storage updates to once every 2 seconds to keep the UI smooth
     const now = Date.now();
-    if (pdfUrl && now - lastStorageUpdate.current > 2000) {
-      lastStorageUpdate.current = now;
+    if (pdfUrl) {
       localStorage.setItem(`page_${pdfUrl}`, page.toString());
       addToRecentBooks({
         identifier: pdfUrl,
@@ -404,19 +403,44 @@ function ReaderContent() {
   }
 
   if (error) {
+    const archiveDetailsUrl = identifier ? `https://archive.org/details/${identifier}` : null;
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50 p-4 text-center" dir={isEnglish ? 'ltr' : 'rtl'}>
         <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md border border-red-100">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2">{isEnglish ? 'Sorry, an error occurred' : 'عذراً، حدث خطأ أثناء تحميل الكتاب'}</h2>
           <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => router.back()}
-            className="w-full bg-primary-900 text-white font-bold py-3 rounded-xl hover:bg-primary-800 transition-colors"
-          >
-            {t.back_to_home}
-          </button>
-          <p className="mt-4 text-xs text-gray-400">{isEnglish ? 'This might be due to security restrictions (CORS) or an invalid link.' : 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.'}</p>
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center justify-center gap-2 w-full bg-primary-900 text-white font-bold py-3 rounded-xl hover:bg-primary-800 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              {isEnglish ? 'Try Again' : 'حاول مرة أخرى'}
+            </button>
+
+            {archiveDetailsUrl && (
+              <a
+                href={archiveDetailsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                {isEnglish ? 'View on Archive.org' : 'مشاهدة في أرشيف.أورج'}
+              </a>
+            )}
+
+            <button
+              onClick={() => router.back()}
+              className="w-full text-gray-500 font-bold py-2 text-sm"
+            >
+              {t.back_to_home}
+            </button>
+          </div>
+
+          <p className="mt-6 text-xs text-gray-400">{isEnglish ? 'This might be due to security restrictions (CORS) or an invalid link.' : 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.'}</p>
         </div>
       </div>
     );
@@ -427,7 +451,6 @@ function ReaderContent() {
       "min-h-screen transition-colors duration-300",
       isNightMode ? "bg-slate-950 text-slate-200" : "bg-creamy-100 text-slate-900"
     )}>
-      {/* Toolbar */}
       <header className={cn(
         "fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4 shadow-md backdrop-blur-md",
         isNightMode ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-slate-200"
@@ -446,7 +469,6 @@ function ReaderContent() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          {/* Zoom Controls */}
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shadow-inner">
             <button
               onClick={() => setScale(s => Math.max(0.5, s - 0.2))}
@@ -480,8 +502,7 @@ function ReaderContent() {
           </button>
 
           <a
-            href={pdfUrl!}
-            download
+            href={`/api/download?url=${encodeURIComponent(pdfUrl!)}&filename=${encodeURIComponent(bookTitle)}.pdf`}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
             title={t.download_pdf}
           >
@@ -490,7 +511,6 @@ function ReaderContent() {
         </div>
       </header>
 
-      {/* Reader Body */}
       <main className="pt-24 pb-12 px-4 flex flex-col items-center">
         <div className="w-full max-w-5xl">
           {Array.from({ length: numPages }, (_, i) => (
@@ -508,7 +528,6 @@ function ReaderContent() {
         </div>
       </main>
 
-      {/* Mobile Page Indicator */}
       <div className="fixed bottom-6 right-6 sm:hidden z-50">
         <div className="bg-primary-900 text-white px-4 py-2 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 border-2 border-white/20 backdrop-blur-sm">
           <span>{pageNum}</span>
