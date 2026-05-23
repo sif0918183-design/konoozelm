@@ -209,16 +209,11 @@ function ReaderContent() {
         } else {
           const optUrl = optimizeArchiveUrl(url);
           if (optUrl.includes('archive.org')) {
-            // Tiered fallback in UI logic
-            if (retryAttempt === 0) {
-              pdfSource = `/api/pdf-proxy?archiveId=${bookIdentifier || ''}&url=${encodeURIComponent(optUrl)}`;
-            } else if (retryAttempt === 1) {
-              // Direct fallback (handles the 80% working cases)
-              pdfSource = optUrl;
-            } else {
-              // Hail Mary: Another proxy attempt with only URL
-              pdfSource = `/api/pdf-proxy?url=${encodeURIComponent(optUrl)}`;
-            }
+             if (retryAttempt === 0 && bookIdentifier) {
+                pdfSource = `/api/pdf-proxy?archiveId=${bookIdentifier}`;
+             } else {
+                pdfSource = `/api/pdf-proxy?url=${encodeURIComponent(optUrl)}`;
+             }
           } else {
             pdfSource = optUrl;
           }
@@ -239,10 +234,15 @@ function ReaderContent() {
         setIsLoading(false);
       } catch (err: any) {
         console.error(`Attempt ${retryAttempt} failed:`, err);
-        if (retryAttempt < 2) {
+        if (retryAttempt < 1) {
           setRetryAttempt(a => a + 1);
         } else {
-          setError(err.message?.includes('404') ? t.error_pdf_404 : t.error_pdf_general);
+          let errorMsg = err.message || t.error_pdf_general;
+          if (err.message?.includes('404')) errorMsg = t.error_file_not_found;
+          else if (err.message?.includes('502')) errorMsg = t.error_upstream;
+          else if (err.message?.includes('Metadata')) errorMsg = t.error_upstream;
+
+          setError(errorMsg);
           setIsLoading(false);
         }
       }
@@ -250,7 +250,7 @@ function ReaderContent() {
 
     loadPdf();
     setIsNightMode(localStorage.getItem('nightMode') === 'true');
-  }, [pdfUrl, bookTitle, t, retryAttempt]);
+  }, [pdfUrl, bookTitle, t, retryAttempt, isEnglish]);
 
   useEffect(() => {
     if (!isLoading && numPages > 0 && !isInitialScrollDone) {
@@ -279,7 +279,7 @@ function ReaderContent() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50" dir={isEnglish ? 'ltr' : 'rtl'}>
         <Loader2 className="w-12 h-12 text-primary-900 animate-spin mb-4" />
         <p className="text-primary-900 font-bold text-lg animate-pulse">{t.loading_book}</p>
-        {retryAttempt > 0 && <p className="text-primary-900/60 text-xs mt-2">{isEnglish ? `Attempting fallback ${retryAttempt}...` : `جاري تجربة محاولة بديلة ${retryAttempt}...`}</p>}
+        {retryAttempt > 0 && <p className="text-primary-900/60 text-xs mt-2">{isEnglish ? `Retrying with discovery mode...` : `جاري إعادة المحاولة بنمط الاكتشاف...`}</p>}
       </div>
     );
   }
@@ -289,12 +289,12 @@ function ReaderContent() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50 p-4 text-center" dir={isEnglish ? 'ltr' : 'rtl'}>
         <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md border border-red-100">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">{t.sorry_error}</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">{isEnglish ? 'Critical Load Error' : 'خطأ فادح في التحميل'}</h2>
+          <p className="text-gray-600 mb-6 font-mono text-sm">{error}</p>
           <div className="flex flex-col gap-3">
             <button onClick={() => { setRetryAttempt(0); setError(null); setIsLoading(true); }} className="w-full bg-primary-900 text-white font-bold py-3 rounded-xl hover:bg-primary-800 transition-colors flex items-center justify-center gap-2">
               <RefreshCw className="w-4 h-4" />
-              {isEnglish ? 'Try Again' : 'إعادة المحاولة'}
+              {t.retry}
             </button>
             <button onClick={() => router.back()} className="w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors">
               {t.back_to_home}
@@ -322,7 +322,7 @@ function ReaderContent() {
             <button onClick={() => setScale(s => Math.min(3, s + 0.2))} className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all active:scale-90" title={isEnglish ? 'Zoom In' : 'تكبير'}><ZoomIn className="w-4 h-4" /></button>
           </div>
           <button onClick={() => { setIsNightMode(!isNightMode); localStorage.setItem('nightMode', (!isNightMode).toString()); }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors" title={t.night_mode}>{isNightMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}</button>
-          <a href={pdfUrl?.includes('archive.org') ? `/api/pdf-proxy?archiveId=${identifier || ''}&url=${encodeURIComponent(pdfUrl)}` : pdfUrl!} download className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors" title={t.download_pdf}><Download className="w-5 h-5" /></a>
+          <a href={`/api/pdf-proxy?archiveId=${identifier || ''}&url=${encodeURIComponent(pdfUrl || '')}`} download className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors" title={t.download_pdf}><Download className="w-5 h-5" /></a>
         </div>
       </header>
       <main className="pt-24 pb-12 px-4 flex flex-col items-center">

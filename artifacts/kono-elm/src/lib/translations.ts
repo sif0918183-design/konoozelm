@@ -126,6 +126,10 @@ export interface TranslationKeys {
   download_pdf: string;
   sorry_error: string;
   security_restriction_msg: string;
+  error_file_not_found: string;
+  error_upstream: string;
+  error_network: string;
+  retry: string;
   preparing_book: string;
   preparation_progress: string;
   of_label: string;
@@ -270,6 +274,10 @@ export const translations: Record<Language, TranslationKeys> = {
     download_pdf: 'تحميل PDF',
     sorry_error: 'عذراً، حدث خطأ أثناء تحميل الكتاب',
     security_restriction_msg: 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.',
+    error_file_not_found: 'الملف غير موجود في أرشيف',
+    error_upstream: 'حدث خطأ في الخادم الوسيط',
+    error_network: 'خطأ في الاتصال بالشبكة',
+    retry: 'إعادة المحاولة',
     preparing_book: 'جارٍ تحضير الكتاب للتحميل',
     preparation_progress: 'نسبة التحضير',
     of_label: 'من',
@@ -412,6 +420,10 @@ export const translations: Record<Language, TranslationKeys> = {
     download_pdf: 'Download PDF',
     sorry_error: 'Sorry, an error occurred',
     security_restriction_msg: 'This might be due to security restrictions (CORS) or an invalid link.',
+    error_file_not_found: 'File not found in archive',
+    error_upstream: 'Upstream server error',
+    error_network: 'Network connection error',
+    retry: 'Retry',
     preparing_book: 'Preparing book for download',
     preparation_progress: 'Preparation Progress',
     of_label: 'of',
