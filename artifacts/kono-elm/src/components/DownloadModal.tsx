@@ -13,6 +13,7 @@ interface DownloadModalProps {
   fileName: string;
   bookTitle: string;
   fileSize?: string | number;
+  archiveId?: string;
 }
 
 export default function DownloadModal({
@@ -22,6 +23,7 @@ export default function DownloadModal({
   fileName,
   bookTitle,
   fileSize,
+  archiveId,
 }: DownloadModalProps) {
   const pathname = usePathname();
   const isEnglish = pathname?.startsWith('/en');
@@ -61,7 +63,7 @@ export default function DownloadModal({
     const downloadName = bookTitle.endsWith('.pdf') ? bookTitle : `${bookTitle}.pdf`;
 
     // Use our local API proxy to bypass CORS and force download
-    const proxyUrl = `/api/download?url=${encodeURIComponent(optimizedUrl)}&filename=${encodeURIComponent(downloadName)}`;
+    const proxyUrl = `/api/download?archiveId=${archiveId || ''}&url=${encodeURIComponent(optimizedUrl)}&filename=${encodeURIComponent(downloadName)}`;
 
     const link = document.createElement('a');
     link.href = proxyUrl;
@@ -70,7 +72,7 @@ export default function DownloadModal({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [fileUrl, bookTitle]);
+  }, [fileUrl, bookTitle, archiveId]);
 
   useEffect(() => {
     if (isComplete && isOpen) {
