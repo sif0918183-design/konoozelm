@@ -5,7 +5,6 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import LanguageRedirector from '@/components/LanguageRedirector';
 import DocumentLanguageSetter from '@/components/DocumentLanguageSetter';
 import { Analytics } from "@vercel/analytics/react";
-import AdsterraScript from '../components/AdsterraScript';
 
 const tajawal = Tajawal({
   subsets: ['arabic'],
@@ -72,7 +71,6 @@ export default function RootLayout({
         {children}
         <PWAInstallPrompt />
         <Analytics />
-        <AdsterraScript />
         <script
           dangerouslySetInnerHTML={{
             __html: `
