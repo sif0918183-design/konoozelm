@@ -403,12 +403,11 @@ function ReaderContent() {
   }
 
   if (error) {
-    const archiveDetailsUrl = identifier ? `https://archive.org/details/${identifier}` : null;
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-creamy-50 p-4 text-center" dir={isEnglish ? 'ltr' : 'rtl'}>
         <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md border border-red-100">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">{isEnglish ? 'Sorry, an error occurred' : 'عذراً، حدث خطأ أثناء تحميل الكتاب'}</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">{t.sorry_error}</h2>
           <p className="text-gray-600 mb-6">{error}</p>
 
           <div className="flex flex-col gap-3">
@@ -420,18 +419,6 @@ function ReaderContent() {
               {isEnglish ? 'Try Again' : 'حاول مرة أخرى'}
             </button>
 
-            {archiveDetailsUrl && (
-              <a
-                href={archiveDetailsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors"
-              >
-                <ExternalLink className="w-4 h-4" />
-                {isEnglish ? 'View on Archive.org' : 'مشاهدة في أرشيف.أورج'}
-              </a>
-            )}
-
             <button
               onClick={() => router.back()}
               className="w-full text-gray-500 font-bold py-2 text-sm"
@@ -439,8 +426,6 @@ function ReaderContent() {
               {t.back_to_home}
             </button>
           </div>
-
-          <p className="mt-6 text-xs text-gray-400">{isEnglish ? 'This might be due to security restrictions (CORS) or an invalid link.' : 'قد يكون ذلك بسبب قيود الأمان (CORS) أو رابط غير صالح.'}</p>
         </div>
       </div>
     );

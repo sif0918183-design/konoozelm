@@ -25,26 +25,22 @@ export default function PWAInstallPrompt() {
       // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
 
-      // Check cooldown logic
-      const lastDismissed = localStorage.getItem('pwa-prompt-dismissed-at');
-      const sessionCount = parseInt(sessionStorage.getItem('pwa-session-count') || '0');
+      // Check 24h cooldown logic
+      const lastPromptedAt = localStorage.getItem('pwa-last-prompted-at');
+      const twentyFourHours = 24 * 60 * 60 * 1000;
 
-      // Update session count for this specific session
-      if (sessionCount === 0) {
-        sessionStorage.setItem('pwa-session-count', '1');
+      if (lastPromptedAt) {
+        const timeSinceLastPrompt = Date.now() - parseInt(lastPromptedAt);
+        if (timeSinceLastPrompt < twentyFourHours) {
+          return;
+        }
       }
 
-      const totalSessionsSinceDismissal = parseInt(localStorage.getItem('pwa-sessions-since-dismissal') || '0');
-
-      // If dismissed, wait for 2 new sessions
-      if (lastDismissed && totalSessionsSinceDismissal < 2) {
-        return;
-      }
-
-      // 30 second delay before showing
+      // 15 second delay before showing
       const timer = setTimeout(() => {
         setIsVisible(true);
-      }, 30000);
+        localStorage.setItem('pwa-last-prompted-at', Date.now().toString());
+      }, 15000);
 
       return () => clearTimeout(timer);
     };
@@ -56,14 +52,6 @@ export default function PWAInstallPrompt() {
     };
 
     window.addEventListener('show-pwa-install-prompt', showHandler);
-
-    // Track sessions
-    const hasTrackedSession = sessionStorage.getItem('pwa-session-tracked');
-    if (!hasTrackedSession) {
-      const currentCount = parseInt(localStorage.getItem('pwa-sessions-since-dismissal') || '0');
-      localStorage.setItem('pwa-sessions-since-dismissal', (currentCount + 1).toString());
-      sessionStorage.setItem('pwa-session-tracked', 'true');
-    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
@@ -84,8 +72,8 @@ export default function PWAInstallPrompt() {
 
     if (outcome === 'accepted') {
       console.log('User accepted the PWA install prompt');
-      localStorage.removeItem('pwa-prompt-dismissed-at');
-      localStorage.setItem('pwa-sessions-since-dismissal', '0');
+      // On successful install, we don't need to show it again
+      localStorage.setItem('pwa-last-prompted-at', (Date.now() * 10).toString()); // Far future
     } else {
       console.log('User dismissed the PWA install prompt');
       handleDismiss();
@@ -98,8 +86,7 @@ export default function PWAInstallPrompt() {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem('pwa-prompt-dismissed-at', Date.now().toString());
-    localStorage.setItem('pwa-sessions-since-dismissal', '0');
+    localStorage.setItem('pwa-last-prompted-at', Date.now().toString());
   };
 
   if (!isVisible) return null;
