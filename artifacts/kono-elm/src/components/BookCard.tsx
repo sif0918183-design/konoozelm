@@ -122,7 +122,7 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
           <div className="relative w-24 sm:w-28 h-32 sm:h-36 bg-primary-50/50 rounded-xl overflow-hidden flex-shrink-0 border border-primary-900/10 shadow-sm transition-all group-hover:shadow-lg group-hover:-translate-y-1 duration-500">
             {!imageError ? (
               <Image
-                src={book.coverImage || `https://archive.org/services/img/${book.identifier}`}
+                src={book.coverImage || `https://archive.org/download/${book.identifier}/page/n0.jpg`}
                 alt={book.title}
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-110"
