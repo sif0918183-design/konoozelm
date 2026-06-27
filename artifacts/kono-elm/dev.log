@@ -1,0 +1,31 @@
+  ▲ Next.js 14.2.18
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 2s
+ ○ Compiling / ...
+ ✓ Compiled / in 10.3s (836 modules)
+ GET / 200 in 11796ms
+ ✓ Compiled in 1488ms (386 modules)
+ ○ Compiling /[categorySlug] ...
+ ✓ Compiled /[categorySlug] in 7.7s (866 modules)
+ GET /api/admin/categories 200 in 8095ms
+ GET / 200 in 8189ms
+ GET /reader 200 in 8215ms
+ GET /api/admin/categories 200 in 70ms
+ GET / 200 in 204ms
+ ✓ Compiled /manifest.json in 408ms (486 modules)
+ GET /manifest.json?lang=en 200 in 479ms
+ GET /manifest.json?lang=ar 200 in 504ms
+ GET /favicon.ico 404 in 8781ms
+ GET /favicon.ico 404 in 203ms
+ GET /reader 200 in 209ms
+ GET / 200 in 211ms
+ GET /api/admin/categories 200 in 67ms
+ GET /api/admin/categories 200 in 12ms
+ GET / 200 in 55ms
+ GET / 200 in 111ms
+ GET /favicon.ico 404 in 109ms
+ GET /reader 200 in 116ms
+ GET /api/admin/categories 200 in 43ms
+ GET /api/admin/categories 200 in 12ms
