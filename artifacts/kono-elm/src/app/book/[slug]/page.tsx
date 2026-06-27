@@ -3,7 +3,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, Download, User, Tag, ChevronRight, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
-import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug, getBookBySlug, getBookBySuffix, saveSeoBook } from '@/lib/seo-data';
+import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getAuthorBySlug, getBookBySlug, getBookBySuffix, saveSeoBook, saveCategory } from '@/lib/seo-data';
 import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 
 export const revalidate = 600;
@@ -157,6 +157,18 @@ export default async function BookPage({ params }: Props) {
         try {
           console.log(`[JIT-CREATE] Creating new book record for: ${archiveBook.title} (${extractedId})`);
 
+          // Ensure "General" category exists to avoid FK constraint violation
+          try {
+            await saveCategory({
+              title: 'عام',
+              slug: 'عام',
+              description: 'كتب متنوعة ومواضيع عامة في العلوم الإسلامية والمعرفية.',
+              lang: 'ar'
+            });
+          } catch (catError) {
+            console.warn('JIT Category creation (ar) failed or exists:', catError);
+          }
+
           // Generate professional description using Groq AI
           let aiTitle = `تحميل كتاب ${archiveBook.title} PDF وقراءته أونلاين - مكتبة الهدى`;
           let aiDesc = `قراءة وتحميل كتاب ${archiveBook.title} للمؤلف ${archiveBook.author || 'غير معروف'} بصيغة PDF مجاناً.`;
@@ -188,6 +200,18 @@ export default async function BookPage({ params }: Props) {
         }
         // Ensure archiveId is set for the rest of the component
         archiveId = extractedId;
+      }
+    }
+  }
+
+  // 4.5. REDIRECT AFTER SUCCESSFUL JIT CREATION
+  // We do this outside the try-catch to allow Next.js to handle the redirect exception
+  if (archiveId && !seoBook && decodedSlug.includes('--')) {
+    const archiveBookData = await getBookDetails(archiveId);
+    if (archiveBookData) {
+      const idealSlug = getShortSlug(archiveBookData.title, archiveId, lang);
+      if (decodedSlug !== idealSlug) {
+        permanentRedirect(`/book/${encodeURIComponent(idealSlug)}`);
       }
     }
   }

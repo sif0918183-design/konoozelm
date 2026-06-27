@@ -3,7 +3,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, User, Tag, ChevronLeft, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
-import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getBookBySlug, getBookBySuffix, saveSeoBook } from '@/lib/seo-data';
+import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getBookBySlug, getBookBySuffix, saveSeoBook, saveCategory } from '@/lib/seo-data';
 import { getBookDetails, getBookFiles } from '@/lib/archive-api';
 import BookCard from '@/components/BookCard';
 
@@ -174,6 +174,18 @@ export default async function EnglishBookPage({ params }: Props) {
         try {
           console.log(`[JIT-CREATE-EN] Creating new book record for: ${archiveBook.title} (${extractedId})`);
 
+          // Ensure "General" category exists to avoid FK constraint violation
+          try {
+            await saveCategory({
+              title: 'General',
+              slug: 'general',
+              description: 'General Islamic books and miscellaneous knowledge.',
+              lang: 'en'
+            });
+          } catch (catError) {
+            console.warn('JIT Category creation (en) failed or exists:', catError);
+          }
+
           // Generate professional description using Groq AI
           let aiTitle = `Download ${archiveBook.title} PDF - Read Online - Huda Library`;
           let aiDesc = `Read and download ${archiveBook.title} by ${archiveBook.author || 'Unknown'} in PDF format for free.`;
@@ -205,6 +217,17 @@ export default async function EnglishBookPage({ params }: Props) {
         }
         // Ensure archiveId is set for the rest of the component
         archiveId = extractedId;
+      }
+    }
+  }
+
+  // 4.5. REDIRECT AFTER SUCCESSFUL JIT CREATION
+  if (archiveId && !seoBook && decodedSlug.includes('--')) {
+    const archiveBookData = await getBookDetails(archiveId);
+    if (archiveBookData) {
+      const idealSlug = getShortSlug(archiveBookData.title, archiveId, lang);
+      if (decodedSlug !== idealSlug) {
+        permanentRedirect(`/en/book/${encodeURIComponent(idealSlug)}`);
       }
     }
   }
