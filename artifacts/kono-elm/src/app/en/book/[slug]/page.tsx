@@ -5,13 +5,14 @@ import Image from 'next/image';
 import { BookOpen, User, Tag, ChevronLeft, Book as BookIcon, Sparkles, Globe, HelpCircle } from 'lucide-react';
 import { getBookByArchiveId, getBooksByCategory, getBooksByAuthor, getBookBySlug, getBookBySuffix, saveSeoBook } from '@/lib/seo-data';
 import { getBookDetails, getBookFiles } from '@/lib/archive-api';
+import BookCard from '@/components/BookCard';
 
 export const revalidate = 600;
-import BookCard from '@/components/BookCard';
 import { generateEnglishSlug, getSiteUrl, isAuthorUnknown } from '@/lib/utils';
 import { getShortSlug, isNewDeterministicSlug, extractSuffix } from '@/lib/slug-utils';
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { generateBookDescription } from '@/lib/groq';
 import Logo from '@/components/Logo';
 import BookSchema from '@/components/BookSchema';
 import Footer from '@/components/Footer';
@@ -65,6 +66,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   let title = seoBook?.seoTitle;
   let description = seoBook?.description;
+
+  // If not in database, try to generate using Groq for better SEO metadata
+  if (!description && archiveDetails) {
+    try {
+      const generated = await generateBookDescription(archiveDetails.title, archiveDetails.author || 'Unknown', 'en');
+      title = title || generated.seoTitle;
+      description = generated.description;
+    } catch (e) {
+      title = title || `Download ${archiveDetails.title} PDF - Read Online - Huda Library`;
+      description = archiveDetails.description || `Read and download ${archiveDetails.title} by ${archiveDetails.author || 'Unknown'} in PDF format for free.`;
+    }
+  }
 
   title = title || `Download ${archiveDetails?.title || 'Book'} PDF - Read Online - Huda Library`;
 
@@ -131,7 +144,7 @@ export default async function EnglishBookPage({ params }: Props) {
     console.error('Lookup Error:', error);
   }
 
-  // 3. REDIRECT CHECK & JIT MIGRATION
+  // 3. REDIRECT CHECK & JIT MIGRATION/CREATION
   if (seoBook) {
     const idealSlug = getShortSlug(seoBook.title, seoBook.archiveId, lang);
     const isLegacy = decodedSlug.includes('--') || (seoBook.slug === decodedSlug && seoBook.new_slug && seoBook.new_slug !== decodedSlug);
@@ -151,10 +164,52 @@ export default async function EnglishBookPage({ params }: Props) {
        permanentRedirect(`/en/book/${encodeURIComponent(idealSlug)}`);
     }
   } else if (decodedSlug.includes('--')) {
-    // If it's a legacy URL but not in our DB, we'll continue and see if Archive has it
+    // 4. JIT CREATION: Book found on Archive but not in our DB
+    const extractedId = decodedSlug.split('--').pop();
+    if (extractedId) {
+      const archiveBook = await getBookDetails(extractedId);
+      if (archiveBook) {
+        const idealSlug = getShortSlug(archiveBook.title, extractedId, lang);
+
+        try {
+          console.log(`[JIT-CREATE-EN] Creating new book record for: ${archiveBook.title} (${extractedId})`);
+
+          // Generate professional description using Groq AI
+          let aiTitle = `Download ${archiveBook.title} PDF - Read Online - Huda Library`;
+          let aiDesc = `Read and download ${archiveBook.title} by ${archiveBook.author || 'Unknown'} in PDF format for free.`;
+
+          try {
+            const generated = await generateBookDescription(archiveBook.title, archiveBook.author || 'Unknown', 'en');
+            aiTitle = generated.seoTitle;
+            aiDesc = generated.description;
+          } catch (aiError) {
+            console.error('AI Generation failed for JIT creation:', aiError);
+          }
+
+          await saveSeoBook({
+            archiveId: extractedId,
+            title: archiveBook.title,
+            author: archiveBook.author || 'Unknown',
+            description: aiDesc,
+            seoTitle: aiTitle,
+            category: 'General',
+            category_slug: 'general',
+            slug: idealSlug,
+            new_slug: idealSlug,
+            lang: 'en',
+            parts_count: archiveBook.files?.length || 1,
+            suffix: extractSuffix(idealSlug) || undefined
+          });
+        } catch (saveError) {
+          console.error('JIT Creation failed:', saveError);
+        }
+        // Ensure archiveId is set for the rest of the component
+        archiveId = extractedId;
+      }
+    }
   }
 
-  // 4. DATA FETCHING
+  // 5. DATA FETCHING (for normal display or JIT fallback)
   let archiveBook;
   if (archiveId) {
     try {
@@ -169,7 +224,7 @@ export default async function EnglishBookPage({ params }: Props) {
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const finalArchiveId = (seoBook?.archiveId || archiveBook?.identifier || archiveId) as string;
 
-  // Final redirect check for books found only on Archive
+  // Final redirect check for legacy slugs
   const idealSlug = getShortSlug(displayTitle, finalArchiveId, lang);
   if (decodedSlug !== idealSlug && (decodedSlug.includes('--') || !isNewDeterministicSlug(decodedSlug))) {
      permanentRedirect(`/en/book/${encodeURIComponent(idealSlug)}`);
@@ -180,12 +235,20 @@ export default async function EnglishBookPage({ params }: Props) {
   const displayCategory = seoBook?.category || 'General';
   const categorySlug = seoBook?.category_slug || generateEnglishSlug(displayCategory);
 
-  let displayDescription = seoBook?.description
-    ? cleanDescription(seoBook.description)
-    : (hasAuthor
-        ? `The book ${displayTitle} is one of the valuable and important works in its field. Author ${displayAuthor} provides a distinguished scientific and methodological vision. This book aims to facilitate access to accurate information for students of knowledge and researchers. You can now download a high-quality PDF version or read directly through your browser through our comprehensive electronic library.`
-        : `The book ${displayTitle} is one of the valuable and important works in its field. It provides a distinguished scientific and methodological vision. This book aims to facilitate access to accurate information for students of knowledge and researchers. You can now download a high-quality PDF version or read directly through your browser through our comprehensive electronic library.`);
+  let displayDescription = seoBook?.description ? cleanDescription(seoBook.description) : undefined;
   let dynamicSeoTitle = seoBook?.seoTitle;
+
+  if (!displayDescription && archiveBook) {
+    try {
+      const generated = await generateBookDescription(displayTitle, displayAuthor, 'en');
+      displayDescription = generated.description;
+      dynamicSeoTitle = generated.seoTitle;
+    } catch (e) {
+      displayDescription = hasAuthor
+        ? `The book ${displayTitle} is one of the valuable and important works in its field. Author ${displayAuthor} provides a distinguished scientific and methodological vision. This book aims to facilitate access to accurate information for students of knowledge and researchers. You can now download a high-quality PDF version or read directly through your browser through our comprehensive electronic library.`
+        : `The book ${displayTitle} is one of the valuable and important works in its field. It provides a distinguished scientific and methodological vision. This book aims to facilitate access to accurate information for students of knowledge and researchers. You can now download a high-quality PDF version or read directly through your browser through our comprehensive electronic library.`;
+    }
+  }
 
   // Internal Links - Restricted to same category as requested
   const otherBooks = await getBooksByCategory(categorySlug, displayCategory, 12, lang)

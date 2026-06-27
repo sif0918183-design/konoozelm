@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // If not in database, try to generate using Groq for better SEO metadata
   if (!description && archiveDetails) {
     try {
-      const generated = await generateBookDescription(archiveDetails.title, archiveDetails.author || 'غير معروف');
+      const generated = await generateBookDescription(archiveDetails.title, archiveDetails.author || 'غير معروف', 'ar');
       title = title || generated.seoTitle;
       description = generated.description;
     } catch (e) {
@@ -126,7 +126,7 @@ export default async function BookPage({ params }: Props) {
     console.error('Lookup Error:', error);
   }
 
-  // 3. REDIRECT CHECK & JIT MIGRATION
+  // 3. REDIRECT CHECK & JIT MIGRATION/CREATION
   if (seoBook) {
     const idealSlug = getShortSlug(seoBook.title, seoBook.archiveId, lang);
     const isLegacy = decodedSlug.includes('--') || (seoBook.slug === decodedSlug && seoBook.new_slug && seoBook.new_slug !== decodedSlug);
@@ -147,10 +147,52 @@ export default async function BookPage({ params }: Props) {
        permanentRedirect(`/book/${encodeURIComponent(idealSlug)}`);
     }
   } else if (decodedSlug.includes('--')) {
-    // If it's a legacy URL but not in our DB, we'll continue and see if Archive has it
+    // 4. JIT CREATION: Book found on Archive but not in our DB
+    const extractedId = decodedSlug.split('--').pop();
+    if (extractedId) {
+      const archiveBook = await getBookDetails(extractedId);
+      if (archiveBook) {
+        const idealSlug = getShortSlug(archiveBook.title, extractedId, lang);
+
+        try {
+          console.log(`[JIT-CREATE] Creating new book record for: ${archiveBook.title} (${extractedId})`);
+
+          // Generate professional description using Groq AI
+          let aiTitle = `تحميل كتاب ${archiveBook.title} PDF وقراءته أونلاين - مكتبة الهدى`;
+          let aiDesc = `قراءة وتحميل كتاب ${archiveBook.title} للمؤلف ${archiveBook.author || 'غير معروف'} بصيغة PDF مجاناً.`;
+
+          try {
+            const generated = await generateBookDescription(archiveBook.title, archiveBook.author || 'غير معروف', 'ar');
+            aiTitle = generated.seoTitle;
+            aiDesc = generated.description;
+          } catch (aiError) {
+            console.error('AI Generation failed for JIT creation:', aiError);
+          }
+
+          await saveSeoBook({
+            archiveId: extractedId,
+            title: archiveBook.title,
+            author: archiveBook.author || 'غير معروف',
+            description: aiDesc,
+            seoTitle: aiTitle,
+            category: 'عام',
+            category_slug: 'عام',
+            slug: idealSlug,
+            new_slug: idealSlug,
+            lang: 'ar',
+            parts_count: archiveBook.files?.length || 1,
+            suffix: extractSuffix(idealSlug) || undefined
+          });
+        } catch (saveError) {
+          console.error('JIT Creation failed:', saveError);
+        }
+        // Ensure archiveId is set for the rest of the component
+        archiveId = extractedId;
+      }
+    }
   }
 
-  // 4. DATA FETCHING
+  // 5. DATA FETCHING (for normal display or JIT fallback)
   let archiveBook;
   if (archiveId) {
     try {
@@ -165,7 +207,7 @@ export default async function BookPage({ params }: Props) {
   const displayTitle = seoBook?.title || archiveBook?.title || 'Untitled';
   const finalArchiveId = (seoBook?.archiveId || archiveBook?.identifier || archiveId) as string;
 
-  // Final redirect check for books found only on Archive
+  // Final redirect check for legacy slugs
   const idealSlug = getShortSlug(displayTitle, finalArchiveId, lang);
   if (decodedSlug !== idealSlug && (decodedSlug.includes('--') || !isNewDeterministicSlug(decodedSlug))) {
      permanentRedirect(`/book/${encodeURIComponent(idealSlug)}`);
@@ -182,7 +224,7 @@ export default async function BookPage({ params }: Props) {
 
   if (!displayDescription && archiveBook) {
     try {
-      const generated = await generateBookDescription(displayTitle, displayAuthor);
+      const generated = await generateBookDescription(displayTitle, displayAuthor, 'ar');
       displayDescription = generated.description;
       dynamicSeoTitle = generated.seoTitle;
     } catch (e) {
