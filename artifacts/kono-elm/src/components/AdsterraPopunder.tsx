@@ -2,44 +2,31 @@
 
 import { useEffect } from 'react';
 
-const AD_STORAGE_KEY = 'adsterra-last-shown';
-const AD_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const AD_SESSION_KEY = 'adsterra-shown';
 
 /**
  * AdsterraPopunder component
  * This component manages the display of the Adsterra Popunder advertisement.
- * It ensures the ad script is only loaded once every 24 hours to optimize performance
- * and user experience, using localStorage with a Cookie fallback.
+ * It ensures the ad script is only loaded once per session to optimize performance
+ * and user experience, using sessionStorage.
  */
 export default function AdsterraPopunder() {
   useEffect(() => {
     const checkAndShowAd = () => {
-      const now = Date.now();
-      let lastShown = null;
+      let isShown = false;
 
-      // Try getting from localStorage
+      // Try getting from sessionStorage
       try {
-        lastShown = localStorage.getItem(AD_STORAGE_KEY);
+        isShown = sessionStorage.getItem(AD_SESSION_KEY) === 'true';
       } catch (e) {
-        // localStorage might be unavailable in some contexts
+        // sessionStorage might be unavailable in some contexts
       }
 
-      // Fallback to cookie if localStorage is empty
-      if (!lastShown) {
-        const cookies = document.cookie.split(';');
-        const adCookie = cookies.find(c => c.trim().startsWith(AD_STORAGE_KEY + '='));
-        if (adCookie) {
-          lastShown = adCookie.split('=')[1];
-        }
-      }
-
-      const lastShownTime = lastShown ? parseInt(lastShown, 10) : 0;
-
-      // Only show if never shown or last shown more than 24 hours ago
-      if (now - lastShownTime > AD_COOLDOWN) {
+      // Only show if not already shown in this session
+      if (!isShown) {
         const scriptSrc = 'https://pl30089135.effectivecpmnetwork.com/bd/fa/32/bdfa32cdd990b0f31e1df6d03d7e336a.js';
 
-        // Prevent double injection if component is mounted multiple times
+        // Prevent double injection if component is mounted multiple times in the same page
         if (document.querySelector(`script[src="${scriptSrc}"]`)) {
           return;
         }
@@ -50,18 +37,12 @@ export default function AdsterraPopunder() {
         script.async = true;
         document.body.appendChild(script);
 
-        // Update storage and cookie to mark as shown
-        const timestamp = now.toString();
-
+        // Update sessionStorage to mark as shown for this session
         try {
-          localStorage.setItem(AD_STORAGE_KEY, timestamp);
+          sessionStorage.setItem(AD_SESSION_KEY, 'true');
         } catch (e) {
           // Ignore storage errors
         }
-
-        // Set cookie with 24 hour expiry
-        const expires = new Date(now + AD_COOLDOWN).toUTCString();
-        document.cookie = `${AD_STORAGE_KEY}=${timestamp}; expires=${expires}; path=/; SameSite=Lax`;
       }
     };
 
