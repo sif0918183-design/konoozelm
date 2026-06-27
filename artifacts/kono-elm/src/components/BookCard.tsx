@@ -94,10 +94,13 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
     setShowDownloadModal(true);
   };
 
-  // Use new_slug if available, otherwise generate the deterministic short slug.
-  // This ensures we strictly use the new URL structure for all internal links.
+  // Use new_slug if available, otherwise generate a temporary legacy slug for JIT creation.
+  // If the book exists in our SEO database, we use the clean deterministic slug.
+  // If it's a new book (e.g. from search results), we use the legacy title--id format
+  // so the server can extract the Archive ID and generate the page on the fly.
   const idealSlug = getShortSlug(book.title, book.identifier, lang);
-  const finalSlug = seoSlug || idealSlug;
+  const legacySlug = `${slugify(book.title)}--${book.identifier}`;
+  const finalSlug = seoSlug || legacySlug;
 
   const detailsHref = lang === 'en'
     ? `/en/book/${encodeURIComponent(finalSlug)}`

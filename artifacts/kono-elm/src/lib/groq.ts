@@ -1,12 +1,12 @@
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-export async function generateBookDescription(title: string, author: string) {
+export async function generateBookDescription(title: string, author: string, lang: 'ar' | 'en' = 'ar') {
   if (!GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY is not defined');
   }
 
-  const prompt = `
+  const arabicPrompt = `
 أنت خبير SEO ومكتبات إسلامية. قم بكتابة وصف جذاب ومحسّن لمحركات البحث (SEO) لكتاب بعنوان "${title}"${author && author !== 'Unknown' && author !== 'غير معروف' ? ` للمؤلف "${author}"` : ''}.
 يجب أن يتضمن الوصف:
 1. مقدمة عن أهمية الكتاب وقيمته العلمية.
@@ -24,6 +24,27 @@ export async function generateBookDescription(title: string, author: string) {
   "description": "الوصف هنا"
 }
 `;
+
+  const englishPrompt = `
+You are an SEO and Islamic Library expert. Write an engaging and SEO-optimized description for a book titled "${title}"${author && author !== 'Unknown' && author !== 'غير معروف' ? ` by author "${author}"` : ''}.
+The description must include:
+1. An introduction about the importance and scientific value of the book.
+2. A brief summary of the content.
+3. Natural keywords within the text (e.g., Download PDF, Read Online, Fiqh books, Hadith books, etc., depending on the book's subject).
+4. IMPORTANT NOTE: If the author's name is not available or is "Unknown" or "غير معروف", DO NOT mention that the author is unknown. Instead, focus the entire description on the book's content and its scientific value.
+5. Text length between 150 to 300 words.
+6. Make the style eloquent and suitable for Islamic content.
+7. Do not mention that you are an AI; start the description directly.
+8. Also suggest an optimized SEO Title that includes "Download & Read PDF".
+
+I want the result in JSON format as follows:
+{
+  "seoTitle": "Book Title Here",
+  "description": "Description here"
+}
+`;
+
+  const prompt = lang === 'en' ? englishPrompt : arabicPrompt;
 
   const response = await fetch(GROQ_API_URL, {
     method: 'POST',
