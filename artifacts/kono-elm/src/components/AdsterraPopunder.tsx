@@ -24,7 +24,7 @@ export default function AdsterraPopunder() {
 
       // Only show if not already shown in this session
       if (!isShown) {
-        const scriptSrc = 'https://pl30089135.effectivecpmnetwork.com/bd/fa/32/bdfa32cdd990b0f31e1df6d03d7e336a.js';
+        const scriptSrc = '';
 
         // Prevent double injection if component is mounted multiple times in the same page
         if (document.querySelector(`script[src="${scriptSrc}"]`)) {
