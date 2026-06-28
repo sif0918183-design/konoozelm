@@ -3,6 +3,7 @@ import { Tajawal, Amiri } from 'next/font/google';
 import '../globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import AdsterraPopunder from '@/components/AdsterraPopunder';
+import AdsterraSocialBar from '@/components/AdsterraSocialBar';
 import LanguageRedirector from '@/components/LanguageRedirector';
 import DocumentLanguageSetter from '@/components/DocumentLanguageSetter';
 
@@ -58,6 +59,7 @@ export default function EnglishLayout({
         <DocumentLanguageSetter />
         {children}
         <AdsterraPopunder />
+        <AdsterraSocialBar />
         <script
           dangerouslySetInnerHTML={{
             __html: `
