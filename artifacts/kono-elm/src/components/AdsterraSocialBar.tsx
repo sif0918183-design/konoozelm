@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-const SCRIPT_URL = 'https://pl29421747.effectivecpmnetwork.com/50/21/19/502119867360dcf8fb64639f085d4a66.js';
+const SCRIPT_URL = '';
 
 /**
  * AdsterraSocialBar Component
