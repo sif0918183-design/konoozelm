@@ -52,6 +52,40 @@ export interface TranslationKeys {
   dont_close_page: string;
   book_label: string;
 
+  // Donation Keys
+  donate_button_text: string;
+  donate_title: string;
+  donate_subtitle: string;
+  donate_any_amount: string;
+  donate_select_method: string;
+  donate_amount_preset: string;
+  donate_custom_amount: string;
+  donate_transfer_instruction: string;
+  donate_wallet_address: string;
+  donate_copy_address: string;
+  donate_address_copied: string;
+  donate_warning_title: string;
+  donate_warning_desc: string;
+  donate_explorer_link: string;
+  donate_confirm_prompt: string;
+  donate_confirm_desc: string;
+  donate_tx_hash: string;
+  donate_donor_name: string;
+  donate_donor_email: string;
+  donate_donor_message: string;
+  donate_submit_confirm: string;
+  donate_confirm_success: string;
+  donate_why_support: string;
+  donate_reason_1: string;
+  donate_reason_2: string;
+  donate_reason_3: string;
+  donate_reason_4: string;
+  donate_reason_5: string;
+  donate_page_meta_title: string;
+  donate_page_meta_desc: string;
+  donate_share_title: string;
+  donate_share_text: string;
+
   // Admin Keys
   admin_title: string;
   admin_main_site: string;
@@ -109,6 +143,33 @@ export interface TranslationKeys {
   admin_bulk_partial_error: string;
   admin_bulk_error: string;
   admin_conn_error: string;
+  admin_donations: string;
+  admin_donation_settings: string;
+  admin_donations_list: string;
+  admin_donation_enabled: string;
+  admin_show_donation_button: string;
+  admin_wallet_address: string;
+  admin_network: string;
+  admin_currency: string;
+  admin_qr_code_url: string;
+  admin_preset_amounts: string;
+  admin_preview_modal: string;
+  admin_save_settings: string;
+  admin_total_donations: string;
+  admin_pending_donations: string;
+  admin_verified_donations: string;
+  admin_status_pending: string;
+  admin_status_verified: string;
+  admin_status_rejected: string;
+  admin_mark_verified: string;
+  admin_mark_rejected: string;
+  admin_confirm_status_change: string;
+  admin_explorer_template: string;
+  admin_title_ar: string;
+  admin_title_en: string;
+  admin_desc_ar: string;
+  admin_desc_en: string;
+
   error_no_pdf: string;
   error_pdf_lib: string;
   error_pdf_404: string;
@@ -202,6 +263,42 @@ export const translations: Record<Language, TranslationKeys> = {
     preparing_download: 'اكتمل التحضير، سيبدأ التحميل الآن...',
     dont_close_page: 'يرجى عدم إغلاق هذه الصفحة حتى يكتمل الشريط',
     book_label: 'الكتاب',
+
+    // Donation Strings
+    donate_button_text: '❤️ ادعم مكتبة الهدى',
+    donate_title: 'ساهم في استمرار مكتبة الهدى',
+    donate_subtitle: 'مكتبة الهدى مشروع معرفي يهدف إلى إتاحة المصادر الإسلامية والكتب والمخطوطات للباحثين وطلاب العلم والقراء. دعمك يساعدنا على استمرار تشغيل المكتبة وتطويرها وإتاحة محتواها.',
+    donate_any_amount: 'يمكنك التبرع بأي مبلغ يناسبك.',
+    donate_select_method: 'اختر طريقة التبرع',
+    donate_amount_preset: 'مبلغ التبرع المقترح',
+    donate_custom_amount: 'مبلغ آخر',
+    donate_transfer_instruction: 'حوّل {amount} {currency} إلى العنوان التالي:',
+    donate_wallet_address: 'عنوان المحفظة',
+    donate_copy_address: 'نسخ عنوان المحفظة',
+    donate_address_copied: 'تم نسخ عنوان المحفظة ✓',
+    donate_warning_title: '⚠️ أرسل {currency} عبر شبكة {network} فقط.',
+    donate_warning_desc: 'تأكد من اختيار الشبكة الصحيحة قبل إرسال التبرع. معاملات العملات الرقمية قد تكون غير قابلة للاسترجاع.',
+    donate_explorer_link: 'عرض العنوان على Blockchain Explorer',
+    donate_confirm_prompt: 'هل تبرعت بالفعل؟',
+    donate_confirm_desc: 'يمكنك إرسال رقم العملية Transaction Hash لمساعدتنا على تسجيل التبرع.',
+    donate_tx_hash: 'رقم العملية (Transaction Hash)',
+    donate_donor_name: 'الاسم (اختياري)',
+    donate_donor_email: 'البريد الإلكتروني (اختياري)',
+    donate_donor_message: 'رسالة أو كلمة تشجيع (اختياري)',
+    donate_submit_confirm: 'إرسال تأكيد التبرع',
+    donate_confirm_success: 'تم إرسال معلومات التبرع بنجاح، شكرًا لدعمك.',
+    donate_why_support: 'لماذا دعمك يهمنا؟',
+    donate_reason_1: 'استمرار تشغيل وتطوير المكتبة الرقمية',
+    donate_reason_2: 'استضافة المحتوى وحفظ المخطوطات والكتب النادرة',
+    donate_reason_3: 'رقمنة المصادر الإسلامية وإتاحتها مجاناً للجميع',
+    donate_reason_4: 'تطوير المنصة وتحسين سرعة الوصول والبحث',
+    donate_reason_5: 'تحسين تجربة القراءة وتوفير الخدمات الحديثة للباحثين',
+    donate_page_meta_title: 'ادعم مكتبة الهدى | التبرع للمكتبة الرقمية',
+    donate_page_meta_desc: 'مساهمتك تمكننا من إتاحة آلاف الكتب والمخطوطات الإسلامية مجانًا للباحثين والقراء حول العالم.',
+    donate_share_title: 'ادعم مكتبة الهدى الرقمية',
+    donate_share_text: 'ساهم في دعم مكتبة الهدى واستمرار إتاحة الكتب والمخطوطات الإسلامية مجاناً للجميع.',
+
+    // Admin Strings
     admin_title: 'لوحة تحكم مكتبة الهدى',
     admin_main_site: 'الموقع الرئيسي',
     admin_search_archive: 'البحث في المكتبة العالمية (Archive)',
@@ -258,6 +355,33 @@ export const translations: Record<Language, TranslationKeys> = {
     admin_bulk_partial_error: 'تمت الإضافة مع وجود أخطاء في {count} كتب. راجع السجلات.',
     admin_bulk_error: 'فشل الإضافة الجماعية (خطأ خادم)',
     admin_conn_error: 'خطأ في الاتصال',
+    admin_donations: 'التبرعات',
+    admin_donation_settings: 'إعدادات التبرعات',
+    admin_donations_list: 'سجل التبرعات',
+    admin_donation_enabled: 'تفعيل نظام التبرعات',
+    admin_show_donation_button: 'إظهار زر التبرع الثابت',
+    admin_wallet_address: 'عنوان المحفظة العام (Public Wallet Address)',
+    admin_network: 'الشبكة (Network)',
+    admin_currency: 'العملة (Currency)',
+    admin_qr_code_url: 'صورة QR Code (اختياري)',
+    admin_preset_amounts: 'المبالغ المقترحة (مفصولة بفواصل)',
+    admin_preview_modal: 'معاينة نافذة التبرع',
+    admin_save_settings: 'حفظ إعدادات التبرعات',
+    admin_total_donations: 'إجمالي التبرعات',
+    admin_pending_donations: 'التبرعات المعلقة',
+    admin_verified_donations: 'التبرعات المؤكدة',
+    admin_status_pending: 'معلق',
+    admin_status_verified: 'مؤكد',
+    admin_status_rejected: 'مرفوض',
+    admin_mark_verified: 'تأكيد',
+    admin_mark_rejected: 'رفض',
+    admin_confirm_status_change: 'هل أنت متأكد من تغيير حالة التبرع؟',
+    admin_explorer_template: 'قالب رابط المستكشف (Explorer Template)',
+    admin_title_ar: 'العنوان بالعربية',
+    admin_title_en: 'العنوان بالإنجليزية',
+    admin_desc_ar: 'الوصف بالعربية',
+    admin_desc_en: 'الوصف بالإنجليزية',
+
     error_no_pdf: 'رابط الكتاب غير موجود',
     error_pdf_lib: 'حدث خطأ أثناء تحميل مكتبة القراءة',
     error_pdf_404: 'الملف غير موجود (404)',
@@ -349,6 +473,42 @@ export const translations: Record<Language, TranslationKeys> = {
     preparing_download: 'Preparation complete, downloading now...',
     dont_close_page: 'Please do not close this page until the bar is complete',
     book_label: 'Book',
+
+    // Donation Strings
+    donate_button_text: '❤️ Support Huda Library',
+    donate_title: 'Support Huda Library',
+    donate_subtitle: 'Huda Library is a non-profit knowledge project dedicated to providing free access to Islamic resources, books, and manuscripts for researchers and readers worldwide. Your support helps us maintain and develop our services.',
+    donate_any_amount: 'You can donate any amount that suits you.',
+    donate_select_method: 'Select Donation Method',
+    donate_amount_preset: 'Suggested Donation Amount',
+    donate_custom_amount: 'Custom Amount',
+    donate_transfer_instruction: 'Transfer {amount} {currency} to the following address:',
+    donate_wallet_address: 'Wallet Address',
+    donate_copy_address: 'Copy Wallet Address',
+    donate_address_copied: 'Wallet address copied ✓',
+    donate_warning_title: '⚠️ Send {currency} via {network} network only.',
+    donate_warning_desc: 'Make sure to select the correct network before sending. Crypto transactions are non-refundable.',
+    donate_explorer_link: 'View Address on Blockchain Explorer',
+    donate_confirm_prompt: 'Did you already donate?',
+    donate_confirm_desc: 'You can send the Transaction Hash to help us record your donation.',
+    donate_tx_hash: 'Transaction Hash',
+    donate_donor_name: 'Name (Optional)',
+    donate_donor_email: 'Email (Optional)',
+    donate_donor_message: 'Message (Optional)',
+    donate_submit_confirm: 'Submit Donation Confirmation',
+    donate_confirm_success: 'Donation info submitted successfully, thank you for your support.',
+    donate_why_support: 'Why Your Support Matters',
+    donate_reason_1: 'Continuous operation and maintenance of the digital library',
+    donate_reason_2: 'Hosting content and preserving rare manuscripts & books',
+    donate_reason_3: 'Digitizing Islamic resources and providing free access to all',
+    donate_reason_4: 'Developing the platform and enhancing search performance',
+    donate_reason_5: 'Improving reading experience and research tools for scholars',
+    donate_page_meta_title: 'Support Huda Library | Donate',
+    donate_page_meta_desc: 'Your contribution enables us to provide thousands of Islamic books & manuscripts for free to researchers worldwide.',
+    donate_share_title: 'Support Huda Library',
+    donate_share_text: 'Support Huda Library in providing free access to Islamic books and manuscripts for everyone.',
+
+    // Admin Strings
     admin_title: 'Huda Library Control Panel',
     admin_main_site: 'Main Site',
     admin_search_archive: 'Search Global Library (Archive)',
@@ -405,6 +565,33 @@ export const translations: Record<Language, TranslationKeys> = {
     admin_bulk_partial_error: 'Added with errors in {count} books. Check logs.',
     admin_bulk_error: 'Bulk addition failed (server error)',
     admin_conn_error: 'Connection error',
+    admin_donations: 'Donations',
+    admin_donation_settings: 'Donation Settings',
+    admin_donations_list: 'Donations Log',
+    admin_donation_enabled: 'Enable Donations',
+    admin_show_donation_button: 'Show Fixed Donation Button',
+    admin_wallet_address: 'Receiving Wallet Address (Public)',
+    admin_network: 'Network',
+    admin_currency: 'Currency',
+    admin_qr_code_url: 'QR Code Image URL (Optional)',
+    admin_preset_amounts: 'Preset Amounts (comma separated)',
+    admin_preview_modal: 'Preview Donation Modal',
+    admin_save_settings: 'Save Donation Settings',
+    admin_total_donations: 'Total Donations',
+    admin_pending_donations: 'Pending Donations',
+    admin_verified_donations: 'Verified Donations',
+    admin_status_pending: 'Pending',
+    admin_status_verified: 'Verified',
+    admin_status_rejected: 'Rejected',
+    admin_mark_verified: 'Mark Verified',
+    admin_mark_rejected: 'Mark Rejected',
+    admin_confirm_status_change: 'Are you sure you want to change donation status?',
+    admin_explorer_template: 'Explorer Link Template',
+    admin_title_ar: 'Arabic Title',
+    admin_title_en: 'English Title',
+    admin_desc_ar: 'Arabic Description',
+    admin_desc_en: 'English Description',
+
     error_no_pdf: 'Book link not found',
     error_pdf_lib: 'An error occurred while loading the reading library',
     error_pdf_404: 'File not found (404)',

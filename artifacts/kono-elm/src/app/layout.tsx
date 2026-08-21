@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Tajawal, Amiri, Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import DonationWidget from '@/components/DonationWidget';
 import AdsterraPopunder from '@/components/AdsterraPopunder';
 import AdsterraSocialBar from '@/components/AdsterraSocialBar';
 import LanguageRedirector from '@/components/LanguageRedirector';
@@ -72,6 +73,7 @@ export default function RootLayout({
         <DocumentLanguageSetter />
         {children}
         <PWAInstallPrompt />
+        <DonationWidget lang="ar" />
         <AdsterraPopunder />
         <AdsterraSocialBar />
         <Analytics />
