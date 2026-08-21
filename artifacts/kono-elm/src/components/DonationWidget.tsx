@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Heart } from 'lucide-react';
 import { translations, type Language } from '@/lib/translations';
 import DonationModal, { DonationSettings } from './DonationModal';
@@ -10,6 +11,7 @@ interface DonationWidgetProps {
 }
 
 export default function DonationWidget({ lang = 'ar' }: DonationWidgetProps) {
+  const pathname = usePathname();
   const t = translations[lang];
   const [isOpen, setIsOpen] = useState(false);
   const [settings, setSettings] = useState<DonationSettings | null>(null);
@@ -28,6 +30,11 @@ export default function DonationWidget({ lang = 'ar' }: DonationWidgetProps) {
         setIsLoading(false);
       });
   }, []);
+
+  // Prevent rendering Arabic widget on English pages and vice-versa
+  const isEnglishPage = pathname?.startsWith('/en');
+  if (lang === 'ar' && isEnglishPage) return null;
+  if (lang === 'en' && !isEnglishPage) return null;
 
   if (!isLoading && settings && (!settings.enabled || !settings.show_button)) {
     return null;
