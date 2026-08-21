@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS donation_settings (
   id INT PRIMARY KEY DEFAULT 1,
   enabled BOOLEAN DEFAULT TRUE,
   show_button BOOLEAN DEFAULT TRUE,
-  wallet_address TEXT NOT NULL DEFAULT 'TY1234567890HudaLibraryTRC20Address',
+  wallet_address TEXT NOT NULL DEFAULT 'TSC67u84nbzYSiKoDLBnVB3csFXLBFYUy6',
   currency TEXT NOT NULL DEFAULT 'USDT',
   network TEXT NOT NULL DEFAULT 'TRON (TRC-20)',
   qr_code TEXT DEFAULT '',
@@ -27,7 +27,7 @@ VALUES (
   1,
   TRUE,
   TRUE,
-  'TY1234567890HudaLibraryTRC20Address',
+  'TSC67u84nbzYSiKoDLBnVB3csFXLBFYUy6',
   'USDT',
   'TRON (TRC-20)',
   'ساهم في استمرار مكتبة الهدى',
@@ -35,7 +35,7 @@ VALUES (
   'مكتبة الهدى مشروع معرفي يهدف إلى إتاحة المصادر الإسلامية والكتب والمخطوطات للباحثين وطلاب العلم والقراء. دعمك يساعدنا على استمرار تشغيل المكتبة وتطويرها وإتاحة محتواها.',
   'Huda Library is a knowledge project aiming to make Islamic resources, books, and manuscripts accessible to researchers, students, and readers. Your support helps us continue operating, developing, and providing free access to content.'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET wallet_address = EXCLUDED.wallet_address WHERE donation_settings.wallet_address LIKE 'TY1234567890%';
 
 -- Enable RLS for donation_settings
 ALTER TABLE donation_settings ENABLE ROW LEVEL SECURITY;

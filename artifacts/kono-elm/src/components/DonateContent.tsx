@@ -58,7 +58,7 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
 
   const currency = settings?.currency || 'USDT';
   const network = settings?.network || 'TRON (TRC-20)';
-  const walletAddress = settings?.wallet_address || 'TY1234567890HudaLibraryTRC20Address';
+  const walletAddress = settings?.wallet_address || 'TSC67u84nbzYSiKoDLBnVB3csFXLBFYUy6';
   const presetAmounts = settings?.preset_amounts || [5, 10, 25, 50, 100];
   const explorerUrlTemplate = settings?.explorer_url_template || 'https://tronscan.org/#/address/{address}';
   const explorerUrl = explorerUrlTemplate.replace('{address}', walletAddress);

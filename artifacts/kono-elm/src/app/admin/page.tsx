@@ -1286,7 +1286,7 @@ export default function AdminDashboard() {
                       required
                       value={donationSettings.wallet_address}
                       onChange={(e) => setDonationSettings({ ...donationSettings, wallet_address: e.target.value })}
-                      placeholder="e.g. TY1234567890HudaLibraryTRC20Address"
+                      placeholder="e.g. TSC67u84nbzYSiKoDLBnVB3csFXLBFYUy6"
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-300 font-mono text-xs focus:ring-2 focus:ring-primary-500 outline-none dir-ltr text-left bg-white"
                     />
                   </div>
@@ -1636,7 +1636,7 @@ export default function AdminDashboard() {
         initialSettings={{
           enabled: donationSettings.enabled,
           show_button: donationSettings.show_button,
-          wallet_address: donationSettings.wallet_address || 'TY1234567890HudaLibraryTRC20Address',
+          wallet_address: donationSettings.wallet_address || 'TSC67u84nbzYSiKoDLBnVB3csFXLBFYUy6',
           currency: donationSettings.currency || 'USDT',
           network: donationSettings.network || 'TRON (TRC-20)',
           qr_code: donationSettings.qr_code,

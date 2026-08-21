@@ -16,7 +16,7 @@ export interface DonationSettingsData {
 export const DEFAULT_DONATION_SETTINGS: DonationSettingsData = {
   enabled: true,
   show_button: true,
-  wallet_address: 'TY1234567890HudaLibraryTRC20Address',
+  wallet_address: 'TSC67u84nbzYSiKoDLBnVB3csFXLBFYUy6',
   currency: 'USDT',
   network: 'TRON (TRC-20)',
   qr_code: '',

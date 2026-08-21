@@ -120,7 +120,7 @@ export default function DonationModal({
   }, [isOpen, onClose]);
 
   const handleCopyAddress = useCallback(() => {
-    const address = settings?.wallet_address || 'TY1234567890HudaLibraryTRC20Address';
+    const address = settings?.wallet_address || 'TSC67u84nbzYSiKoDLBnVB3csFXLBFYUy6';
     if (!address) return;
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -211,7 +211,7 @@ export default function DonationModal({
 
   const currency = settings?.currency || 'USDT';
   const network = settings?.network || 'TRON (TRC-20)';
-  const walletAddress = settings?.wallet_address || 'TY1234567890HudaLibraryTRC20Address';
+  const walletAddress = settings?.wallet_address || 'TSC67u84nbzYSiKoDLBnVB3csFXLBFYUy6';
   const title = lang === 'ar'
     ? (settings?.title_ar || t.donate_title)
     : (settings?.title_en || t.donate_title);
