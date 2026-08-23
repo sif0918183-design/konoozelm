@@ -273,7 +273,7 @@ export default function DonationModal({
             </div>
           </div>
 
-          <p className="text-xs text-primary-100/80 leading-relaxed mt-2 line-clamp-3 sm:line-clamp-none">
+          <p className="text-xs text-primary-100/80 leading-relaxed mt-2">
             {description}
           </p>
 
