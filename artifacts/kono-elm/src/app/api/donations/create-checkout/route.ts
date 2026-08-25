@@ -11,8 +11,8 @@ export async function POST(req: Request) {
     const { amount, donor_name = '', donor_email = '', donor_message = '' } = body;
 
     const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      return NextResponse.json({ error: 'مبلغ التبرع غير صريح' }, { status: 400 });
+    if (isNaN(parsedAmount) || parsedAmount < 15) {
+      return NextResponse.json({ error: 'أقل مبلغ للقرص بالبطاقة هو 15 دولار' }, { status: 400 });
     }
 
     // Default target wallet on Polygon for USDC

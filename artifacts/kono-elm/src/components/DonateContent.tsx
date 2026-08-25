@@ -78,6 +78,7 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
   const network = settings?.network || 'TRON (TRC-20)';
   const walletAddress = settings?.wallet_address || 'TSC67u84nbzYSiKoDLBnVB3csFXLBFYUy6';
   const presetAmounts = settings?.preset_amounts || [5, 10, 25, 50, 100];
+  const cardPresetAmounts = [15, 25, 50, 100];
   const explorerUrlTemplate = settings?.explorer_url_template || 'https://tronscan.org/#/address/{address}';
   const explorerUrl = explorerUrlTemplate.replace('{address}', walletAddress);
 
@@ -309,26 +310,27 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
 
       {/* Main Donation Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Side: Interactive Crypto Transfer Card */}
+        {/* Left Side: Two Distinct Cards */}
         <div className="lg:col-span-7 space-y-6">
+          {/* Top Card: Cards & Digital Wallets via PayGate */}
           <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-200/80 space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-gray-100">
               <h3 className="text-lg font-bold text-primary-950 flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                {t.donate_select_method} ({currency})
+                <Heart className="w-5 h-5 fill-gold-500 text-gold-500" />
+                <span>{t.donate_paygate_btn}</span>
               </h3>
-              <span className="text-xs font-bold px-3 py-1 bg-primary-50 text-primary-900 rounded-full border border-primary-200">
-                {network}
+              <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full border border-emerald-200">
+                Visa / Mastercard / Apple Pay / Google Pay
               </span>
             </div>
 
-            {/* Preset Amount Selector */}
+            {/* Preset Amount Selector for Cards */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-2">
                 {t.donate_amount_preset}
               </label>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                {presetAmounts.map((amt) => (
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {cardPresetAmounts.map((amt) => (
                   <button
                     key={amt}
                     type="button"
@@ -397,13 +399,54 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
                 )}
               </button>
             </div>
+          </div>
 
-            {/* Transfer Instruction for Direct Crypto */}
-            <div className="pt-4 border-t border-gray-100 text-center">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-3">
-                {t.donate_crypto_direct}
+          {/* Bottom Card: Direct Crypto Transfer */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-200/80 space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+              <h3 className="text-base sm:text-lg font-bold text-primary-950 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <span>USDT {network} Crypto Transfer</span>
+              </h3>
+              <span className="text-xs font-bold px-3 py-1 bg-primary-50 text-primary-900 rounded-full border border-primary-200">
+                {currency}
               </span>
             </div>
+
+            {/* Preset Amount Selector for Crypto */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-2">
+                {t.donate_amount_preset}
+              </label>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {presetAmounts.map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setSelectedAmount(amt)}
+                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border ${
+                      selectedAmount === amt
+                        ? 'bg-primary-900 text-white border-primary-900 shadow-md scale-105'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-gold-400'
+                    }`}
+                  >
+                    ${amt}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setSelectedAmount('custom')}
+                  className={`py-2.5 px-2 rounded-xl text-[11px] font-bold transition-all border ${
+                    selectedAmount === 'custom'
+                      ? 'bg-primary-900 text-white border-primary-900 shadow-md scale-105'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-gold-400'
+                  }`}
+                >
+                  {t.donate_custom_amount}
+                </button>
+              </div>
+            </div>
+
             <div className="p-3.5 bg-gold-50 rounded-2xl border border-gold-200 text-center">
               <p className="text-xs sm:text-sm font-bold text-primary-950">
                 {t.donate_transfer_instruction

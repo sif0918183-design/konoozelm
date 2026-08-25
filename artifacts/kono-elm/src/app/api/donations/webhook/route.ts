@@ -44,6 +44,24 @@ export async function GET(req: Request) {
       });
     }
 
+    // Optional verification step via IPN token if available
+    if (donation.provider_payment_id) {
+      try {
+        const verifyRes = await fetch(
+          `https://api.paygate.to/control/payment-status.php?ipn_token=${encodeURIComponent(donation.provider_payment_id)}`,
+          { cache: 'no-store' }
+        );
+        if (verifyRes.ok) {
+          const verifyData = await verifyRes.json();
+          if (verifyData.status !== 'paid' && !txidIn && !txidOut) {
+            console.warn('Webhook received but PayGate status check is not paid yet:', verifyData);
+          }
+        }
+      } catch (err) {
+        console.error('Error verifying webhook payment status:', err);
+      }
+    }
+
     const parsedValue = valueCoin ? parseFloat(valueCoin) : parseFloat(donation.amount);
 
     // 3. Update donation status to paid
