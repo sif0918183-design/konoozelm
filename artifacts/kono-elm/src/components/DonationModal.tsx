@@ -83,10 +83,6 @@ export default function DonationModal({
       return;
     }
 
-    if (finalAmount < 15) {
-      setCheckoutError(lang === 'ar' ? 'أقل مبلغ يقبله هذا النوع من نظام التحويل 15$' : 'Minimum donation amount for card transfer is $15');
-      return;
-    }
 
     setIsCreatingCheckout(true);
 
@@ -274,7 +270,7 @@ export default function DonationModal({
   const explorerUrlTemplate = settings?.explorer_url_template || 'https://tronscan.org/#/address/{address}';
   const explorerUrl = explorerUrlTemplate.replace('{address}', walletAddress);
 
-  const cardPresetAmounts = [15, 25, 50, 100];
+  const cardPresetAmounts = presetAmounts;
   const displayCryptoAmount = cryptoSelectedAmount === 'custom'
     ? (cryptoCustomAmount ? `${cryptoCustomAmount} ${currency}` : `${currency}`)
     : `${cryptoSelectedAmount} ${currency}`;
@@ -435,19 +431,11 @@ export default function DonationModal({
                     <div className="mt-2">
                       <input
                         type="number"
-                        min="15"
+                        min="1"
                         step="any"
-                        placeholder={lang === 'ar' ? 'أدخل المبلغ بالدولار ($) - 15$ على الأقل' : 'Enter amount in USD ($) - min $15'}
+                        placeholder={lang === 'ar' ? 'أدخل المبلغ بالدولار ($)' : 'Enter amount in USD ($)'}
                         value={cardCustomAmount}
-                        onChange={(e) => {
-                          setCardCustomAmount(e.target.value);
-                          const num = parseFloat(e.target.value);
-                          if (num && num < 15) {
-                            setCheckoutError(lang === 'ar' ? 'أقل مبلغ يقبله هذا النوع من نظام التحويل 15$' : 'Minimum donation amount for card transfer is $15');
-                          } else {
-                            setCheckoutError('');
-                          }
-                        }}
+                        onChange={(e) => setCardCustomAmount(e.target.value)}
                         className="w-full px-4 py-2 rounded-xl border border-gray-300 text-xs focus:ring-2 focus:ring-primary-500 outline-none bg-white"
                       />
                     </div>

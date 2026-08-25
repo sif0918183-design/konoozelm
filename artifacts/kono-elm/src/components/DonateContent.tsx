@@ -83,7 +83,7 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
   const network = settings?.network || 'TRON (TRC-20)';
   const walletAddress = settings?.wallet_address || 'TSC67u84nbzYSiKoDLBnVB3csFXLBFYUy6';
   const presetAmounts = settings?.preset_amounts || [5, 10, 25, 50, 100];
-  const cardPresetAmounts = [15, 25, 50, 100];
+  const cardPresetAmounts = presetAmounts;
   const explorerUrlTemplate = settings?.explorer_url_template || 'https://tronscan.org/#/address/{address}';
   const explorerUrl = explorerUrlTemplate.replace('{address}', walletAddress);
 
@@ -102,10 +102,6 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
       return;
     }
 
-    if (finalAmount < 15) {
-      setCheckoutError(lang === 'ar' ? 'أقل مبلغ يقبله هذا النوع من نظام التحويل 15$' : 'Minimum donation amount for card transfer is $15');
-      return;
-    }
 
     setIsCreatingCheckout(true);
 
@@ -374,22 +370,14 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
               </div>
 
               {cardSelectedAmount === 'custom' && (
-                <div className="mt-3 space-y-1">
+                <div className="mt-3">
                   <input
                     type="number"
-                    min="15"
+                    min="1"
                     step="any"
-                    placeholder={lang === 'ar' ? 'أدخل المبلغ بالدولار ($) - 15$ على الأقل' : 'Enter amount in USD ($) - min $15'}
+                    placeholder={lang === 'ar' ? 'أدخل المبلغ بالدولار ($)' : 'Enter amount in USD ($)'}
                     value={cardCustomAmount}
-                    onChange={(e) => {
-                      setCardCustomAmount(e.target.value);
-                      const num = parseFloat(e.target.value);
-                      if (num && num < 15) {
-                        setCheckoutError(lang === 'ar' ? 'أقل مبلغ يقبله هذا النوع من نظام التحويل 15$' : 'Minimum donation amount for card transfer is $15');
-                      } else {
-                        setCheckoutError('');
-                      }
-                    }}
+                    onChange={(e) => setCardCustomAmount(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-primary-500 outline-none bg-white"
                   />
                 </div>
