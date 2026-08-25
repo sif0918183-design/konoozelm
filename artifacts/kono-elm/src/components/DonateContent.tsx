@@ -30,8 +30,13 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
   const t = translations[lang];
   const [settings, setSettings] = useState<DonationSettings | null>(initialSettings);
   const [isLoading, setIsLoading] = useState(!initialSettings);
-  const [selectedAmount, setSelectedAmount] = useState<number | 'custom'>(25);
-  const [customAmount, setCustomAmount] = useState<string>('');
+  // Card Payment States (Starts at $15)
+  const [cardSelectedAmount, setCardSelectedAmount] = useState<number | 'custom'>(25);
+  const [cardCustomAmount, setCardCustomAmount] = useState<string>('');
+
+  // Crypto Payment States (Starts at $5)
+  const [cryptoSelectedAmount, setCryptoSelectedAmount] = useState<number | 'custom'>(25);
+  const [cryptoCustomAmount, setCryptoCustomAmount] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -82,18 +87,23 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
   const explorerUrlTemplate = settings?.explorer_url_template || 'https://tronscan.org/#/address/{address}';
   const explorerUrl = explorerUrlTemplate.replace('{address}', walletAddress);
 
-  const displayAmount = selectedAmount === 'custom'
-    ? (customAmount ? `${customAmount} ${currency}` : `${currency}`)
-    : `${selectedAmount} ${currency}`;
+  const displayCryptoAmount = cryptoSelectedAmount === 'custom'
+    ? (cryptoCustomAmount ? `${cryptoCustomAmount} ${currency}` : `${currency}`)
+    : `${cryptoSelectedAmount} ${currency}`;
 
   const handlePayGateCheckout = async () => {
     setCheckoutError('');
-    const finalAmount = selectedAmount === 'custom'
-      ? parseFloat(customAmount) || 0
-      : selectedAmount;
+    const finalAmount = cardSelectedAmount === 'custom'
+      ? parseFloat(cardCustomAmount) || 0
+      : cardSelectedAmount;
 
     if (!finalAmount || finalAmount <= 0) {
       setCheckoutError(lang === 'ar' ? 'يرجى تحديد مبلغ التبرع' : 'Please select or enter a donation amount');
+      return;
+    }
+
+    if (finalAmount < 15) {
+      setCheckoutError(lang === 'ar' ? 'أقل مبلغ يقبله هذا النوع من نظام التحويل 15$' : 'Minimum donation amount for card transfer is $15');
       return;
     }
 
@@ -176,9 +186,9 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
     setIsSubmittingConfirm(true);
     setConfirmError('');
 
-    const finalAmount = selectedAmount === 'custom'
-      ? parseFloat(customAmount) || 0
-      : selectedAmount;
+    const finalAmount = cryptoSelectedAmount === 'custom'
+      ? parseFloat(cryptoCustomAmount) || 0
+      : cryptoSelectedAmount;
 
     try {
       const res = await fetch('/api/donations/confirm', {
@@ -334,9 +344,12 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
                   <button
                     key={amt}
                     type="button"
-                    onClick={() => setSelectedAmount(amt)}
+                    onClick={() => {
+                      setCardSelectedAmount(amt);
+                      setCheckoutError('');
+                    }}
                     className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border ${
-                      selectedAmount === amt
+                      cardSelectedAmount === amt
                         ? 'bg-primary-900 text-white border-primary-900 shadow-md scale-105'
                         : 'bg-white text-gray-700 border-gray-200 hover:border-gold-400'
                     }`}
@@ -346,9 +359,12 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
                 ))}
                 <button
                   type="button"
-                  onClick={() => setSelectedAmount('custom')}
+                  onClick={() => {
+                    setCardSelectedAmount('custom');
+                    setCheckoutError('');
+                  }}
                   className={`py-2.5 px-2 rounded-xl text-[11px] font-bold transition-all border ${
-                    selectedAmount === 'custom'
+                    cardSelectedAmount === 'custom'
                       ? 'bg-primary-900 text-white border-primary-900 shadow-md scale-105'
                       : 'bg-white text-gray-700 border-gray-200 hover:border-gold-400'
                   }`}
@@ -357,15 +373,23 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
                 </button>
               </div>
 
-              {selectedAmount === 'custom' && (
-                <div className="mt-3">
+              {cardSelectedAmount === 'custom' && (
+                <div className="mt-3 space-y-1">
                   <input
                     type="number"
-                    min="1"
+                    min="15"
                     step="any"
-                    placeholder={lang === 'ar' ? 'أدخل المبلغ بالدولار ($)' : 'Enter amount in USD ($)'}
-                    value={customAmount}
-                    onChange={(e) => setCustomAmount(e.target.value)}
+                    placeholder={lang === 'ar' ? 'أدخل المبلغ بالدولار ($) - 15$ على الأقل' : 'Enter amount in USD ($) - min $15'}
+                    value={cardCustomAmount}
+                    onChange={(e) => {
+                      setCardCustomAmount(e.target.value);
+                      const num = parseFloat(e.target.value);
+                      if (num && num < 15) {
+                        setCheckoutError(lang === 'ar' ? 'أقل مبلغ يقبله هذا النوع من نظام التحويل 15$' : 'Minimum donation amount for card transfer is $15');
+                      } else {
+                        setCheckoutError('');
+                      }
+                    }}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-primary-500 outline-none bg-white"
                   />
                 </div>
@@ -423,9 +447,9 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
                   <button
                     key={amt}
                     type="button"
-                    onClick={() => setSelectedAmount(amt)}
+                    onClick={() => setCryptoSelectedAmount(amt)}
                     className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border ${
-                      selectedAmount === amt
+                      cryptoSelectedAmount === amt
                         ? 'bg-primary-900 text-white border-primary-900 shadow-md scale-105'
                         : 'bg-white text-gray-700 border-gray-200 hover:border-gold-400'
                     }`}
@@ -435,9 +459,9 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
                 ))}
                 <button
                   type="button"
-                  onClick={() => setSelectedAmount('custom')}
+                  onClick={() => setCryptoSelectedAmount('custom')}
                   className={`py-2.5 px-2 rounded-xl text-[11px] font-bold transition-all border ${
-                    selectedAmount === 'custom'
+                    cryptoSelectedAmount === 'custom'
                       ? 'bg-primary-900 text-white border-primary-900 shadow-md scale-105'
                       : 'bg-white text-gray-700 border-gray-200 hover:border-gold-400'
                   }`}
@@ -445,12 +469,26 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
                   {t.donate_custom_amount}
                 </button>
               </div>
+
+              {cryptoSelectedAmount === 'custom' && (
+                <div className="mt-3">
+                  <input
+                    type="number"
+                    min="1"
+                    step="any"
+                    placeholder={lang === 'ar' ? 'أدخل المبلغ بالدولار ($)' : 'Enter amount in USD ($)'}
+                    value={cryptoCustomAmount}
+                    onChange={(e) => setCryptoCustomAmount(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-primary-500 outline-none bg-white"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="p-3.5 bg-gold-50 rounded-2xl border border-gold-200 text-center">
               <p className="text-xs sm:text-sm font-bold text-primary-950">
                 {t.donate_transfer_instruction
-                  .replace('{amount}', displayAmount)
+                  .replace('{amount}', displayCryptoAmount)
                   .replace('{currency}', '')}
               </p>
             </div>
