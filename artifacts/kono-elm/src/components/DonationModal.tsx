@@ -54,6 +54,10 @@ export default function DonationModal({
   const [showToast, setShowToast] = useState(false);
   const [activeTab, setActiveTab] = useState<'donate' | 'confirm'>('donate');
 
+  // PayGate Checkout State
+  const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+
   // Confirmation Form State
   const [txHash, setTxHash] = useState('');
   const [donorName, setDonorName] = useState('');
@@ -62,6 +66,44 @@ export default function DonationModal({
   const [isSubmittingConfirm, setIsSubmittingConfirm] = useState(false);
   const [confirmSuccess, setConfirmSuccess] = useState(false);
   const [confirmError, setConfirmError] = useState('');
+
+  const handlePayGateCheckout = async () => {
+    setCheckoutError('');
+    const finalAmount = selectedAmount === 'custom'
+      ? parseFloat(customAmount) || 0
+      : selectedAmount;
+
+    if (!finalAmount || finalAmount <= 0) {
+      setCheckoutError(lang === 'ar' ? 'يرجى تحديد مبلغ التبرع' : 'Please select or enter a donation amount');
+      return;
+    }
+
+    setIsCreatingCheckout(true);
+
+    try {
+      const res = await fetch('/api/donations/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: finalAmount,
+          donor_name: donorName,
+          donor_email: donorEmail,
+          donor_message: donorMessage
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        setCheckoutError(data.error || (lang === 'ar' ? 'فشل إنشاء عملية الدفع' : 'Failed to create checkout session'));
+        setIsCreatingCheckout(false);
+      }
+    } catch (err) {
+      setCheckoutError(lang === 'ar' ? 'خطأ في الاتصال بالسيرفر' : 'Server connection error');
+      setIsCreatingCheckout(false);
+    }
+  };
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -375,7 +417,40 @@ export default function DonationModal({
                 )}
               </div>
 
-              {/* Transfer Instruction */}
+            {/* Primary PayGate Payment Action Button */}
+            <div className="space-y-2 pt-1">
+              {checkoutError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl">
+                  {checkoutError}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handlePayGateCheckout}
+                disabled={isCreatingCheckout}
+                className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-gold-500 via-gold-400 to-gold-500 hover:from-gold-400 hover:to-gold-500 text-primary-950 font-bold text-xs sm:text-sm shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 border border-gold-300 scale-100 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+              >
+                {isCreatingCheckout ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{t.donate_processing_redirect}</span>
+                  </>
+                ) : (
+                  <>
+                    <Heart className="w-4 h-4 fill-primary-950 text-primary-950" />
+                    <span>{t.donate_paygate_btn}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Transfer Instruction for Direct Crypto */}
+            <div className="pt-3 border-t border-gray-100 text-center">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">
+                {t.donate_crypto_direct}
+              </span>
+            </div>
               <div className="p-3 bg-gold-50/80 rounded-2xl border border-gold-200 text-center">
                 <p className="text-xs font-bold text-primary-950">
                   {t.donate_transfer_instruction

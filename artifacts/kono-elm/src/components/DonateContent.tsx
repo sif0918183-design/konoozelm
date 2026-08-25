@@ -36,6 +36,11 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
   const [showToast, setShowToast] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // PayGate Checkout State
+  const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+  const [returnStatus, setReturnStatus] = useState<'success' | 'cancelled' | null>(null);
+
   // Confirmation Form State
   const [txHash, setTxHash] = useState('');
   const [donorName, setDonorName] = useState('');
@@ -44,6 +49,19 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
   const [isSubmittingConfirm, setIsSubmittingConfirm] = useState(false);
   const [confirmSuccess, setConfirmSuccess] = useState(false);
   const [confirmError, setConfirmError] = useState('');
+
+  // Check URL query parameters for return status
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('status');
+      if (status === 'success' || status === 'paid') {
+        setReturnStatus('success');
+      } else if (status === 'cancelled' || status === 'cancel') {
+        setReturnStatus('cancelled');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!settings) {
@@ -66,6 +84,44 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
   const displayAmount = selectedAmount === 'custom'
     ? (customAmount ? `${customAmount} ${currency}` : `${currency}`)
     : `${selectedAmount} ${currency}`;
+
+  const handlePayGateCheckout = async () => {
+    setCheckoutError('');
+    const finalAmount = selectedAmount === 'custom'
+      ? parseFloat(customAmount) || 0
+      : selectedAmount;
+
+    if (!finalAmount || finalAmount <= 0) {
+      setCheckoutError(lang === 'ar' ? 'يرجى تحديد مبلغ التبرع' : 'Please select or enter a donation amount');
+      return;
+    }
+
+    setIsCreatingCheckout(true);
+
+    try {
+      const res = await fetch('/api/donations/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: finalAmount,
+          donor_name: donorName,
+          donor_email: donorEmail,
+          donor_message: donorMessage
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        setCheckoutError(data.error || (lang === 'ar' ? 'فشل إنشاء عملية الدفع' : 'Failed to create checkout session'));
+        setIsCreatingCheckout(false);
+      }
+    } catch (err) {
+      setCheckoutError(lang === 'ar' ? 'خطأ في الاتصال بالسيرفر' : 'Server connection error');
+      setIsCreatingCheckout(false);
+    }
+  };
 
   const handleCopyAddress = useCallback(() => {
     if (!walletAddress) return;
@@ -221,6 +277,36 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
         </div>
       </div>
 
+      {/* Return Status Banners */}
+      {returnStatus === 'success' && (
+        <div className="p-6 bg-emerald-500/15 border-2 border-emerald-500 rounded-3xl text-emerald-900 flex items-center gap-4 shadow-lg animate-fadeIn">
+          <div className="w-12 h-12 bg-emerald-600 text-white rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md">
+            <Check className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-bold text-base text-emerald-950">
+              {t.donate_confirm_success}
+            </h3>
+            <p className="text-xs text-emerald-800 mt-1">
+              {t.donate_payment_success}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {returnStatus === 'cancelled' && (
+        <div className="p-5 bg-amber-500/15 border-2 border-amber-500 rounded-3xl text-amber-900 flex items-center gap-4 shadow-lg animate-fadeIn">
+          <div className="w-10 h-10 bg-amber-600 text-white rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md">
+            <Info className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-amber-950">
+              {t.donate_payment_cancelled}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Main Donation Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Side: Interactive Crypto Transfer Card */}
@@ -284,7 +370,40 @@ export default function DonateContent({ lang, initialSettings = null }: DonateCo
               )}
             </div>
 
-            {/* Transfer Instruction */}
+            {/* Primary PayGate Payment Action Button */}
+            <div className="space-y-3 pt-2">
+              {checkoutError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl">
+                  {checkoutError}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handlePayGateCheckout}
+                disabled={isCreatingCheckout}
+                className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-gold-500 via-gold-400 to-gold-500 hover:from-gold-400 hover:to-gold-500 text-primary-950 font-bold text-sm sm:text-base shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 border border-gold-300 scale-100 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+              >
+                {isCreatingCheckout ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>{t.donate_processing_redirect}</span>
+                  </>
+                ) : (
+                  <>
+                    <Heart className="w-5 h-5 fill-primary-950" />
+                    <span>{t.donate_paygate_btn}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Transfer Instruction for Direct Crypto */}
+            <div className="pt-4 border-t border-gray-100 text-center">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-3">
+                {t.donate_crypto_direct}
+              </span>
+            </div>
             <div className="p-3.5 bg-gold-50 rounded-2xl border border-gold-200 text-center">
               <p className="text-xs sm:text-sm font-bold text-primary-950">
                 {t.donate_transfer_instruction
