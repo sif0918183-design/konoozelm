@@ -49,9 +49,10 @@ export async function POST(req: Request) {
     }
 
     if (!addressIn) {
-      // Fallback if PayGate wallet creation endpoint fails or returned unexpected payload
-      isOfflineFallback = true;
-      addressIn = paymentReference;
+      console.error('PayGate wallet API did not return address_in');
+      return NextResponse.json({
+        error: 'تعذر الاتصال ببوابة الدفع PayGate حالياً، يرجى المحاولة مرة أخرى أو استخدام التبرع المباشر.'
+      }, { status: 502 });
     }
 
     const client = supabaseAdmin || supabase;
@@ -78,11 +79,10 @@ export async function POST(req: Request) {
     }
 
     // Build Checkout Redirect URL
-    // Multi-provider mode checkout link on PayGate
-    let checkoutUrl = `https://checkout.paygate.to/pay.php?address=${encodeURIComponent(addressIn)}&amount=${parsedAmount}&currency=USD`;
-    if (donor_email.trim()) {
-      checkoutUrl += `&email=${encodeURIComponent(donor_email.trim())}`;
-    }
+    // addressIn from PayGate wallet.php is already URL-encoded; do NOT double-encode it.
+    // PayGate pay.php requires an email parameter. If none provided by donor, use default domain donor email.
+    const emailToUse = donor_email.trim() || 'donor@hudalibrary.com';
+    const checkoutUrl = `https://checkout.paygate.to/pay.php?address=${addressIn}&amount=${parsedAmount}&currency=USD&email=${encodeURIComponent(emailToUse)}`;
 
     return NextResponse.json({
       success: true,
