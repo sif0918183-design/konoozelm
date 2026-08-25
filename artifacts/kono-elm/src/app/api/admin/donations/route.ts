@@ -30,10 +30,10 @@ export async function GET() {
 
     const items = donations || [];
     const totalCount = items.length;
-    const pendingCount = items.filter(d => d.status === 'pending').length;
-    const verifiedCount = items.filter(d => d.status === 'verified').length;
+    const pendingCount = items.filter(d => d.status === 'pending' || d.status === 'processing').length;
+    const verifiedCount = items.filter(d => d.status === 'verified' || d.status === 'paid').length;
     const totalAmountVerified = items
-      .filter(d => d.status === 'verified')
+      .filter(d => d.status === 'verified' || d.status === 'paid')
       .reduce((acc, d) => acc + (parseFloat(d.amount) || 0), 0);
 
     return NextResponse.json({
@@ -64,7 +64,7 @@ export async function PATCH(req: Request) {
   try {
     const { id, status } = await req.json();
 
-    if (!id || !['verified', 'rejected', 'pending'].includes(status)) {
+    if (!id || !['verified', 'rejected', 'pending', 'paid', 'failed', 'cancelled'].includes(status)) {
       return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
     }
 

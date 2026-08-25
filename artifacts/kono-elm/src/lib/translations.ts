@@ -85,6 +85,11 @@ export interface TranslationKeys {
   donate_page_meta_desc: string;
   donate_share_title: string;
   donate_share_text: string;
+  donate_paygate_btn: string;
+  donate_crypto_direct: string;
+  donate_processing_redirect: string;
+  donate_payment_cancelled: string;
+  donate_payment_success: string;
 
   // Admin Keys
   admin_title: string;
@@ -297,6 +302,11 @@ export const translations: Record<Language, TranslationKeys> = {
     donate_page_meta_desc: 'مساهمتك تمكننا من إتاحة آلاف الكتب والمخطوطات الإسلامية مجانًا للباحثين والقراء حول العالم.',
     donate_share_title: 'ادعم مكتبة الهدى الرقمية',
     donate_share_text: 'ساهم في دعم مكتبة الهدى واستمرار إتاحة الكتب والمخطوطات الإسلامية مجاناً للجميع.',
+    donate_paygate_btn: 'التبرع الآن (بطاقة / Apple Pay / Google Pay)',
+    donate_crypto_direct: 'التبرع المباشر عبر محفظة الكريبتو',
+    donate_processing_redirect: 'جاري تحويلك لصفحة الدفع الآمنة...',
+    donate_payment_cancelled: 'تم إلغاء عملية الدفع، يمكنك المحاولة مرة أخرى في أي وقت.',
+    donate_payment_success: 'جزاكم الله خيراً! تم استقبال تبرعكم بنجاح وتسجيله.',
 
     // Admin Strings
     admin_title: 'لوحة تحكم مكتبة الهدى',
@@ -507,6 +517,11 @@ export const translations: Record<Language, TranslationKeys> = {
     donate_page_meta_desc: 'Your contribution enables us to provide thousands of Islamic books & manuscripts for free to researchers worldwide.',
     donate_share_title: 'Support Huda Library',
     donate_share_text: 'Support Huda Library in providing free access to Islamic books and manuscripts for everyone.',
+    donate_paygate_btn: 'Donate Now (Card / Apple Pay / Google Pay)',
+    donate_crypto_direct: 'Direct Crypto Wallet Transfer',
+    donate_processing_redirect: 'Redirecting to secure payment page...',
+    donate_payment_cancelled: 'Payment process was cancelled. You can try again anytime.',
+    donate_payment_success: 'Thank you! Your donation was received and recorded successfully.',
 
     // Admin Strings
     admin_title: 'Huda Library Control Panel',
