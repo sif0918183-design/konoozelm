@@ -54,30 +54,28 @@ export default function EnglishLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html className={`${tajawal.variable} ${amiri.variable}`}>
-      <body className="min-h-screen bg-[#f8f9fa] font-tajawal overflow-x-hidden">
-        <LanguageRedirector />
-        <DocumentLanguageSetter />
-        {children}
-        <DonationWidget lang="en" />
-        <AdsterraPopunder />
-        <AdsterraSocialBar />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                  }, function(err) {
-                    console.log('ServiceWorker registration failed: ', err);
-                  });
+    <div className={`${tajawal.variable} ${amiri.variable} min-h-screen bg-[#f8f9fa] font-tajawal overflow-x-hidden`}>
+      <LanguageRedirector />
+      <DocumentLanguageSetter />
+      {children}
+      <DonationWidget lang="en" />
+      <AdsterraPopunder />
+      <AdsterraSocialBar />
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                  console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, function(err) {
+                  console.log('ServiceWorker registration failed: ', err);
                 });
-              }
-            `,
-          }}
-        />
-      </body>
-    </html>
+              });
+            }
+          `,
+        }}
+      />
+    </div>
   );
 }
