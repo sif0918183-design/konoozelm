@@ -25,16 +25,28 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       // Try metadata discovery if direct link fails
-      const idMatch = url.match(/archive\.org\/download\/([^\/]+)/);
+      const idMatch = url.match(/archive\.org\/download\/([^\/]+)/) || url.match(/archive\.org\/details\/([^\/]+)/);
       if (idMatch) {
         const identifier = idMatch[1];
         const metadataRes = await fetch(`https://archive.org/metadata/${identifier}`);
         if (metadataRes.ok) {
           const metadata = await metadataRes.json();
-          const pdfFile = metadata.files?.find((f: any) => f.name.toLowerCase().endsWith('.pdf'));
-          if (pdfFile) {
-             const newRes = await fetch(`https://archive.org/download/${identifier}/${pdfFile.name}`, {
-                headers: { 'User-Agent': 'Mozilla/5.0' },
+          const pdfFiles = metadata.files?.filter((f: any) =>
+            f.name &&
+            f.name.toLowerCase().endsWith('.pdf') &&
+            !f.name.toLowerCase().endsWith('_text.pdf')
+          ) || [];
+
+          const bestPdf = pdfFiles.find((f: any) => f.format?.toLowerCase() === 'text pdf') ||
+                          pdfFiles.find((f: any) => !f.name.includes('_bw.pdf')) ||
+                          pdfFiles[0];
+
+          if (bestPdf) {
+             const newUrl = `https://archive.org/download/${identifier}/${encodeURIComponent(bestPdf.name)}`;
+             const newRes = await fetch(newUrl, {
+                headers: {
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                },
                 redirect: 'follow'
              });
              if (newRes.ok) {

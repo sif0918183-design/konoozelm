@@ -96,12 +96,6 @@ export default async function CategoryPage({ params }: Props) {
                   coverImage: `https://archive.org/services/img/${book.archiveId}`,
                 }}
                 initialSeoSlug={book.slug}
-                initialFiles={[
-                  {
-                    name: book.title,
-                    url: `https://archive.org/download/${book.archiveId}/${book.archiveId}.pdf`
-                  }
-                ]}
               />
             </div>
           ))}
