@@ -62,57 +62,182 @@ export async function filterAndRankBooks(category: string, books: any[]) {
   }));
 }
 
+// Global counter for deterministic sequential rotation across generations (1 -> 2 -> 3 -> 4 -> 1 ...)
+let globalStyleCounter = 0;
+
 /**
- * Generates SEO description for a book using GPT-4.1-mini
+ * Returns current global style index (0-based) and increments counter.
  */
-export async function generateBookDescription(title: string, author: string, lang: string = 'ar') {
+export function getNextStyleIndex(): number {
+  const currentIndex = globalStyleCounter % 4;
+  globalStyleCounter++;
+  return currentIndex;
+}
+
+/**
+ * Advances global style counter by count.
+ */
+export function advanceStyleCounter(count: number): void {
+  globalStyleCounter += count;
+}
+
+/**
+ * Generates SEO description for a book using GPT-4.1-mini with 4 distinct editorial styles.
+ * If explicitStyleIndex is provided, uses that specific style (0-based index 0..3).
+ * Otherwise, automatically uses and advances the global sequential counter.
+ */
+export async function generateBookDescription(title: string, author: string, lang: string = 'ar', explicitStyleIndex?: number) {
   const isEnglish = lang === 'en';
+  const hasAuthor = author && author !== 'Unknown' && author !== 'غير معروف' && author.trim() !== '';
+
+  const styleIndex = explicitStyleIndex !== undefined ? (Math.abs(explicitStyleIndex) % 4) : getNextStyleIndex();
+
+  // Common mandatory safety & grounding instructions
+  const commonRulesAr = `
+قواعد وأحكام إلزامية حاسمة:
+1. الاعتماد المطلق على بيانات الكتاب الحقيقية فقط ("${title}"${hasAuthor ? ` للمؤلف "${author}"` : ''}).
+2. يُمنع منعاً باتاً اختلاق معلومات عن المؤلف، أو ادعاء وجود أجزاء أو مجلدات غير مؤكدة، أو اختلاق اقتباسات أو آراء لم ترد في البيانات.
+3. إذا كانت المعلومات المتاحة عن الكتاب محدودة، يجب أن يكون الوصف مختصراً وطبيعياً (200-300 كلمة) دون حشو أو مبالغات.
+4. ${!hasAuthor ? 'اسم المؤلف غير متوفر؛ يُمنع منعاً باتاً ذكر "المؤلف غير معروف" أو أي عبارة مشابهة، بل ركز الوصف بالكامل على الكتاب وموضوعه والقارئ.' : 'اذكر اسم المؤلف بشكل طبيعي وسلس دون مبالغة.'}
+5. اكتب بلغة عربية احترافية، بليغة، كأنها بقلم خبير مكتبات ومحرر بشري متمرس، مع دمج كلمات بحثية بأسلوب طبيعي (تحميل PDF، قراءة أونلاين، مكتبة إسلامية).
+6. ابدأ النص مباشرة دون التنويه بكونك مساعد ذكي.
+`;
+
+  const commonRulesEn = `
+CRITICAL MANDATORY RULES:
+1. Rely STRICTLY and SOLELY on the real provided book data ("${title}"${hasAuthor ? ` by "${author}"` : ''}).
+2. STRICTLY PROHIBITED: Do not fabricate author biography, unverified volume numbers, fake table of contents, or fictional historical claims.
+3. If provided metadata is concise, keep the description natural and focused (200-300 words) without fluff or false promises.
+4. ${!hasAuthor ? 'Author name is unavailable. DO NOT state "Unknown Author" or anything similar. Focus 100% on the book title, theme, and value.' : 'Mention the author naturally.'}
+5. Write in fluent, professional, human-like editorial style suited for a digital Islamic library with smooth SEO phrase integration (Download PDF, Read Online, Islamic Library).
+6. Start immediately without any AI intro phrases.
+`;
+
+  // 4 Editorial Styles Prompts
+  let styleInstructionAr = '';
+  let styleInstructionEn = '';
+
+  switch (styleIndex) {
+    case 0:
+      // Style 1: تقديم موضوعي مباشر (Direct Objective Overview)
+      styleInstructionAr = `
+[الأسلوب التحريري الأول: تقديم موضوعي مباشر]
+- الشخصية التحريرية: أسلوب موسوعي موضوعي، يبدأ مباشرة بتعريف الكتاب وموضوعه العلمي بشكل محدد وواضح.
+- البناء التحريري:
+  1. فقرة افتتاحية تحدد العنوان والمجال المعرفي الرئيسي للكتاب بصورة مباشرة ورصينة.
+  2. استعراض موضوعي لأبرز المحاور والمحتويات التي يعالجها الكتاب بناءً على عنوانه ومجاله.
+  3. فقرة ختامية توضح مكانة الكتاب وخيارات الاطلاع عليه وتحميله بجميع صيغه (PDF) وقراءته أونلاين.
+`;
+      styleInstructionEn = `
+[Editorial Style 1: Direct Objective Overview]
+- Editorial Character: Encyclopedic, clear, and direct. Begins straight away by defining the book and its primary field of study.
+- Structure:
+  1. Direct opening paragraph stating the title, author (if available), and core field.
+  2. Structured overview of main themes and subject matter derived from the title.
+  3. Clear concluding summary regarding its utility for readers and direct PDF download/online reading.
+`;
+      break;
+
+    case 1:
+      // Style 2: عرض تحليلي للمضمون (Analytical Content Presentation)
+      styleInstructionAr = `
+[الأسلوب التحريري الثاني: عرض تحليلي للمضمون]
+- الشخصية التحريرية: أسلوب تحليلي رصين، يركز على المضمون العلمي والقضايا الجوهرية التي يناقشها الكتاب ودواعي تدوينه.
+- البناء التحريري:
+  1. افتتاحية تركز على زاوية التناول العلمية والموضوع الأساسي الذي يدور حوله النص.
+  2. تحليل طبيعي للقضايا والمسائل العلمية أو الفكرية التي يسلط الكتاب الضوء عليها.
+  3. بيان الفائدة التحليلية للباحث والقارئ، وتوفير الكتاب للتحميل المباشر والقراءة عبر المكتبة.
+`;
+      styleInstructionEn = `
+[Editorial Style 2: Analytical Content Focus]
+- Editorial Character: Analytical, insightful, and focused on core thematic concepts and intellectual scope.
+- Structure:
+  1. Opening paragraph highlighting the core premise and thematic focus of the work.
+  2. Thoughtful analysis of the subject matter, key questions, or principles addressed.
+  3. Scholarly benefit for readers along with seamless PDF download and reading options.
+`;
+      break;
+
+    case 2:
+      // Style 3: التعريف بالقيمة العلمية والفائدة (Academic Value & Utility Focus)
+      styleInstructionAr = `
+[الأسلوب التحريري الثالث: التعريف بالقيمة العلمية والفائدة]
+- الشخصية التحريرية: أسلوب أكاديمي محفز، يركز على قيمة الكتاب في باب العلوم وقدرته على خدمة الباحثين والطلاب.
+- البناء التحريري:
+  1. استهلال يبرز الأهمية العلمية للموضوع والمكانة التي يمثلها هذا المصنف لدارسي هذا الفن.
+  2. توضيح ما يكتسبه القارئ والباحث من مطالعة هذا الكتاب وأبرز فوائده العلمية.
+  3. خاتمة تبرز أهمية اقتناء هذه النسخة الإلكترونية المتاحة للتحميل والقراءة السريعة.
+`;
+      styleInstructionEn = `
+[Editorial Style 3: Academic Value & Utility]
+- Editorial Character: Educational and value-oriented, emphasizing research benefit and scholarly merit.
+- Structure:
+  1. Opening highlighting the academic relevance and importance of the subject matter.
+  2. Detailed utility overview explaining what students and researchers gain from consulting this title.
+  3. Closing sentence facilitating direct access for digital reading and PDF downloading.
+`;
+      break;
+
+    case 3:
+      // Style 4: وصف تحريري مرن وإيقاع متنوع (Flexible Narrative Style)
+      styleInstructionAr = `
+[الأسلوب التحريري الرابع: وصف تحريري مرن بأسلوب سلس]
+- الشخصية التحريرية: أسلوب تحريري مرن وسلس، يبدأ من الفكرة البارزة في المصنف ثم ينتقل بإيقاع متجدد ومبسط بين أجزائه.
+- البناء التحريري:
+  1. مدخل تحريري جذاب ينطلق من فكرة جوهرية يطرحها موضوع الكتاب.
+  2. التقال بأسلوب سردي طبيعي ومتنوع الجمل لتوضيح تفاصيل المادة ومحتواها.
+  3. فقرة ختامية مشجعة توضح سهولة قراءة الكتاب أونلاين وتحميله بصيغة PDF.
+`;
+      styleInstructionEn = `
+[Editorial Style 4: Flexible Narrative Description]
+- Editorial Character: Dynamic, fluid, and narrative-driven with expressive sentence structure.
+- Structure:
+  1. Engaging introductory lead inspired by the central concept of the title.
+  2. Fluid progression into the structural aspects and coverage of the topic.
+  3. Inviting conclusion offering effortless reading and direct PDF download links.
+`;
+      break;
+  }
 
   const prompt = isEnglish ? `
-You are a professional SEO and library expert. Write a compelling, natural, and comprehensive SEO description for a book titled "${title}"${author && author !== 'Unknown' && author !== 'غير معروف' ? ` by author "${author}"` : ''}.
+You are a senior digital library editor and SEO specialist. Write a comprehensive, highly professional, human-like SEO description for a book titled "${title}"${hasAuthor ? ` by author "${author}"` : ''}.
+
+${styleInstructionEn}
+
+${commonRulesEn}
 
 Requirements:
-1. Style: The style must be very natural and human-like (critical for Google indexing), eloquent and suitable for scholarly content.
-2. Content:
-   - An introduction about the book's importance and value.
-   - A brief and focused overview of the book's topic and main sections.
-   - Naturally integrated keywords (e.g., Download PDF, Read Online, Islamic books, etc.).
-   - Important: If the author's name is not provided or is "Unknown", DO NOT mention that the author is unknown. Instead, focus entirely on the book and its value.
-3. Length: Between 200 to 400 words to ensure SEO performance.
-4. No AI mention: Start the description directly and do not mention being an AI assistant.
-5. Enhanced Title: Suggest a catchy SEO title that includes "Download & Read PDF" and sounds authoritative.
-
-I want the result strictly in JSON format:
+- Length: 200 to 400 words.
+- SEO Title: Suggest an authoritative title incorporating "Download & Read PDF" and the book title.
+- Format: Return strictly JSON object format:
 {
-  "seoTitle": "SEO Title here",
-  "description": "Full description here"
+  "seoTitle": "Authoritative SEO Title Here",
+  "description": "Full Description Here"
 }
 ` : `
-أنت خبير SEO ومكتبات إسلامية محترف. قم بكتابة وصف جذاب، طبيعي، وشامل لمحركات البحث (SEO) لكتاب بعنوان "${title}"${author && author !== 'Unknown' && author !== 'غير معروف' ? ` للمؤلف "${author}"` : ''}.
+أنت رئيس تحرير مكتبة رقمية إسلامية وخبير SEO محترف. قم بكتابة وصف رصين ومحتوى متميز ومطابق للمعايير لكتاب بعنوان "${title}"${hasAuthor ? ` للمؤلف "${author}"` : ''}.
+
+${styleInstructionAr}
+
+${commonRulesAr}
 
 المتطلبات:
-1. الأسلوب: يجب أن يكون الأسلوب طبيعياً جداً ويشبه كتابة البشر (مهم جداً لقبول Google)، بليغاً ومناسباً للمحتوى الإسلامي.
-2. المحتوى:
-   - مقدمة عن أهمية الكتاب وقيمته العلمية في التراث الإسلامي.
-   - نبذة مختصرة ومركزة عن موضوع الكتاب وأهم الأبواب التي يتناولها.
-   - كلمات مفتاحية مدمجة بصورة طبيعية تماماً (مثل: تحميل PDF، قراءة أونلاين، كتب إسلامية، إلخ).
-   - ملاحظة هامة: إذا كان اسم المؤلف غير متوفر أو "غير معروف"، فلا تذكر أبداً أن المؤلف غير معروف، بل ركز الوصف بالكامل على متن الكتاب وقيمته العلمية.
-3. الطول: بين 200 إلى 400 كلمة لضمان تفوقه في نتائج البحث.
-4. عدم ذكر الذكاء الاصطناعي: ابدأ الوصف مباشرة ولا تذكر أنك مساعد ذكي.
-5. العنوان المحسن: اقترح عنوان SEO جذاب يتضمن "تحميل وقراءة PDF" ويوحي بالموثوقية.
-
-أريد النتيجة بتنسيق JSON حصراً:
+- الطول: بين 200 و 400 كلمة.
+- عنوان SEO: اقترح عنواناً جذاباً وموثوقاً يتضمن "تحميل وقراءة PDF" واسم الكتاب.
+- التنسيق: أعد النتيجة حصراً بصيغة JSON:
 {
   "seoTitle": "عنوان SEO هنا",
   "description": "الوصف الكامل هنا"
 }
 `;
 
+  console.log(`[SEO Description Generation] Using Editorial Style #${styleIndex + 1}`);
+
   const result = await callOpenAI(
     SEO_MODEL,
     [{ role: 'user', content: prompt }],
     { type: 'json_object' },
-    '[SEO]'
+    `[SEO Style #${styleIndex + 1}]`
   );
   return result as { seoTitle: string; description: string };
 }
