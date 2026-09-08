@@ -92,29 +92,29 @@ export async function generateBookDescription(title: string, author: string, lan
 
   const styleIndex = explicitStyleIndex !== undefined ? (Math.abs(explicitStyleIndex) % 4) : getNextStyleIndex();
 
-  // Common mandatory safety, grounding, and style guidelines
+  // Common mandatory safety, grounding, semantic SEO, and editorial guidelines
   const commonRulesAr = `
-قواعد وأحكام إلزامية حاسمة (الانضباط بالحقائق والدقة التحريرية):
-1. الحقائق أولاً: اعتمد حصراً وبشكل مطلق على بيانات الكتاب الحقيقية المتوفرة ("${title}"${hasAuthor ? ` للمؤلف "${author}"` : ''}).
-2. يُمنع منعاً باتاً التخمين أو اختلاق: فصول غير معروفة، أجزاء، منهج المؤلف، مذهبه، آراؤه، تقييمات، دار نشر، أو محقق ما لم ترد صراحة في البيانات. مجرد وجود عنوان لا يعني جواز اختراع محتواه المفترض.
-3. ${!hasAuthor ? 'اسم المؤلف غير متوفر؛ يُمنع منعاً باتاً كتابة "المؤلف غير معروف" أو أي جملة تشير لغيابه. ركز الوصف بالكامل وبشكل طبيعي على متن الكتاب وموضوعه.' : 'اذكر اسم المؤلف بشكل طبيعي وسلس دون تكرار أو مبالغة.'}
-4. منع الحشو والدعاية والتسويق للموقع: الوصف خاص بـ "الكتاب فقط". يمنع ختم الوصف بعبارات دعاية للموقع مثل "يمكن تحميله PDF"، "قراءته أونلاين"، "تتيح المكتبة"، "في المكتبة الإسلامية الرقمية".
-5. حظر العبارات المستهلكة والقوالب الآلية: تجنب قدر الإمكان عبارات النمطية مثل ("مرجع مهم"، "مرجع قيم"، "مرجع علمي متميز"، "إضافة قيمة"، "إضافة مهمة للمكتبة"، "الباحثين والطلاب والمهتمين"، "بأسلوب علمي رصين"، "تعميق الفهم"، "إثراء المكتبة").
-6. تنويع الجمل والتركيب: تجنب التكرار الآلي لافتتاحيات مثل ("يُعد..."، "يعتبر..."، "يتناول...") أو نهايات نمطية مثل ("مما يجعله إضافة قيمة...").
-7. الطول والتقسيم: اكتب وصفاً يتراوح بين 100 إلى 180 كلمة تقريباً (أقصر بحدود 80-120 كلمة إن كانت البيانات محدودة). لا تجعل عدد الفقرات قالباً ثابتاً (يمكن فقرة أو فقرتين أو ثلاث حسب الحجم والمعلومات).
-8. مراجعة تحريرية داخلية قبل إخراج الناتج: قبل إخراج النص النهائي، راجع الوصف ذهنياً للتأكد من خلوه تماماً من التخمين أو الحشو أو العبارات التسويقية المكررة، واقتطع أي جملة لا تقدم فائدة حقيقية عن الكتاب.
+قواعد وأحكام إلزامية حاسمة (تحرير بشري احترافي + SEO دلالي غني):
+1. الاعتماد المطلق على البيانات الحقيقية: اعتمد حصراً وبشكل مطلق على بيانات الكتاب الحقيقية المتوفرة ("${title}"${hasAuthor ? ` للمؤلف "${author}"` : ''}).
+2. التكاملي بين التحرير البشري والـ Semantic SEO: ادعم النص بالمصطلحات العلمية والدلالية المرتبطة بموضوع الكتاب ومجاله (مثل الفقه الحنفي، الأحكام الفقهية، الحديث، السنة النبوية، العقيدة) فقط عندما تكون مرتبطة وثيقة بمادة الكتاب. لا تحشو كلمات مفتاحية لمجرد SEO.
+3. حظر الاختلاق والتخمين: يُمنع منعاً باتاً اختلاق فصول غير معروفة، أجزاء، منهج المؤلف، مذهبه، آراؤه، تقييمات، أو دار نشر ما لم ترد صراحة في البيانات. مجرد وجود عنوان لا يعني جواز اختراع محتواه التفصيلي.
+4. ${!hasAuthor ? 'اسم المؤلف غير متوفر؛ يُمنع منعاً باتاً كتابة "المؤلف غير معروف" أو أي جملة تشير لغيابه. ركز الوصف بالكامل وبشكل طبيعي على متن الكتاب وموضوعه.' : 'اذكر اسم المؤلف بطريقة طبيعية دون حشو أو تكرار متكلف.'}
+5. تركيز النص على الكتاب لا على الموقع: لا تحول الوصف إلى نص تسويقي للموقع، ويُمنع ختم الفقرات بعبارات حشو دعائية مثل ("تحميل PDF مجاناً"، "يمكن قراءته أونلاين عبر المكتبة"، "في المكتبة الإسلامية الرقمية").
+6. منع القوالب والعبارات المستهلكة: حظر العبارات المكررة مثل ("يُعد كتاب"، "يعتبر كتاب"، "مرجع مهم"، "مرجع قيم"، "إضافة قيمة"، "يتيح للقارئ"، "مما يسهم في"، "الباحثين والطلاب والمهتمين"، "بأسلوب علمي رصين").
+7. بنية تحريرية مرنة وطول مناسب: استهدف طولاً بين 120 إلى 220 كلمة عندما تسمح البيانات بذلك (وأقصر إذا كانت البيانات قليلة). نوع بنيات الفقرات والجمل (من 1 إلى 3 فقرات) دون اتباع قالب ثوابت مسبق.
+8. مراجعة تحريرية داخلية قبل إخراج الناتج: راجع النص ذهنياً قبل إخرجه وتأكد أن النص يجيب عن سؤال القارئ ومحرك البحث ببلاغة ودقة ودون جمل حشو.
 `;
 
   const commonRulesEn = `
-CRITICAL MANDATORY RULES (Fact-based Grounding & Editorial Discipline):
-1. FACTS FIRST: Rely STRICTLY and SOLELY on real provided book data ("${title}"${hasAuthor ? ` by "${author}"` : ''}).
-2. ABSOLUTELY PROHIBITED: Do NOT guess or fabricate table of contents, unverified volume counts, author methodology, school of thought, or publisher details not present in the data.
-3. ${!hasAuthor ? 'Author is unavailable; DO NOT write "Unknown Author" or mention missing author info. Focus entirely on the book itself.' : 'Mention the author naturally without repetitive praise.'}
-4. NO MARKETING/LIBRARY FILLER: Do not convert the description into website promo or append boilerplate endings like "Download PDF here", "Read online in our library", or "Islamic digital library".
-5. BAN AI CLICHÉS & REPETITIVE PHRASES: Avoid overused clichés like ("important reference", "valuable addition", "for researchers and students", "deepening understanding", "enriching the library").
-6. VARY SENTENCE STRUCTURE: Do not rely on repetitive sentence openers ("This book is considered...", "It deals with...") or predictable boilerplate conclusions.
-7. LENGTH & STRUCTURE: Keep between 100 to 180 words (or shorter, 80-120 words, if data is sparse). Use 1 to 3 natural paragraphs.
-8. INTERNAL EDITORIAL CHECK: Review the draft before output. Strip away any marketing fluff, ungrounded assumptions, or AI noise.
+CRITICAL MANDATORY RULES (Native English Editorial Quality + Semantic SEO):
+1. FACTS FIRST: Rely STRICTLY and SOLELY on the real provided book data ("${title}"${hasAuthor ? ` by "${author}"` : ''}).
+2. NATIVE ENGLISH EDITORIAL QUALITY: Write as a professional English-language book editor. Do NOT produce translated Arabic patterns or clumsy phrasing.
+3. SEMANTIC SEO INTEGRATION: Naturally incorporate relevant domain keywords (e.g., Islamic jurisprudence, Hadith studies, theology, historical analysis) ONLY when genuinely backed by the book's topic. Do NOT keyword-stuff.
+4. ABSOLUTELY NO HALLUCINATIONS: Do NOT invent unverified chapters, volume numbers, school of thought, or author opinions not present in the input.
+5. ${!hasAuthor ? 'Author name is unavailable; DO NOT write "Unknown Author" or mention missing author details. Focus 100% on the book itself.' : 'Mention the author naturally without overusing the name.'}
+6. NO MARKETING/WEBSITE FILLER: Focus entirely on the book. Do NOT write promotional text about the website/library or append boilerplate download links ("Download PDF here", "Read online in our digital library").
+7. BAN AI CLICHÉS: Avoid generic phrases ("This book is an important reference...", "This valuable work...", "It provides readers with...", "It is a valuable addition...", "Researchers and students interested in...").
+8. LENGTH & FLEXIBLE STRUCTURE: Target roughly 120 to 220 words (or shorter if data is sparse). Use 1 to 3 natural paragraphs with varied sentence structures.
 `;
 
   // 4 Re-formulated Editorial Styles
@@ -123,111 +123,113 @@ CRITICAL MANDATORY RULES (Fact-based Grounding & Editorial Discipline):
 
   switch (styleIndex) {
     case 0:
-      // Style 1: الوصف الببليوغرافي التحريري (Bibliographical Editorial Overview)
+      // Style 1: تعريف وتحليل (Definition & Subject Analysis)
       styleInstructionAr = `
-[الأسلوب التحريري الأول: الوصف الببليوغرافي التحريري]
-- الشخصية التحريرية: أسلوب هادئ وموضوعي ومباشر، ينطلق من تعريف ببليوغرافي رصين بطبيعة الكتاب ومجاله العلمي، دون مبالغة أو لغة دعائية.
+[الأسلوب التحريري الأول: تعريف وتحليل]
+- الشخصية التحريرية: أسلوب تحريري رصين ينطلق من هوية الكتاب وموضوعه الأساسي، ثم ينتقل بشكل طبيعي إلى استعراض محتواه وأبرز جوانبه المعرفية.
 - التناول والتنظيم:
-  * ابدأ من هوية الكتاب وعنوانه بأسلوب طبيعي ومختلف (تجنب البدء بـ "يُعد كتاب...").
-  * انتقل إلى بيان موضوعه ومجاله بناءً على البيانات المتوفرة فقط.
-  * اختم بعبارة موضوعية موجزة تلخص الفن المعرفي أو المجال الذي ينتمي إليه.
+  * ابدأ مباشرة بتسليط الضوء على هويته وموضوعه الرئيسي بأسلوب متجدد (تجنب افتتاحات القوالب مثل "يُعد كتاب...").
+  * حلل المحور الفكري أو الفقهي أو التاريخي للكتاب بناءً على المعطيات المؤكدة.
+  * صغ خاتمة متناسقة توضح البعد المعرفي للمصنف.
 `;
       styleInstructionEn = `
-[Editorial Style 1: Bibliographical Editorial Overview]
-- Editorial Character: Calm, objective, and bibliographical. Introduces the work and its academic genre straightforwardly without hype.
+[Editorial Style 1: Definition & Analysis]
+- Editorial Character: Scholarly and analytical. Begins directly with the book's identity and primary subject, then analyzes its core coverage.
 - Structure:
-  * Begin naturally with the book's identity and subject matter (avoid generic "This book is considered...").
-  * Outline the core scope based strictly on available metadata.
-  * Conclude with a concise summary of the field or domain it addresses.
+  * Lead with a direct statement of the book's identity and core discipline (avoid "This book is...").
+  * Analyze the central theme or field based strictly on confirmed metadata.
+  * Conclude with a concise summary of its intellectual scope.
 `;
       break;
 
     case 1:
-      // Style 2: الفكرة المركزية (Central Thematic Core)
+      // Style 2: الموضوع أولاً (Subject-First Lead)
       styleInstructionAr = `
-[الأسلوب التحريري الثاني: الفكرة المركزية]
-- الشخصية التحريرية: أسلوب تحريري يبدأ من القضية المحورية أو الفكرة الرئيسية التي يستهدفها العنوان والموضوع، وربطها بالكتاب ومؤلفه بشكل سلس.
+[الأسلوب التحريري الثاني: الموضوع أولاً]
+- الشخصية التحريرية: أسلوب يبدأ من القضية المعرفية أو المجال الفكري الذي يناقشه الكتاب، ثم يربط ذلك ببراعة بعنوان المصنف ومؤلفه.
 - التناول والتنظيم:
-  * ابدأ ببيان القضية أو الموضوع الأساسي الذي تدور حوله مادة الكتاب (إذا كانت واضحة من البيانات).
-  * اربط الفكرة بعنوان الكتاب ووسمه العلمي.
-  * قدم صياغة تحريرية متناسقة توضح أبعاد هذا الموضوع بأسلوب محرر خبير، دون تحويل النص إلى بطاقة بيانات جافة.
+  * افتتح النص بطرح المجال أو المسألة الرئيسية التي يدور حولها موضوع الكتاب.
+  * اربط المضمون بعين العنوان واكتفِ بالإشارة إلى مادة الكتاب بأسلوب سلس.
+  * قدم استعراضاً متماسكاً يبرز السياق المعرفي للموضوع دون حشو.
 `;
       styleInstructionEn = `
-[Editorial Style 2: Central Thematic Core]
-- Editorial Character: Conceptual lead. Begins with the main question or central topic indicated by the title and subject.
+[Editorial Style 2: Subject-First Lead]
+- Editorial Character: Conceptual lead. Begins with the central question, discipline, or thematic issue addressed by the work.
 - Structure:
-  * Open with the core subject matter or theme the work centers around.
-  * Connect the theme directly to the title and author.
-  * Provide a fluid editorial presentation of the topic without robotic listing.
+  * Open with the overarching topic or field of study before naming the title.
+  * Connect the theme seamlessly to the book title and author.
+  * Offer an engaging presentation of the core subject matter.
 `;
       break;
 
     case 2:
-      // Style 3: عرض المحتوى والبنية (Content & Scope Focus)
+      // Style 3: بنية ومحتوى (Content & Structural Focus)
       styleInstructionAr = `
-[الأسلوب التحريري الثالث: عرض المحتوى والبنية]
-- الشخصية التحريرية: أسلوب عملي مركز يجيب القارئ بشكل مباشر عن سؤال: "ما الذي يقدمه هذا الكتاب؟"، بالاعتماد حصراً على المعطيات المؤكدة.
+[الأسلوب التحريري الثالث: بنية ومحتوى]
+- الشخصية التحريرية: أسلوب محدد وإخباري يجيب القارئ بوضوح عن طبيعة المادة المعالجة والموضوعات المدرجة وفق البيانات المتوفرة فقط.
 - التناول والتنظيم:
-  * ركز على مادة الكتاب ونوع المحتوى والموضوعات المعالجة فيه وفق ما توضحه البيانات.
-  * صغ استعراضاً محددًا للمحتوى بأسلوب واضح ومباشر بعيداً عن المبالغة.
-  * تجنب تماماً اختلاق أبواب أو فصول لم تذكر في البيانات، واجعل التركيز على النطاق العلمي الفعلي.
+  * ركز على صلب المادة العلمية ونوع القضايا التي يتطرق إليها النص.
+  * استعرض البنية المعرفية والنطاق الموضوعي للكتاب بدقة ودون اختلاق فصول أو أبواب لم تذكر.
+  * صغ الفقرات بأسلوب مقتضب ومباشر يوضح معالم الكتاب الأساسية.
 `;
       styleInstructionEn = `
-[Editorial Style 3: Content & Scope Focus]
-- Editorial Character: Informative and structural. Directly answers "What does this book contain?" based purely on verified facts.
+[Editorial Style 3: Content & Structure]
+- Editorial Character: Direct and informative. Focuses on what the book actually covers and its structural material.
 - Structure:
-  * Focus on the material and subject coverage verified in the metadata.
-  * Present a clear, well-structured summary of the subject matter.
-  * Strictly avoid inventing table of contents or missing chapters.
+  * Highlight the core material and specific topics verified in the metadata.
+  * Outline the scope and thematic coverage with clarity and precision.
+  * Maintain strict factual fidelity without inventing missing chapters or outlines.
 `;
       break;
 
     case 3:
-      // Style 4: الوصف التحريري المرن (Flexible Narrative Style)
+      // Style 4: تحرير مرن (Flexible Narrative Style)
       styleInstructionAr = `
-[الأسلوب التحريري الرابع: الوصف التحريري المرن]
-- الشخصية التحريرية: أسلوب مرن ومتجدد في صياغته وإيقاع جمله، يبدو وكأنه بقلم محرر مستقل يفضل المدخل التحريري غير القالبي.
+[الأسلوب التحريري الرابع: تحرير مرن بأسلوب حر]
+- الشخصية التحريرية: أسلوب تحريري حر بتركيب جمل متجدد وإيقاع انسيابي غير تقليدي، يعطي الانطباع بقلم محرر متخصص يكتب بأسلوب مستقل.
 - التناول والتنظيم:
-  * اختر زاوية تناول مختلفة (مدخل من جانب بارز في عنوان الكتاب، أو السياق الموضوعي، أو تنوع طبيعي في بناء الجمل).
-  * تنقل بين المعطيات بانسيابية وسلاسة وبنية لغوية متجددة تعطي النص نفساً بشرياً ذايةً.
-  * حافظ على الدقة والتوازن التام دون الخروج عن البيانات المتوفرة.
+  * انطلق من زاوية مدخل مميزة تنبع من عنوان الكتاب أو نطاقه الفرعي.
+  * تنقل بين المعطيات بانسيابية وسلاسة وبناء لغوي يتنوع في طول الجمل والفقرات.
+  * حافظ على الانضباط والدقة التامة للبيانات المتاحة دون مبالغة.
 `;
       styleInstructionEn = `
 [Editorial Style 4: Flexible Narrative Style]
-- Editorial Character: Fluid, natural, and expressive. Distinctive phrasing that reads like an independent editorial piece.
+- Editorial Character: Dynamic and fluid. Expressive prose with varied sentence mechanics suited for a modern editorial piece.
 - Structure:
-  * Choose a dynamic entry angle derived from the title or thematic context.
-  * Transition smoothly between details with varied sentence lengths and structure.
-  * Maintain strict fidelity to real metadata while offering a fresh reading flow.
+  * Choose a dynamic entry point drawn from a key aspect of the title or subfield.
+  * Transition effortlessly between details using expressive language.
+  * Ensure strict fidelity to real metadata throughout.
 `;
       break;
   }
 
   const prompt = isEnglish ? `
-You are a senior library editor. Write a natural, highly professional, fact-grounded book description for "${title}"${hasAuthor ? ` by "${author}"` : ''}.
+You are a senior professional book editor. Write a natural, highly professional, fact-grounded book description for "${title}"${hasAuthor ? ` by "${author}"` : ''}.
 
 ${styleInstructionEn}
 
 ${commonRulesEn}
 
 Requirements:
-- Length: 100 to 180 words (or 80 to 120 words if data is sparse).
-- SEO Title: Suggest a concise title incorporating "Download & Read PDF" and the book title.
+- Length: Target 120 to 220 words (or shorter if data is sparse).
+- Language: Native, fluent English strictly (no Arabic phrases or clumsy translation patterns).
+- SEO Title: Suggest a concise, clean title incorporating "Download & Read PDF" and the book title.
 - Format: Return strictly JSON object format:
 {
   "seoTitle": "SEO Title Here",
   "description": "Full Description Here"
 }
 ` : `
-أنت رئيس تحرير مكتبة رقمية متخصصة. قم بكتابة وصف تحريري دقيق، طبيعي، ومستند إلى الحقائق لكتاب بعنوان "${title}"${hasAuthor ? ` للمؤلف "${author}"` : ''}.
+أنت رئيس تحرير مكتبة متخصصة. قم بكتابة وصف تحريري دقيق، طبيعي، وغني دلالياً لكتاب بعنوان "${title}"${hasAuthor ? ` للمؤلف "${author}"` : ''}.
 
 ${styleInstructionAr}
 
 ${commonRulesAr}
 
 المتطلبات:
-- الطول: بين 100 و 180 كلمة تقريباً (أو 80-120 كلمة إذا كانت البيانات محدودة).
-- عنوان SEO: اقترح عنواناً ورصيناً يتضمن "تحميل وقراءة PDF" واسم الكتاب.
+- الطول: استهدف بين 120 و 220 كلمة تقريباً (أو أقصر إذا كانت البيانات محدودة).
+- اللغة: لغة عربية فصحى طبيعية واحترافية حصراً.
+- عنوان SEO: اقترح عنواناً جذاباً ورصيناً يتضمن "تحميل وقراءة PDF" واسم الكتاب.
 - التنسيق: أعد النتيجة حصراً بصيغة JSON:
 {
   "seoTitle": "عنوان SEO هنا",
