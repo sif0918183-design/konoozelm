@@ -22,7 +22,7 @@ export async function generateEnhancedSeoContent(
   const normalizedTitle = preNormalizedTitle || await normalizeTitle(originalTitle, originalAuthor, lang);
 
   // Step 2: Generate SEO description and Title using OpenAI (for Admin operations)
-  const aiContent = await generateWithOpenAI(normalizedTitle, originalAuthor, lang);
+  const aiContent = await generateWithOpenAI(normalizedTitle, originalAuthor, lang, category);
 
   return {
     title: normalizedTitle,

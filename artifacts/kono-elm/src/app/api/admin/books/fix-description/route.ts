@@ -21,8 +21,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
-    // Use AI to regenerate content with the new "no-unknown-author" rules
-    const aiContent = await generateBookDescription(book.title, book.author, lang);
+    // Use AI to regenerate content with the new dynamic rules and category context
+    const aiContent = await generateBookDescription(book.title, book.author, lang, book.category);
 
     const updatedBook = {
       ...book,

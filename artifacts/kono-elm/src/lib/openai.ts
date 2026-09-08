@@ -62,44 +62,82 @@ export async function filterAndRankBooks(category: string, books: any[]) {
   }));
 }
 
+let globalStyleCounter = 0;
+
 /**
- * Generates SEO description for a book using GPT-4.1-mini
+ * Generates dynamic prompt for book description with structural and stylistic variation.
  */
-export async function generateBookDescription(title: string, author: string, lang: string = 'ar') {
+export function buildDynamicPrompt(title: string, author: string, lang: string = 'ar', category?: string) {
   const isEnglish = lang === 'en';
+  const validAuthor = author && author !== 'Unknown' && author !== 'غير معروف' && author !== 'null' ? author : null;
+  const categoryContext = category && category !== 'عام' && category !== 'General' ? category : null;
 
-  const prompt = isEnglish ? `
-You are a professional SEO and library expert. Write a compelling, natural, and comprehensive SEO description for a book titled "${title}"${author && author !== 'Unknown' && author !== 'غير معروف' ? ` by author "${author}"` : ''}.
+  const titleHash = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const styleIndex = (globalStyleCounter + titleHash) % 4;
+  globalStyleCounter = (globalStyleCounter + 1) % 4;
 
-Requirements:
-1. Style: The style must be very natural and human-like (critical for Google indexing), eloquent and suitable for scholarly content.
-2. Content:
-   - An introduction about the book's importance and value.
-   - A brief and focused overview of the book's topic and main sections.
-   - Naturally integrated keywords (e.g., Download PDF, Read Online, Islamic books, etc.).
-   - Important: If the author's name is not provided or is "Unknown", DO NOT mention that the author is unknown. Instead, focus entirely on the book and its value.
-3. Length: Between 200 to 400 words to ensure SEO performance.
-4. No AI mention: Start the description directly and do not mention being an AI assistant.
-5. Enhanced Title: Suggest a catchy SEO title that includes "Download & Read PDF" and sounds authoritative.
+  if (isEnglish) {
+    const englishStyles = [
+      `STYLE APPROACH: Analytical & Direct Subject Focus.
+Begin directly with the core subject and domain of the book. Focus on the analytical framework and key themes investigated in the text.`,
+      `STYLE APPROACH: Scope & Structural Overview.
+Structure the description around the scope of topics covered and the thematic breakdown of the work.`,
+      `STYLE APPROACH: Conceptual & Methodological Perspective.
+Focus on the methodological approach, theoretical/scholarly concepts, and practical dimensions presented in the text.`,
+      `STYLE APPROACH: Contextual & Concise Synthesis.
+Provide a clear, punchy, subject-driven summary highlighting the primary questions and core value of the work.`
+    ];
 
-I want the result strictly in JSON format:
+    return `
+You are a distinguished scholarly editor and SEO specialist for an Islamic digital library.
+Write a unique, highly natural, engaging, and SEO-optimized book description for:
+Book Title: "${title}"
+${validAuthor ? `Author: "${validAuthor}"` : ''}
+${categoryContext ? `Category/Subject: "${categoryContext}"` : ''}
+
+${englishStyles[styleIndex]}
+
+CRITICAL REQUIREMENTS:
+1. NO TEMPLATES & NO CLICHÉS: DO NOT start with generic openers like "This book is a valuable work...", "This indispensable masterpiece...", "In the realm of...", or "Offers deep insights into...". Start IMMEDIATELY with the actual subject or premise of the book (e.g., "Examining the principles of jurisprudence, '${title}' explores...", "Centered on Hadith terminology, '${title}' presents...").
+2. REAL INFORMATION GROUNDING: Base your description strictly on the title, author, and category context. Adapt your vocabulary to the specific discipline (e.g. Fiqh, Tafsir, Aqeedah, Arabic Language, History, or General Knowledge). Do NOT invent false historical dates or imaginary publication facts.
+3. HANDLING UNKNOWN AUTHORS: ${validAuthor ? `Mention author "${validAuthor}" naturally.` : `Do NOT mention that the author is unknown or unstated. Focus entirely on the text itself.`}
+4. NATURAL KEYWORD INTEGRATION: Seamlessly weave keywords (such as "PDF download", "read online", "scholarly edition") into informative context. Do NOT tack on generic marketing sentences at the end.
+5. LENGTH & STRUCTURE: Write 2 to 3 natural, well-crafted paragraphs (150–250 words total). Keep tone eloquent, objective, and human-written.
+6. SEO TITLE: Provide a natural, concise SEO title that sounds authoritative (e.g., "Download ${title} PDF - Read Online", "${title} PDF Book - Read & Download").
+
+Format your response strictly as JSON:
 {
   "seoTitle": "SEO Title here",
   "description": "Full description here"
 }
-` : `
-أنت خبير SEO ومكتبات إسلامية محترف. قم بكتابة وصف جذاب، طبيعي، وشامل لمحركات البحث (SEO) لكتاب بعنوان "${title}"${author && author !== 'Unknown' && author !== 'غير معروف' ? ` للمؤلف "${author}"` : ''}.
+`;
+  } else {
+    const arabicStyles = [
+      `أسلوب العرض: التحليلي المباشر.
+ابدأ فوراً بتحليل الموضوع الأساسي والقضايا المركزية التي يعالجها الكتاب بأسلوب بليغ ومستقل.`,
+      `أسلوب العرض: التناول المحوري والأبواب.
+ركز على تنوع الموضوعات والأبواب العلمية والنطاق المعرفي الذي يغطيه المتن.`,
+      `أسلوب العرض: المنهجي والموضوعي.
+تسليط الضوء على المنهجية العلمية والقواعد والأفكار الجوهرية الواردة في النص.`,
+      `أسلوب العرض: السياقي والتعريفي المكثف.
+تقديم صياغة معبرة ومكثفة توضح طبيعة المادة العلمية وفائدتها المباشرة للباحثين والقراء.`
+    ];
 
-المتطلبات:
-1. الأسلوب: يجب أن يكون الأسلوب طبيعياً جداً ويشبه كتابة البشر (مهم جداً لقبول Google)، بليغاً ومناسباً للمحتوى الإسلامي.
-2. المحتوى:
-   - مقدمة عن أهمية الكتاب وقيمته العلمية في التراث الإسلامي.
-   - نبذة مختصرة ومركزة عن موضوع الكتاب وأهم الأبواب التي يتناولها.
-   - كلمات مفتاحية مدمجة بصورة طبيعية تماماً (مثل: تحميل PDF، قراءة أونلاين، كتب إسلامية، إلخ).
-   - ملاحظة هامة: إذا كان اسم المؤلف غير متوفر أو "غير معروف"، فلا تذكر أبداً أن المؤلف غير معروف، بل ركز الوصف بالكامل على متن الكتاب وقيمته العلمية.
-3. الطول: بين 200 إلى 400 كلمة لضمان تفوقه في نتائج البحث.
-4. عدم ذكر الذكاء الاصطناعي: ابدأ الوصف مباشرة ولا تذكر أنك مساعد ذكي.
-5. العنوان المحسن: اقترح عنوان SEO جذاب يتضمن "تحميل وقراءة PDF" ويوحي بالموثوقية.
+    return `
+أنت محرر علمي وخبير SEO في مكتبة إسلامية معتمدة. قم بكتابة وصف فريد وطبيعي وبليغ ومحسّن لمحركات البحث (SEO) لكتاب:
+عنوان الكتاب: "${title}"
+${validAuthor ? `المؤلف: "${validAuthor}"` : ''}
+${categoryContext ? `التصنيف/المجال: "${categoryContext}"` : ''}
+
+${arabicStyles[styleIndex]}
+
+قواعد صارمة يمنع التخلي عنها:
+1. منع القوالب والجمل المكررة تماماً: يمنع منعاً باتاً البدء بعبارات مستهلكة مثل ("يعد هذا الكتاب من أهم/أبرز...", "يعتبر هذا الكتاب...", "يقدم الباحث/المؤلف رؤية عميقة...", "صرح علمي شامخ", "لا غنى عنه لكل باحث"). ابدأ فوراً بموضوع الكتاب والمتن الأساسي (مثلاً: "ينتظم هذا المصنف حول أحكام الفقه المالي...", "يعالج هذا السفر مبادئ علم النحو...").
+2. الاعتماد على المعطيات الحقيقية: استند إلى اسم الكتاب وتصنيفه ومؤلفه لتقديم صياغة متخصصة تناسب المجال (فقه، حديث، تفسير، عقيدة، لغة عربية، تاريخ، إلخ). لا تخترع تواريخ أو تفاصيل غير مؤكدة.
+3. اسم المؤلف: ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بشكل طبيعي.` : `إذا كان المؤلف غير معروف أو غير متوفر، فلا تذكر أبداً أنه غير معروف، بل ركز الوصف بالكامل على متن الكتاب.`}
+4. دمج الكلمات المفتاحية بذكاء: ادمج كلمات البحث (مثل: تحميل PDF، قراءة أونلاين، كتاب) بشكل طبيعي ضمن السياق العلمي، ودون إضافة فقرات تسويقية منفصلة أو مبتذلة.
+5. الطول والشكل: اكتب من 2 إلى 3 فقرات قصيرة بليغة (بين 150 إلى 250 كلمة). اجعل الأسلوب بشرياً فصيحاً وموثوقاً.
+6. عنوان SEO محسن: اقترح عنوان SEO متنوّعاً وطبيعياً (مثل: "تحميل كتاب ${title} PDF وقراءته أونلاين" أو "كتاب ${title} PDF - قراءة وتحميل مجاني").
 
 أريد النتيجة بتنسيق JSON حصراً:
 {
@@ -107,6 +145,14 @@ I want the result strictly in JSON format:
   "description": "الوصف الكامل هنا"
 }
 `;
+  }
+}
+
+/**
+ * Generates SEO description for a book using GPT-4.1-mini with dynamic prompts
+ */
+export async function generateBookDescription(title: string, author: string, lang: string = 'ar', category?: string) {
+  const prompt = buildDynamicPrompt(title, author, lang, category);
 
   const result = await callOpenAI(
     SEO_MODEL,
