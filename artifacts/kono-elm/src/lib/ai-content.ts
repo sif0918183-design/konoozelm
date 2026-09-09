@@ -16,13 +16,14 @@ export async function generateEnhancedSeoContent(
   originalAuthor: string,
   category: string,
   preNormalizedTitle?: string,
-  lang: string = 'ar'
+  lang: string = 'ar',
+  explicitStyleIndex?: number
 ): Promise<SeoContent> {
   // Step 1: Use pre-normalized title if provided, otherwise normalize using OpenAI
   const normalizedTitle = preNormalizedTitle || await normalizeTitle(originalTitle, originalAuthor, lang);
 
   // Step 2: Generate SEO description and Title using OpenAI (for Admin operations)
-  const aiContent = await generateWithOpenAI(normalizedTitle, originalAuthor, lang);
+  const aiContent = await generateWithOpenAI(normalizedTitle, originalAuthor, lang, explicitStyleIndex);
 
   return {
     title: normalizedTitle,
