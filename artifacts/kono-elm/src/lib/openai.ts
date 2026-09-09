@@ -79,37 +79,38 @@ export function buildDynamicPrompt(title: string, author: string, lang: string =
   if (isEnglish) {
     const englishStyles = [
       `STRUCTURAL PERSPECTIVE 1: Direct Noun/Subject Opening.
-Begin immediately with a descriptive noun phrase or subject assertion regarding the book's specific domain matter. Vary paragraph structure naturally across 2 paragraphs.`,
-      `STRUCTURAL PERSPECTIVE 2: Thematic Questions & Conceptual Scope.
-Open with the core scholarly questions or issues explored in this text. Use a concise 2-paragraph layout focusing on subject relevance.`,
-      `STRUCTURAL PERSPECTIVE 3: Analytical Breakdown.
-Focus directly on the content structure and key thematic sections. Keep tone strictly informative without formulaic metadata introductions.`,
-      `STRUCTURAL PERSPECTIVE 4: Methodological & Discipline Focus.
-Start with the discipline's central concepts and how the text handles them. Use 1 rich, comprehensive paragraph or 2 short focused paragraphs.`,
+Begin immediately with a descriptive noun phrase or subject assertion regarding the book's specific domain matter.`,
+      `STRUCTURAL PERSPECTIVE 2: Thematic Focus & Conceptual Scope.
+Open with the primary scholarly concepts or subject areas explored in this text.`,
+      `STRUCTURAL PERSPECTIVE 3: Content Structure Breakdown.
+Focus directly on the thematic sections and subject organization of the work.`,
+      `STRUCTURAL PERSPECTIVE 4: Discipline & Methodological Context.
+Start with the central principles of the discipline and how this work addresses them.`,
       `STRUCTURAL PERSPECTIVE 5: Textual Overview.
-Provide a direct synthesis of what the work contains, weaving research utility and downloadable reading options naturally into text flow.`,
-      `STRUCTURAL PERSPECTIVE 6: Contextual & Functional Guide.
-Open directly with the primary focus of the work. Emphasize its practical value for readers and scholars without introductory fluff.`
+Provide a direct synthesis of what the work covers and its core focus within its category.`,
+      `STRUCTURAL PERSPECTIVE 6: Subject-First Functional Guide.
+Open directly with the primary subject matter and its specific relevance for readers.`
     ];
 
     return `
-You are an expert scholarly editor and SEO specialist for an Islamic digital library.
-Write a completely unique, natural, human-written SEO description for:
+You are a professional book editor and library specialist writing for an English-language digital catalog.
+Write an authentic, highly informative, and natural SEO book description for:
 Book Title: "${title}"
 ${validAuthor ? `Author: "${validAuthor}"` : ''}
 ${categoryContext ? `Category/Subject: "${categoryContext}"` : ''}
 
 ${englishStyles[styleIndex]}
 
-STRICT RULES TO AVOID TEMPLATES & REPETITION:
-1. BANNED OPENING FORMULAS: DO NOT start with "This book is...", "This work...", "Examining...", "Centered on...", "Delving into...", "In this comprehensive work...", "This indispensable masterpiece...", or "Written by...".
-2. VARY OPENING GRAMMAR: Vary the sentence structure naturally. Start with a subject noun, a thematic concept, or a direct statement about the field. NEVER copy or reuse fixed opening phrases across books.
-3. REQUIRED WORD COUNT & PARAGRAPHS: Write at least 2 detailed paragraphs (target range: 150 to 220 words total). Do NOT generate brief summaries or single short paragraphs under 140 words. Expand thoughtfully on the subject matter, methodology, and research utility.
-4. INFORMATION GROUNDING: Use only factual information drawn from the title, author, and category context. Do NOT invent fake historical facts or dates.
-5. UNKNOWN AUTHOR HANDLING: ${validAuthor ? `Integrate author "${validAuthor}" naturally.` : `Do NOT mention that the author is unknown or omitted. Focus entirely on the text content.`}
-6. NATURAL SEO & TITLE: Integrate search intent naturally (e.g. "PDF download", "read online") without standalone sales pitches. Provide an expressive, concise SEO title.
+GUIDELINES & PRINCIPLES (INFORMATION FIRST, SEO SECOND):
+1. NATIVE ENGLISH EDITORIAL PROSE: Write naturally as a native English book editor. Avoid translationese, rigid formulas, or marketing tone.
+2. WORD COUNT: Aim for 150-220 words when sufficient metadata is provided. If metadata is minimal, write a concise, accurate, and informative summary without adding artificial fluff or filler.
+3. FACTUAL GROUNDING: Base the text strictly on verified book data (title, author, category, subject area). Do NOT extrapolate speculative details or invent unconfirmed facts.
+4. BANNED CLICHÉS: DO NOT use repetitive sales pitch phrases such as "This valuable work...", "This important reference...", "Perfect for scholars and students...", "It provides readers with...", "This indispensable masterpiece...", or "Written by...".
+5. SEMANTIC SEO & PDF MENTIONS: Incorporate relevant discipline terminology naturally for strong semantic SEO. Do NOT stuff keywords. Mention "PDF download" or "read online" AT MOST ONCE naturally if relevant, never as a primary focus.
+6. UNKNOWN AUTHOR HANDLING: ${validAuthor ? `Include author "${validAuthor}" naturally.` : `Do NOT mention that the author is unknown or missing. Focus entirely on the text content.`}
+7. SEO TITLE: Suggest a clean, authoritative SEO title that reads like a professional library catalog entry.
 
-Format response as strictly JSON:
+Format response strictly as JSON:
 {
   "seoTitle": "SEO Title here",
   "description": "Full description here"
@@ -120,32 +121,33 @@ Format response as strictly JSON:
       `نمط البناء الأول: البداية المباشرة باسم الموضوع أو المجال.
 ابدأ الجملة الأولى فوراً باسم الموضوع أو الجملة الاسمية التي تحدد مضمون الكتاب دون أفعال تمهيدية مكررة.`,
       `نمط البناء الثاني: التناول القضائي والتحليلي.
-ركز على المسائل العلمية والقضايا التي يطرحها المتن في سياق موضوعه، مستخدماً فقرتين قصیرتين بتركيب لغوي فريد.`,
+ركز على المسائل العلمية والقضايا التي يطرحها المتن في سياق موضوعه بتركيب لغوي فريد.`,
       `نمط البناء الثالث: التركيز على المحاور والأبواب.
 ابسط المحاور والموضوعات الأساسية للكتاب مباشرة دون مقدمات إنشائية، بأسلوب بليغ يناسب فن العلم.`,
       `نمط البناء الرابع: المنظور المنهجي والمعرفي.
-سلط الضوء على المنهجية والأصول العلمية الواردة في النص بفقرة واحدة غنية أو فقرتين مركزتين.`,
+سلط الضوء على المنهجية والأصول العلمية الواردة في النص بأسلوب علمي رصين.`,
       `نمط البناء الخامس: العرض المباشر والمكثف.
-قدم عرضاً شاملاً ومكثفاً لمحتوى السفر وفائدته العلمية مع دمج خيارات القراءة والتحميل بسلاسة.`,
+قدم عرضاً شاملاً ومكثفاً لمحتوى السفر وموضوعه الأساسي دون حشو.`,
       `نمط البناء السادس: التناول السياقي للموضوع.
-ابدأ فوراً بتأصيل المادة العلمية ومجالها المعرفي، بأسلوب يعبر عن خصوصية هذا الكتاب عن غيره.`
+ابدأ فوراً بتأصيل المادة العلمية ومجالها المعرفي، بأسلوب يعبر عن خصوصية هذا الكتاب.`
     ];
 
     return `
-أنت محرر علمي وخبير SEO محترف في مكتبة إسلامية. قم بكتابة وصف فريد وطبيعي وبليغ وغير مكرر لكتاب:
+أنت محرر كتب متخصص في مكتبة إسلامية ومعرفية. قم بكتابة وصف طبيعي، فريد، بليغ، وغني بالمعلومات لكتاب:
 عنوان الكتاب: "${title}"
 ${validAuthor ? `المؤلف: "${validAuthor}"` : ''}
 ${categoryContext ? `التصنيف/المجال: "${categoryContext}"` : ''}
 
 ${arabicStyles[styleIndex]}
 
-قواعد صارمة لضمان التنوع التام ومنع التكرار:
-1. منع الأفعال والافتتاحيات المكررة: يمنع منعاً باتاً استخدام الافتتاحيات النمطية أو البدء بأفعال مثل ("ينتظم"، "ينطلق"، "يقدم هذا الكتاب"، "يتناول هذا الكتاب"، "يركز هذا الكتاب"، "يستعرض هذا الكتاب"، "يعالج هذا الكتاب"، "يدور هذا الكتاب"، "يعد هذا الكتاب"، "يعتبر هذا الكتاب").
-2. التنويع النحوي في الافتتاحية: غير التركيب النحوي للجملة الأولى من كتاب لآخر (ابدأ أحياناً بالجملة الاسمية، أو بالموضوع مباشرة، أو بالمسألة العلمية). يمنع استخدام صيغة موحدة أو جمل استهلالية نمطية.
-3. عدد الكلمات والفقرات المطلوب: يجب أن يتكون الوصف من فقرتين مفصلتين على الأقل (بين 150 إلى 220 كلمة). يمنع كتابة ملخصات موجزة أو فقرة قصيرة واحدة تقل عن 140 كلمة. ابسط الشرح في موضوع الكتاب ومنهجه وفائدته للباحثين والقراء.
-4. المعطيات الحقيقية: اعتمد على اسم الكتاب وتصنيفه ومؤلفه لتقديم صياغة متخصصة تناسب المجال (فقه، حديث، تفسير، عقيدة، لغة، تاريخ، إلخ) دون اختراع تفاصيل غير مؤكدة.
-5. اسم المؤلف: ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بأسلوب سلس.` : `إذا كان المؤلف غير معروف، فلا تذكر إطلاقاً أنه غير معروف، بل ركز الوصف بالكامل على موضوع الكتاب.`}
-6. دمج SEO والعنوان: ادمج كلمات البحث (تحميل PDF، قراءة أونلاين، كتاب) بشكل طبيعي وضمين داخل النص دون جمل تسويقية مجزأة. اقترح عنوان SEO جذاباً ومتنوعاً.
+قواعد وضوابط كتابة الوصف (المعلومات أولاً، SEO ثانياً، والتسويق في الحد الأدنى):
+1. أسلوب عربي أصيل: اكتب بلغة عربية فصيحة وسليمة وبناء تعبيري متنوع ومستقل، بعيداً عن القوالب الجاهزة أو الصياغات الآلية.
+2. الطول والعمق: استهدف 150-220 كلمة عندما تكون معلومات الكتاب كافية. إذا كانت المعلومات المتاحة محدودة، اكتب وصفاً أقصر لكنه مفيد ودقيق ودون حشو أو تكرار.
+3. الالتزام بالحقائق: استند حصراً إلى المعطيات المتوفرة (العنوان، المؤلف، التصنيف، المجال). لا تضف معلومات غير موجودة ولا تستنتج محتوى تفصيلياً غير مؤكد.
+4. منع العبارات المستهلكة: يمنع استخدام عبارات تسويقية عامة مثل ("مرجع لا غنى عنه"، "كنز علمي"، "مطلب ضروري لكل باحث"، "يعد هذا الكتاب من أهم/أبرز...", "يقدم الباحث رؤية عميقة").
+5. SEO الدلالي والتنزيل: استخدم المصطلحات العلمية المرتبطة بموضوع الكتاب بأسلوب طبيعي لتحقيق Semantic SEO دون Keyword Stuffing. لا تجعل "تحميل PDF" و"قراءة أونلاين" محور الوصف، ويمكن ذكرهما مرة واحدة فقط بشكل طبيعي ضمن السياق.
+6. اسم المؤلف: ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بأسلوب سلس.` : `إذا كان اسم المؤلف غير معروف أو مفقوداً، فلا تذكر مطلقاً أنه غير معروف، بل ركز الوصف بالكامل على الموضوع والمتن.`}
+7. عنوان SEO: اقترح عنوان SEO جذّاباً ومتنوّعاً يعبر عن الكتاب بأسلوب بشري موثوق.
 
 أريد النتيجة بتنسيق JSON حصراً:
 {
