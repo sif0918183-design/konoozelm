@@ -104,7 +104,7 @@ ${englishStyles[styleIndex]}
 STRICT RULES TO AVOID TEMPLATES & REPETITION:
 1. BANNED OPENING FORMULAS: DO NOT start with "This book is...", "This work...", "Examining...", "Centered on...", "Delving into...", "In this comprehensive work...", "This indispensable masterpiece...", or "Written by...".
 2. VARY OPENING GRAMMAR: Vary the sentence structure naturally. Start with a subject noun, a thematic concept, or a direct statement about the field. NEVER copy or reuse fixed opening phrases across books.
-3. FLEXIBLE PARAGRAPH STRUCTURE: Write between 1 and 3 paragraphs (130-180 words total). Allow the structure and sentence flow to vary based on the specific book title and subject matter.
+3. REQUIRED WORD COUNT & PARAGRAPHS: Write at least 2 detailed paragraphs (target range: 150 to 220 words total). Do NOT generate brief summaries or single short paragraphs under 140 words. Expand thoughtfully on the subject matter, methodology, and research utility.
 4. INFORMATION GROUNDING: Use only factual information drawn from the title, author, and category context. Do NOT invent fake historical facts or dates.
 5. UNKNOWN AUTHOR HANDLING: ${validAuthor ? `Integrate author "${validAuthor}" naturally.` : `Do NOT mention that the author is unknown or omitted. Focus entirely on the text content.`}
 6. NATURAL SEO & TITLE: Integrate search intent naturally (e.g. "PDF download", "read online") without standalone sales pitches. Provide an expressive, concise SEO title.
@@ -142,7 +142,7 @@ ${arabicStyles[styleIndex]}
 قواعد صارمة لضمان التنوع التام ومنع التكرار:
 1. منع الأفعال والافتتاحيات المكررة: يمنع منعاً باتاً استخدام الافتتاحيات النمطية أو البدء بأفعال مثل ("ينتظم"، "ينطلق"، "يقدم هذا الكتاب"، "يتناول هذا الكتاب"، "يركز هذا الكتاب"، "يستعرض هذا الكتاب"، "يعالج هذا الكتاب"، "يدور هذا الكتاب"، "يعد هذا الكتاب"، "يعتبر هذا الكتاب").
 2. التنويع النحوي في الافتتاحية: غير التركيب النحوي للجملة الأولى من كتاب لآخر (ابدأ أحياناً بالجملة الاسمية، أو بالموضوع مباشرة، أو بالمسألة العلمية). يمنع استخدام صيغة موحدة أو جمل استهلالية نمطية.
-3. مرونة البناء والفقرات: اكتب بين فقرة واحدة وافية إلى 3 فقرات قصيرة (بين 130 إلى 180 كلمة). اجعل ترتيب الجمل والأفكار يختلف بحسب طبيعة الموضوع والمعلومات المتوفرة.
+3. عدد الكلمات والفقرات المطلوب: يجب أن يتكون الوصف من فقرتين مفصلتين على الأقل (بين 150 إلى 220 كلمة). يمنع كتابة ملخصات موجزة أو فقرة قصيرة واحدة تقل عن 140 كلمة. ابسط الشرح في موضوع الكتاب ومنهجه وفائدته للباحثين والقراء.
 4. المعطيات الحقيقية: اعتمد على اسم الكتاب وتصنيفه ومؤلفه لتقديم صياغة متخصصة تناسب المجال (فقه، حديث، تفسير، عقيدة، لغة، تاريخ، إلخ) دون اختراع تفاصيل غير مؤكدة.
 5. اسم المؤلف: ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بأسلوب سلس.` : `إذا كان المؤلف غير معروف، فلا تذكر إطلاقاً أنه غير معروف، بل ركز الوصف بالكامل على موضوع الكتاب.`}
 6. دمج SEO والعنوان: ادمج كلمات البحث (تحميل PDF، قراءة أونلاين، كتاب) بشكل طبيعي وضمين داخل النص دون جمل تسويقية مجزأة. اقترح عنوان SEO جذاباً ومتنوعاً.
