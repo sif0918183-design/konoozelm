@@ -146,7 +146,7 @@ export function normalizeYear(date: any): string | undefined {
 /**
  * Fetch with timeout and error handling
  */
-export async function safeFetch(url: string, options: RequestInit = {}, timeout = 8000): Promise<Response | null> {
+export async function safeFetch(url: string, options: RequestInit = {}, timeout = 12000): Promise<Response | null> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
 
