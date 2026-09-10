@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkAuth } from '@/lib/admin-auth';
-import { generateBookDescription } from '@/lib/openai';
+import { generateBookDescription } from '@/lib/groq';
 
 export async function POST(request: Request) {
   if (!checkAuth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

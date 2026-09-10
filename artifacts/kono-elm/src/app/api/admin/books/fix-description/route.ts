@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { checkAuth } from '@/lib/admin-auth';
 import { getBookByArchiveId, saveSeoBook } from '@/lib/seo-data';
-import { generateBookDescription } from '@/lib/openai';
+import { generateBookDescription } from '@/lib/groq';
 
 export async function POST(request: Request) {
   if (!checkAuth()) {

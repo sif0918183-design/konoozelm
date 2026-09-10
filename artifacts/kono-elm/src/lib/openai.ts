@@ -219,16 +219,42 @@ I want the result strictly in JSON format:
 }
 
 /**
- * Standardizes and improves book titles using GPT-4.1-nano
+ * Cleans new book titles by stripping catalog numbers, zero-padded prefixes,
+ * website domain prefixes (e.g. lisanarabs., marfat.com), and "Pdf" noise.
+ */
+export function cleanBookTitle(rawTitle: string): string {
+  if (!rawTitle) return '';
+  let title = rawTitle.trim();
+
+  // 1. Remove website domain prefixes (e.g., "marfat.com - ", "lisanarabs.")
+  title = title.replace(/^(?:[a-zA-Z0-9-]+\.)+(?:com|org|net|info|co|me|site|[a-zA-Z]{2,})\.?(?:\s*-\s*|\s*|\.)?/gi, '');
+  title = title.replace(/^[a-zA-Z0-9-_]+\./g, '');
+
+  // 2. Remove leading catalog numbers, zero-padded IDs, and dashes e.g. "129708 - ", "00116 "
+  title = title.replace(/^\s*\d{3,}\s*(?:[-_.:]\s*)?/g, '');
+  title = title.replace(/^\s*0+\d*\s*(?:[-_.:]\s*)?/g, '');
+
+  // 3. Remove standalone "Pdf", "PDF", "pdf"
+  title = title.replace(/\bpdf\b/gi, '');
+
+  // 4. Cleanup trailing/leading dashes, dots, underscores, and extra whitespace
+  title = title.replace(/^[\s\-.:_]+|[\s\-.:_]+$/g, '').replace(/\s+/g, ' ').trim();
+
+  return title;
+}
+
+/**
+ * Standardizes and improves book titles using cleanBookTitle and GPT-4.1-nano
  */
 export async function normalizeTitle(title: string, author?: string, lang: string = 'ar') {
-  if (!OPENAI_API_KEY) return title;
+  const cleanedTitle = cleanBookTitle(title);
+  if (!OPENAI_API_KEY) return cleanedTitle;
 
   const isEnglish = lang === 'en';
 
   const prompt = isEnglish ? `
 Standardize and improve the following book title to be suitable for SEO and a professional library.
-Original Title: "${title}"
+Original Title: "${cleanedTitle}"
 ${author && author !== 'Unknown' && author !== 'غير معروف' ? `Author: "${author}"` : ''}
 
 Requirements:
@@ -239,7 +265,7 @@ Requirements:
 5. Return the result as JSON: {"normalizedTitle": "..."}
 ` : `
 قم بتوحيد وتحسين عنوان الكتاب التالي ليكون مناسباً لـ SEO ومكتبة احترافية.
-العنوان الأصلي: "${title}"
+العنوان الأصلي: "${cleanedTitle}"
 ${author && author !== 'Unknown' && author !== 'غير معروف' ? `المؤلف: "${author}"` : ''}
 
 المطلوب:
@@ -257,9 +283,9 @@ ${author && author !== 'Unknown' && author !== 'غير معروف' ? `المؤل
       { type: 'json_object' },
       '[FILTER]'
     );
-    return result.normalizedTitle;
+    return cleanBookTitle(result.normalizedTitle);
   } catch (error) {
-    return title;
+    return cleanedTitle;
   }
 }
 
