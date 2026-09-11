@@ -32,17 +32,36 @@ export interface SearchResult {
 }
 
 /**
- * Extracts a concise, high-value sample from full OCR text
+ * Sanitizes and extracts a concise, high-value sample from full OCR text.
+ * Strips technical noise, email addresses, web URLs, and Archive.org uploader artifacts.
  * Priority: Beginning/Preface (first 1000 chars) + End/Table of Contents (last 1200 chars)
  */
 export function extractOcrSample(fullText: string): string | null {
   if (!fullText) return null;
-  const trimmed = fullText.trim();
-  if (trimmed.length <= 2200) {
-    return trimmed;
+
+  let cleaned = fullText
+    // Remove email addresses
+    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '')
+    // Remove web links & domain noise
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/www\.\S+/gi, '')
+    .replace(/(?:archive\.org|marfat\.com|lisanarabs\.com|waqfeya\.net|al-maktaba\.org)\S*/gi, '')
+    // Remove uploader / scanner technical lines
+    .replace(/(?:Paging|OCR|Scanner|Identifier|Digitizing|Sponsor|Contributor|Bookplate):\s*[^\n]+/gi, '')
+    // Remove repeated non-alphanumeric noise symbols
+    .replace(/[-_=*#~]{3,}/g, ' ')
+    // Normalize whitespace
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n+/g, '\n')
+    .trim();
+
+  if (!cleaned || cleaned.length < 30) return null;
+
+  if (cleaned.length <= 2200) {
+    return cleaned;
   }
-  const beginning = trimmed.substring(0, 1000).trim();
-  const ending = trimmed.substring(trimmed.length - 1200).trim();
+  const beginning = cleaned.substring(0, 1000).trim();
+  const ending = cleaned.substring(cleaned.length - 1200).trim();
   return `=== مقدمة ونشرة الكتاب ===\n${beginning}\n\n=== فهرس الموضوعات والأبواب ===\n${ending}`;
 }
 

@@ -18,7 +18,7 @@ export interface BookMetadataPayload {
 }
 
 /**
- * Safely fetches top 2-3 search snippets for the specific book (title + author) with a strict 3.5s timeout.
+ * Safely fetches top 2-3 search snippets for the specific book (title + author) with strict relevancy matching and a 3.5s timeout.
  */
 export async function fetchWebSnippets(title: string, author?: string, lang: 'ar' | 'en' = 'ar'): Promise<string[]> {
   const isEnglish = lang === 'en';
@@ -47,6 +47,9 @@ export async function fetchWebSnippets(title: string, author?: string, lang: 'ar
     const regex = /<a\s+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
     let match: RegExpExecArray | null;
 
+    // Words from title to verify relevancy
+    const titleWords = title.split(/\s+/).filter(w => w.length > 2);
+
     while ((match = regex.exec(html)) !== null && snippets.length < 3) {
       let text = match[1]
         .replace(/<[^>]+>/g, '')
@@ -59,7 +62,11 @@ export async function fetchWebSnippets(title: string, author?: string, lang: 'ar
         .trim();
 
       if (text.length > 20) {
-        snippets.push(text);
+        // Verify snippet has at least one significant title word to ensure direct relevancy
+        const isRelevant = titleWords.some(w => text.toLowerCase().includes(w.toLowerCase()));
+        if (isRelevant) {
+          snippets.push(text);
+        }
       }
     }
 
@@ -116,20 +123,22 @@ ${englishStyles[styleIndex]}
 
 STRICT ANTI-HALLUCINATION & EDITORIAL RULES:
 1. STRICT SOURCE GROUNDING & NO EXTRAPOLATION:
-   - Base your description strictly on the provided metadata and verified search results above.
-   - NEVER extrapolate or speculate the following from the book title or category alone:
-     * Specific chapters, sections, or table of contents.
-     * The author's specific methodology, objectives, or opinions.
-     * Historical context, sources, or theological/juridical schools discussed.
-     * Detailed contents not explicitly confirmed in the source text.
-2. FLEXIBLE LENGTH & NO FLUFF:
-   - Target 150-220 words ONLY when source metadata is rich.
-   - If available source information is limited, write a concise, accurate, short summary (60-100 words). Do NOT pad the text with generic filler or false statements to reach 150 words.
+   - Do NOT infer or extrapolate any detailed information from the book title or category alone. Do NOT mention specific chapters, sections, topics, author methodology, sources, schools of thought, author objectives, historical context, or detailed content UNLESS explicitly present in the original book data or supported by a directly linked reliable source.
+   - When in doubt, OMIT the detail rather than guessing.
+   - Do NOT turn possibilities or assumptions into facts.
+   - If a good original description is provided in Archive.org metadata, rephrase it naturally rather than inventing extra details.
+   - Ignore technical uploader artifacts (emails, URLs, scanning metadata) present in OCR.
+2. SOURCE HIERARCHY & FLEXIBLE LENGTH:
+   - Priority 1: Primary book metadata from Archive.org/Database.
+   - Priority 2: Verified OCR sample (used strictly for explicit, clear facts).
+   - Priority 3: Secondary Web Search (only if directly relevant).
+   - Rich metadata -> ~150-220 words. Moderate metadata -> ~100-160 words. Limited metadata -> concise, accurate short description (60-100 words).
+   - Accuracy is vastly more important than length. Do NOT pad the text to force a specific word count.
 3. BANNED CLICHÉS & REPETITIVE FORMULAS:
    - DO NOT use generic boilerplate such as "This book explores...", "Highlights the...", "Offers readers...", "This valuable reference...", "Serves as an essential guide...", "Scientific methodology...", "Written by...".
-   - Vary sentence structures and paragraph openers naturally.
+   - Maintain structural diversity across entries.
 4. SEMANTIC SEO & PDF MENTIONS:
-   - Incorporate relevant discipline terms naturally from the factual metadata.
+   - Incorporate relevant discipline terms naturally from verified factual metadata only.
    - Mention "PDF download" or "read online" AT MOST ONCE naturally if appropriate. Never make it the focus.
 5. UNKNOWN AUTHOR HANDLING:
    - ${validAuthor ? `Include author "${validAuthor}" naturally.` : `Do NOT mention that the author is unknown or omitted. Focus entirely on the confirmed text content.`}
@@ -168,25 +177,26 @@ ${snippetsText ? `- نتائج البحث الثانوي المؤكدة من ا�
 ${arabicStyles[styleIndex]}
 
 قواعد صارمة لمنع التخمين والهلوسة والصياغات الآلية:
-1. المصدرية الحصرية والامتناع التام عن التخمين:
-   - بيانات Archive.org ونتائج البحث المؤكدة أعلاه هي المصدر الأساسي والوحيد للوصف.
-   - يمنع منعاً باتاً استنتاج أو افتراض أي من الآتي من عنوان الكتاب أو تصنيفه وحدهما:
-     * أبواب أو فصول أو أجزاء غير مذكورة صراحة.
-     * منهج المؤلف أو أهدافه أو آراؤه الخاصة.
-     * مصادر الكتاب أو المذاهب والمدارس التي يناقشها.
-     * تفاصيل تاريخية أو سياقية لم تثبت في البيانات أعلاه.
-   (مثال: إذا كان عنوان الكتاب "مختصر في العقيدة"، فلا تذكر أنه يتناول توحيد الربوبية أو الأسماء والصفات ما لم يكن ذلك مذكوراً صراحة في البيانات أعلاه).
+1. قواعد الاستناد إلى المصادر والامتناع القاطع عن التخمين:
+   - لا تستنتج أي معلومة تفصيلية من عنوان الكتاب أو تصنيفه وحدهما. لا تذكر فصولًا أو أبوابًا أو موضوعات محددة أو منهج المؤلف أو مصادر الكتاب أو المذاهب أو المدارس الفكرية أو أهداف المؤلف أو سياقه التاريخي أو محتواه التفصيلي إلا إذا كانت هذه المعلومات موجودة بوضوح في بيانات الكتاب الأصلية أو مدعومة بمصدر موثوق مرتبط مباشرة بالكتاب.
+   - عند الشك، احذف المعلومة بدل تخمينها.
+   - لا تحول الاحتمال أو الاستنتاج إلى حقيقة.
+   - إذا كان هناك وصف أصلي جيد للكتاب في بيانات Archive.org، أعد صياغته بصورة طبيعية وأصيلة بدلاً من اختراع معلومات إضافية.
+   - تجنب تماماً تضمين البريد الإلكتروني أو الروابط أو المعلومات التقنية الخاصة بالرفع أو الضوضاء الضوئية المتروكة في OCR.
 
-2. مرونة الطول وتجنب الحشو:
-   - إذا كانت البيانات المتاحة غنية، استهدف من 150 إلى 220 كلمة.
-   - إذا كانت البيانات المتاحة قليلة، اكتب وصفاً قصيراً ومباشراً ودقيقاً (دون إجبار النص على الوصول إلى 150 كلمة بحشو أو كلام إنشائي).
+2. ترتيب أولوية المصادر ومرونة الطول:
+   - الترتيب: بيانات الكتاب الأصلية -> عينة OCR المفلترة (للحقائق الواضحة فقط) -> نتائج الويب المطابقة تماماً.
+   - إذا كانت المعلومات غنية: استهدف حوالي 150-220 كلمة.
+   - إذا كانت المعلومات متوسطة: استهدف حوالي 100-160 كلمة.
+   - إذا كانت المعلومات محدودة: اكتب وصفاً قصيراً ودقيقاً ومباشراً (دون محاولة الوصول إلى 150 كلمة بأي ثمن). الدقة والتثبت أهم بكتير من الطول.
 
-3. التنويع ومنع العبارات المكررة:
-   - يمنع استخدام القوالب المتكررة مثل: ("يتناول الكتاب...", "يسلط الضوء...", "يتيح للقارئ...", "يُعد مرجعًا...", "منهجية علمية...", "مرجع لا غنى عنه"، "كنز علمي").
-   - نوّع بدايات الجمل وبنية الفقرات بأسلوب عربي فصيح وطبيعي.
+3. التنويع ومنع العبارات المكررة والقوالب:
+   - حافظ على تنوع الأساليب الأربعة ولا تبدأ الأوصاف بنفس الطريقة.
+   - يمنع استخدام القوالب المتكررة والعبارات التسويقية مثل: ("يتناول الكتاب...", "يسلط الضوء...", "يتيح للقارئ...", "يُعد مرجعًا...", "منهجية علمية...", "مرجع لا غنى عنه"، "كنز علمي"، "مورد قيم").
+   - تجنب تكرار عنوان الكتاب بلا داعٍ.
 
 4. SEO الدلالي والتنزيل:
-   - ادمج المصطلحات العلمية الحقيقية الواردة في المادة بأسلوب طبيعي.
+   - ادمج المصطلحات العلمية الحقيقية الواردة في المادة بأسلوب طبيعي لتحقيق Semantic SEO دون Keyword Stuffing.
    - لا تجعل "تحميل PDF" أو "قراءة أونلاين" محور الوصف، ويمكن ذكرهما مرة واحدة فقط بأسلوب غير متكلف.
 
 5. اسم المؤلف:
