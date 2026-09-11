@@ -1,8 +1,8 @@
 import { cleanBookTitle } from './openai';
 import { fetchBookOcrSample } from './archive-api';
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
 let globalStyleCounter = 0;
 
@@ -212,7 +212,7 @@ ${arabicStyles[styleIndex]}
 }
 
 /**
- * Generates SEO description for a book using Groq (openai/gpt-oss-120b) with dynamic 4-style rotation, web search enrichment, and strict anti-hallucination rules.
+ * Generates SEO description for a book using OpenAI (gpt-5-mini / gpt-4o-mini) with dynamic 4-style rotation, web search enrichment, and strict anti-hallucination rules.
  */
 export async function generateBookDescription(
   title: string,
@@ -223,8 +223,8 @@ export async function generateBookDescription(
   existingDescription?: string,
   archiveId?: string
 ) {
-  if (!GROQ_API_KEY) {
-    throw new Error('GROQ_API_KEY is not defined');
+  if (!OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not defined');
   }
 
   const cleanedTitle = cleanBookTitle(title);
@@ -236,7 +236,7 @@ export async function generateBookDescription(
       const ocrResult = await fetchBookOcrSample(archiveId);
       if (ocrResult) ocrSample = ocrResult;
     } catch (ocrErr) {
-      console.warn('[Groq Generator] OCR fetch fallback triggered:', ocrErr);
+      console.warn('[Book Description Generator] OCR fetch fallback triggered:', ocrErr);
     }
   }
 
@@ -245,7 +245,7 @@ export async function generateBookDescription(
   try {
     webSnippets = await fetchWebSnippets(cleanedTitle, author, lang);
   } catch (searchError) {
-    console.warn('[Groq Generator] Web search failed, proceeding with metadata:', searchError);
+    console.warn('[Book Description Generator] Web search failed, proceeding with metadata:', searchError);
   }
 
   const prompt = buildGroqDynamicPrompt({
@@ -259,30 +259,43 @@ export async function generateBookDescription(
     lang
   });
 
-  const response = await fetch(GROQ_API_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'openai/gpt-oss-120b',
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      response_format: { type: 'json_object' },
-    }),
-  });
+  // Try gpt-5-mini first as requested, falling back gracefully to gpt-4o-mini if gpt-5-mini is unavailable on the key
+  const modelsToTry = ['gpt-5-mini', 'gpt-4o-mini'];
+  let lastError: any = null;
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(`Groq API error: ${errorData.error?.message || response.statusText}`);
+  for (const model of modelsToTry) {
+    try {
+      const response = await fetch(OPENAI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          response_format: { type: 'json_object' },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`OpenAI API error (${model}): ${errorData.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = JSON.parse(data.choices[0].message.content);
+      return content as { seoTitle: string; description: string };
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[Book Description Generator] Failed with model ${model}, trying fallback if available:`, err.message);
+    }
   }
 
-  const data = await response.json();
-  const content = JSON.parse(data.choices[0].message.content);
-  return content as { seoTitle: string; description: string };
+  throw lastError || new Error('OpenAI API request failed');
 }
