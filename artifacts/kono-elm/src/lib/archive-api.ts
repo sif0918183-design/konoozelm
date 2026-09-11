@@ -57,12 +57,15 @@ export function extractOcrSample(fullText: string): string | null {
 
   if (!cleaned || cleaned.length < 30) return null;
 
-  if (cleaned.length <= 2200) {
+  // Optimized token extraction: focus on high-value headings, TOC, and preface (max ~1400 chars)
+  if (cleaned.length <= 1400) {
     return cleaned;
   }
-  const beginning = cleaned.substring(0, 1000).trim();
-  const ending = cleaned.substring(cleaned.length - 1200).trim();
-  return `=== مقدمة ونشرة الكتاب ===\n${beginning}\n\n=== فهرس الموضوعات والأبواب ===\n${ending}`;
+
+  // Extract first 700 chars (preface/headings) and last 700 chars (table of contents/index)
+  const beginning = cleaned.substring(0, 700).trim();
+  const ending = cleaned.substring(cleaned.length - 700).trim();
+  return `[المقدمة والعناوين]: ${beginning}\n\n[فهرس الموضوعات]: ${ending}`;
 }
 
 /**

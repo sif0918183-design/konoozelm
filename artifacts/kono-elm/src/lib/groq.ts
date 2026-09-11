@@ -1,8 +1,8 @@
 import { cleanBookTitle } from './openai';
 import { fetchBookOcrSample } from './archive-api';
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 let globalStyleCounter = 0;
 
@@ -110,41 +110,25 @@ Provide a clear, objective summary reflecting only the confirmed source details.
     return `
 You are a professional scholarly book editor for a digital library catalog. Your objective is to write an authentic, natural, and strictly factual SEO book description based EXCLUSIVELY on the provided source metadata.
 
-SOURCE METADATA:
-- Book Title: "${payload.title}"
+SOURCE DATA:
+- Title: "${payload.title}"
 ${validAuthor ? `- Author: "${validAuthor}"` : ''}
 ${validEditor ? `- Editor/Translator: "${validEditor}"` : ''}
-${categoryContext ? `- Category/Field: "${categoryContext}"` : ''}
-${existingDesc ? `- Original Source Metadata from Archive.org:\n"""${existingDesc.substring(0, 500)}"""` : ''}
-${ocrText ? `- Archive.org Verified Book Text/OCR Sample (Preface & Table of Contents):\n"""${ocrText}"""` : ''}
-${snippetsText ? `- Secondary Web Search Background:\n"""${snippetsText}"""` : ''}
+${categoryContext ? `- Category: "${categoryContext}"` : ''}
+${existingDesc ? `- Original Source Desc: "${existingDesc.substring(0, 300)}"` : ''}
+${ocrText ? `- Verified Book OCR Sample (Table of Contents / Preface):\n"""${ocrText}"""` : ''}
+${snippetsText ? `- Web Search Snippets:\n"""${snippetsText}"""` : ''}
 
 ${englishStyles[styleIndex]}
 
-STRICT ANTI-HALLUCINATION & EDITORIAL RULES:
-1. STRICT SOURCE GROUNDING & NO EXTRAPOLATION:
-   - Do NOT infer or extrapolate any detailed information from the book title or category alone. Do NOT mention specific chapters, sections, topics, author methodology, sources, schools of thought, author objectives, historical context, or detailed content UNLESS explicitly present in the original book data or supported by a directly linked reliable source.
-   - When in doubt, OMIT the detail rather than guessing.
-   - Do NOT turn possibilities or assumptions into facts.
-   - If a good original description is provided in Archive.org metadata, rephrase it naturally rather than inventing extra details.
-   - Ignore technical uploader artifacts (emails, URLs, scanning metadata) present in OCR.
-2. SOURCE HIERARCHY & FLEXIBLE LENGTH:
-   - Priority 1: Primary book metadata from Archive.org/Database.
-   - Priority 2: Verified OCR sample (used strictly for explicit, clear facts).
-   - Priority 3: Secondary Web Search (only if directly relevant).
-   - Rich metadata -> ~150-220 words. Moderate metadata -> ~100-160 words. Limited metadata -> concise, accurate short description (60-100 words).
-   - Accuracy is vastly more important than length. Do NOT pad the text to force a specific word count.
-3. BANNED CLICHÉS & REPETITIVE FORMULAS:
-   - DO NOT use generic boilerplate such as "This book explores...", "Highlights the...", "Offers readers...", "This valuable reference...", "Serves as an essential guide...", "Scientific methodology...", "Written by...".
-   - Maintain structural diversity across entries.
-4. SEMANTIC SEO & PDF MENTIONS:
-   - Incorporate relevant discipline terms naturally from verified factual metadata only.
-   - Mention "PDF download" or "read online" AT MOST ONCE naturally if appropriate. Never make it the focus.
-5. UNKNOWN AUTHOR HANDLING:
-   - ${validAuthor ? `Include author "${validAuthor}" naturally.` : `Do NOT mention that the author is unknown or omitted. Focus entirely on the confirmed text content.`}
-6. SEO TITLE: Suggest a clean, authoritative SEO title suitable for a library catalog entry.
+RULES:
+1. STRICT SOURCE GROUNDING: Use clear facts present in metadata/OCR. Do NOT invent chapters, methodology, or history. Omit doubtful details.
+2. FLEXIBLE LENGTH: Rich data -> 150-220 words; Limited data -> concise short description (60-100 words). Accuracy > length.
+3. NO CLICHÉS: Avoid boilerplate ("This book explores...", "Must-read reference..."). Vary sentence structures.
+4. SEMANTIC SEO: Use authentic discipline terms naturally. Mention "PDF download" or "read online" at most once.
+5. ${validAuthor ? `Include author "${validAuthor}" naturally.` : `Omit any mention of unknown/missing author.`}
 
-Format response strictly as JSON:
+JSON format strictly:
 {
   "seoTitle": "SEO Title here",
   "description": "Full description here"
@@ -163,46 +147,27 @@ Format response strictly as JSON:
     ];
 
     return `
-أنت محرر كتب محترف وموثوق في مكتبة علمية. مهمتك كتابة وصف دقيق، بليغ، وأصيل لكتاب بناءً حصراً على البيانات الحقيقية المتاحة.
+أنت محرر كتب محترف في مكتبة علمية. مهمتك كتابة وصف دقيق، بليغ، وأصيل لكتاب استناداً إلى الحقائق المصدرية المتاحة حصراً.
 
-المعطيات المصدرية المتاحة:
+المعطيات المصدرية:
 - عنوان الكتاب: "${payload.title}"
 ${validAuthor ? `- المؤلف: "${validAuthor}"` : ''}
 ${validEditor ? `- المحقق/المترجم: "${validEditor}"` : ''}
-${categoryContext ? `- المجال/التصنيف: "${categoryContext}"` : ''}
-${existingDesc ? `- النص/الوصف الأصلي المتوفر من Archive.org:\n"""${existingDesc.substring(0, 500)}"""` : ''}
-${ocrText ? `- عينة النص/OCR المباشرة من الكتاب في Archive.org (المقدمة والفهرس):\n"""${ocrText}"""` : ''}
-${snippetsText ? `- نتائج البحث الثانوي المؤكدة من الويب:\n"""${snippetsText}"""` : ''}
+${categoryContext ? `- المجال: "${categoryContext}"` : ''}
+${existingDesc ? `- الوصف الأصلي: "${existingDesc.substring(0, 300)}"` : ''}
+${ocrText ? `- عينة OCR المفلترة (المقدمة والفهرس):\n"""${ocrText}"""` : ''}
+${snippetsText ? `- نتائج الويب المطابقة:\n"""${snippetsText}"""` : ''}
 
 ${arabicStyles[styleIndex]}
 
-قواعد صارمة لمنع التخمين والهلوسة والصياغات الآلية:
-1. قواعد الاستناد إلى المصادر والامتناع القاطع عن التخمين:
-   - لا تستنتج أي معلومة تفصيلية من عنوان الكتاب أو تصنيفه وحدهما. لا تذكر فصولًا أو أبوابًا أو موضوعات محددة أو منهج المؤلف أو مصادر الكتاب أو المذاهب أو المدارس الفكرية أو أهداف المؤلف أو سياقه التاريخي أو محتواه التفصيلي إلا إذا كانت هذه المعلومات موجودة بوضوح في بيانات الكتاب الأصلية أو مدعومة بمصدر موثوق مرتبط مباشرة بالكتاب.
-   - عند الشك، احذف المعلومة بدل تخمينها.
-   - لا تحول الاحتمال أو الاستنتاج إلى حقيقة.
-   - إذا كان هناك وصف أصلي جيد للكتاب في بيانات Archive.org، أعد صياغته بصورة طبيعية وأصيلة بدلاً من اختراع معلومات إضافية.
-   - تجنب تماماً تضمين البريد الإلكتروني أو الروابط أو المعلومات التقنية الخاصة بالرفع أو الضوضاء الضوئية المتروكة في OCR.
+ضوابط صريحة:
+1. المصدرية والدقة: اعتمد فقط على الحقائق المذكورة صراحة في الميتاداتا أو OCR المفلتر. لا تخترع فصولاً أو مناهج أو أهدافاً غير موجودة. عند الشك احذف المعلومة.
+2. مرونة الطول: معلومات غنية -> ~150-220 كلمة؛ معلومات محدودة -> وصف قصير ودقيق (60-100 كلمة). الدقة والتثبت أهم من الطول.
+3. التنوع ومنع العبارات المكررة: تجنب القوالب الجاهزة والعبارات التسويقية ("مرجع لا غنى عنه"، "كنز علمي"، "يسلط الضوء").
+4. SEO الدلالي والتنزيل: ادمج مصطلحات المادة بأسلوب طبيعي، واذكر "تحميل PDF" أو "قراءة أونلاين" مرة واحدة بأسلوب سلس.
+5. المؤلف: ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بأسلوب طبيعي.` : `لا تذكر مطلقاً أن المؤلف غير معروف، بل ركز الوصف على المتن.`}
 
-2. ترتيب أولوية المصادر ومرونة الطول:
-   - الترتيب: بيانات الكتاب الأصلية -> عينة OCR المفلترة (للحقائق الواضحة فقط) -> نتائج الويب المطابقة تماماً.
-   - إذا كانت المعلومات غنية: استهدف حوالي 150-220 كلمة.
-   - إذا كانت المعلومات متوسطة: استهدف حوالي 100-160 كلمة.
-   - إذا كانت المعلومات محدودة: اكتب وصفاً قصيراً ودقيقاً ومباشراً (دون محاولة الوصول إلى 150 كلمة بأي ثمن). الدقة والتثبت أهم بكتير من الطول.
-
-3. التنويع ومنع العبارات المكررة والقوالب:
-   - حافظ على تنوع الأساليب الأربعة ولا تبدأ الأوصاف بنفس الطريقة.
-   - يمنع استخدام القوالب المتكررة والعبارات التسويقية مثل: ("يتناول الكتاب...", "يسلط الضوء...", "يتيح للقارئ...", "يُعد مرجعًا...", "منهجية علمية...", "مرجع لا غنى عنه"، "كنز علمي"، "مورد قيم").
-   - تجنب تكرار عنوان الكتاب بلا داعٍ.
-
-4. SEO الدلالي والتنزيل:
-   - ادمج المصطلحات العلمية الحقيقية الواردة في المادة بأسلوب طبيعي لتحقيق Semantic SEO دون Keyword Stuffing.
-   - لا تجعل "تحميل PDF" أو "قراءة أونلاين" محور الوصف، ويمكن ذكرهما مرة واحدة فقط بأسلوب غير متكلف.
-
-5. اسم المؤلف:
-   - ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بأسلوب سلس.` : `إذا كان اسم المؤلف غير معروف أو مفقوداً، فلا تذكر مطلقاً أنه غير معروف، بل ركز الوصف بالكامل على المادة المعرفية للكتاب.`}
-
-أريد النتيجة بتنسيق JSON حصراً:
+تنسيق JSON حصراً:
 {
   "seoTitle": "عنوان SEO هنا",
   "description": "الوصف الكامل هنا"
@@ -212,7 +177,7 @@ ${arabicStyles[styleIndex]}
 }
 
 /**
- * Generates SEO description for a book using OpenAI (gpt-5-mini / gpt-4o-mini) with dynamic 4-style rotation, web search enrichment, and strict anti-hallucination rules.
+ * Generates SEO description for a book using Groq (openai/gpt-oss-120b) with dynamic 4-style rotation, targeted OCR sampling, and cost-optimized prompts.
  */
 export async function generateBookDescription(
   title: string,
@@ -223,8 +188,8 @@ export async function generateBookDescription(
   existingDescription?: string,
   archiveId?: string
 ) {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not defined');
+  if (!GROQ_API_KEY) {
+    throw new Error('GROQ_API_KEY is not defined');
   }
 
   const cleanedTitle = cleanBookTitle(title);
@@ -236,16 +201,19 @@ export async function generateBookDescription(
       const ocrResult = await fetchBookOcrSample(archiveId);
       if (ocrResult) ocrSample = ocrResult;
     } catch (ocrErr) {
-      console.warn('[Book Description Generator] OCR fetch fallback triggered:', ocrErr);
+      console.warn('[Groq Generator] OCR fetch fallback triggered:', ocrErr);
     }
   }
 
-  // 2. Perform web search enrichment as secondary fallback/background
+  // 2. Conditional Web Search: only as a fallback if both existing description and OCR sample are sparse
   let webSnippets: string[] = [];
-  try {
-    webSnippets = await fetchWebSnippets(cleanedTitle, author, lang);
-  } catch (searchError) {
-    console.warn('[Book Description Generator] Web search failed, proceeding with metadata:', searchError);
+  const needsWebSearch = (!existingDescription || existingDescription.length < 50) && (!ocrSample || ocrSample.length < 100);
+  if (needsWebSearch) {
+    try {
+      webSnippets = await fetchWebSnippets(cleanedTitle, author, lang);
+    } catch (searchError) {
+      console.warn('[Groq Generator] Web search failed, proceeding with metadata:', searchError);
+    }
   }
 
   const prompt = buildGroqDynamicPrompt({
@@ -259,43 +227,30 @@ export async function generateBookDescription(
     lang
   });
 
-  // Try gpt-5-mini first as requested, falling back gracefully to gpt-4o-mini if gpt-5-mini is unavailable on the key
-  const modelsToTry = ['gpt-5-mini', 'gpt-4o-mini'];
-  let lastError: any = null;
-
-  for (const model of modelsToTry) {
-    try {
-      const response = await fetch(OPENAI_API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
+  const response = await fetch(GROQ_API_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${GROQ_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'openai/gpt-oss-120b',
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
         },
-        body: JSON.stringify({
-          model,
-          messages: [
-            {
-              role: 'user',
-              content: prompt,
-            },
-          ],
-          response_format: { type: 'json_object' },
-        }),
-      });
+      ],
+      response_format: { type: 'json_object' },
+    }),
+  });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`OpenAI API error (${model}): ${errorData.error?.message || response.statusText}`);
-      }
-
-      const data = await response.json();
-      const content = JSON.parse(data.choices[0].message.content);
-      return content as { seoTitle: string; description: string };
-    } catch (err: any) {
-      lastError = err;
-      console.warn(`[Book Description Generator] Failed with model ${model}, trying fallback if available:`, err.message);
-    }
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(`Groq API error: ${errorData.error?.message || response.statusText}`);
   }
 
-  throw lastError || new Error('OpenAI API request failed');
+  const data = await response.json();
+  const content = JSON.parse(data.choices[0].message.content);
+  return content as { seoTitle: string; description: string };
 }
