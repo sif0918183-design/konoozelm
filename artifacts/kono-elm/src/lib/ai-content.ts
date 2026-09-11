@@ -17,19 +17,21 @@ export async function generateEnhancedSeoContent(
   category: string,
   preNormalizedTitle?: string,
   lang: string = 'ar',
-  existingDescription?: string
+  existingDescription?: string,
+  archiveId?: string
 ): Promise<SeoContent> {
   const cleanedOriginal = cleanBookTitle(originalTitle);
   const normalizedTitle = preNormalizedTitle ? cleanBookTitle(preNormalizedTitle) : await normalizeTitle(cleanedOriginal, originalAuthor, lang);
 
-  // Generate SEO description and Title using Groq with existing metadata
+  // Generate SEO description and Title using Groq with existing metadata & Archive.org OCR
   const aiContent = await generateBookDescription(
     normalizedTitle,
     originalAuthor,
     lang === 'en' ? 'en' : 'ar',
     category,
     undefined,
-    existingDescription
+    existingDescription,
+    archiveId
   );
 
   return {

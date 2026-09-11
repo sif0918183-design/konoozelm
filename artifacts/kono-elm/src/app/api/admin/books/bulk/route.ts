@@ -39,7 +39,7 @@ export async function POST(request: Request) {
         }
         const partsCount = files.length || 1;
 
-        const seoContent = await generateEnhancedSeoContent(book.title, book.author, category, book.title, lang, book.description);
+        const seoContent = await generateEnhancedSeoContent(book.title, book.author, category, book.title, lang, book.description, book.id);
 
         const bookPayload = {
           slug: `${slugify(seoContent.title)}--${book.id}`,

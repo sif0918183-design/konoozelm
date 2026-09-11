@@ -31,6 +31,54 @@ export interface SearchResult {
   hasMore: boolean;
 }
 
+/**
+ * Extracts a concise, high-value sample from full OCR text
+ * Priority: Beginning/Preface (first 1000 chars) + End/Table of Contents (last 1200 chars)
+ */
+export function extractOcrSample(fullText: string): string | null {
+  if (!fullText) return null;
+  const trimmed = fullText.trim();
+  if (trimmed.length <= 2200) {
+    return trimmed;
+  }
+  const beginning = trimmed.substring(0, 1000).trim();
+  const ending = trimmed.substring(trimmed.length - 1200).trim();
+  return `=== مقدمة ونشرة الكتاب ===\n${beginning}\n\n=== فهرس الموضوعات والأبواب ===\n${ending}`;
+}
+
+/**
+ * Discovers and fetches a limited OCR text sample from Archive.org with a strict 3.5s timeout.
+ */
+export async function fetchBookOcrSample(identifier: string): Promise<string | null> {
+  if (!identifier) return null;
+
+  try {
+    const metaUrl = `${ARCHIVE_METADATA_BASE}${identifier}`;
+    const metaRes = await safeFetch(metaUrl, {}, 3500);
+    if (!metaRes || !metaRes.ok) return null;
+
+    const data = await metaRes.json();
+    const files = data.files || [];
+
+    const ocrFile = files.find((f: any) =>
+      f.name && (f.name.toLowerCase().endsWith('_djvu.txt') || f.format === 'DjVuTXT')
+    );
+
+    if (!ocrFile) return null;
+
+    const ocrUrl = `https://archive.org/download/${identifier}/${encodeURIComponent(ocrFile.name)}`;
+    const ocrRes = await safeFetch(ocrUrl, {}, 3500);
+
+    if (!ocrRes || !ocrRes.ok) return null;
+
+    const rawText = await ocrRes.text();
+    return extractOcrSample(rawText);
+  } catch (error) {
+    console.warn(`[OCR Extraction Fallback] Could not fetch OCR for ${identifier}:`, error);
+    return null;
+  }
+}
+
 const ARCHIVE_API_BASE = 'https://archive.org/advancedsearch.php';
 const ARCHIVE_METADATA_BASE = 'https://archive.org/metadata/';
 

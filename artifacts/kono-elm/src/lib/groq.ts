@@ -1,4 +1,5 @@
 import { cleanBookTitle } from './openai';
+import { fetchBookOcrSample } from './archive-api';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -11,6 +12,7 @@ export interface BookMetadataPayload {
   category?: string;
   editor?: string;
   description?: string;
+  ocrSample?: string;
   webSnippets?: string[];
   lang?: 'ar' | 'en';
 }
@@ -79,6 +81,7 @@ export function buildGroqDynamicPrompt(payload: BookMetadataPayload) {
   const categoryContext = payload.category && payload.category !== 'عام' && payload.category !== 'General' ? payload.category : null;
   const validEditor = payload.editor && payload.editor !== 'Unknown' && payload.editor !== 'غير معروف' ? payload.editor : null;
   const existingDesc = payload.description ? payload.description.trim() : null;
+  const ocrText = payload.ocrSample ? payload.ocrSample.trim() : null;
   const snippetsText = payload.webSnippets && payload.webSnippets.length > 0 ? payload.webSnippets.join('\n- ') : null;
 
   const titleHash = payload.title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -106,7 +109,8 @@ ${validAuthor ? `- Author: "${validAuthor}"` : ''}
 ${validEditor ? `- Editor/Translator: "${validEditor}"` : ''}
 ${categoryContext ? `- Category/Field: "${categoryContext}"` : ''}
 ${existingDesc ? `- Original Source Metadata from Archive.org:\n"""${existingDesc.substring(0, 500)}"""` : ''}
-${snippetsText ? `- Verified Search Results Background:\n"""${snippetsText}"""` : ''}
+${ocrText ? `- Archive.org Verified Book Text/OCR Sample (Preface & Table of Contents):\n"""${ocrText}"""` : ''}
+${snippetsText ? `- Secondary Web Search Background:\n"""${snippetsText}"""` : ''}
 
 ${englishStyles[styleIndex]}
 
@@ -158,7 +162,8 @@ ${validAuthor ? `- المؤلف: "${validAuthor}"` : ''}
 ${validEditor ? `- المحقق/المترجم: "${validEditor}"` : ''}
 ${categoryContext ? `- المجال/التصنيف: "${categoryContext}"` : ''}
 ${existingDesc ? `- النص/الوصف الأصلي المتوفر من Archive.org:\n"""${existingDesc.substring(0, 500)}"""` : ''}
-${snippetsText ? `- نتائج البحث الموثوقة من الويب المرتبطة بالكتاب:\n"""${snippetsText}"""` : ''}
+${ocrText ? `- عينة النص/OCR المباشرة من الكتاب في Archive.org (المقدمة والفهرس):\n"""${ocrText}"""` : ''}
+${snippetsText ? `- نتائج البحث الثانوي المؤكدة من الويب:\n"""${snippetsText}"""` : ''}
 
 ${arabicStyles[styleIndex]}
 
@@ -205,7 +210,8 @@ export async function generateBookDescription(
   lang: 'ar' | 'en' = 'ar',
   category?: string,
   editor?: string,
-  existingDescription?: string
+  existingDescription?: string,
+  archiveId?: string
 ) {
   if (!GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY is not defined');
@@ -213,7 +219,18 @@ export async function generateBookDescription(
 
   const cleanedTitle = cleanBookTitle(title);
 
-  // Perform web search enrichment for the book with strict 3.5s timeout and fallback
+  // 1. Fetch OCR text sample from Archive.org if archiveId is available
+  let ocrSample: string | undefined;
+  if (archiveId) {
+    try {
+      const ocrResult = await fetchBookOcrSample(archiveId);
+      if (ocrResult) ocrSample = ocrResult;
+    } catch (ocrErr) {
+      console.warn('[Groq Generator] OCR fetch fallback triggered:', ocrErr);
+    }
+  }
+
+  // 2. Perform web search enrichment as secondary fallback/background
   let webSnippets: string[] = [];
   try {
     webSnippets = await fetchWebSnippets(cleanedTitle, author, lang);
@@ -227,6 +244,7 @@ export async function generateBookDescription(
     category,
     editor,
     description: existingDescription,
+    ocrSample,
     webSnippets,
     lang
   });

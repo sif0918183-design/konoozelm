@@ -226,21 +226,33 @@ export function cleanBookTitle(rawTitle: string): string {
   if (!rawTitle) return '';
   let title = rawTitle.trim();
 
-  // 1. Remove website domain prefixes (e.g., "marfat.com - ", "lisanarabs.")
-  title = title.replace(/^(?:[a-zA-Z0-9-]+\.)+(?:com|org|net|info|co|me|site|[a-zA-Z]{2,})\.?(?:\s*-\s*|\s*|\.)?/gi, '');
-  title = title.replace(/^[a-zA-Z0-9-_]+\./g, '');
+  // Iteratively clean prefixes until stable
+  let prev = '';
+  while (title !== prev) {
+    prev = title;
 
-  // 2. Remove leading catalog numbers, zero-padded IDs, and dashes e.g. "129708 - ", "00116 "
-  title = title.replace(/^\s*\d{3,}\s*(?:[-_.:]\s*)?/g, '');
-  title = title.replace(/^\s*0+\d*\s*(?:[-_.:]\s*)?/g, '');
+    // Remove leading catalog numbers, zero-padded IDs, and dashes/dots e.g. "129708 - ", "00116 "
+    title = title.replace(/^(?:\d+|-|\s|_|\.)+/g, '').trim();
 
-  // 3. Remove standalone "Pdf", "PDF", "pdf"
+    // Remove website domain prefixes (e.g., "marfat.com - ", "lisanarabs.com - ", "lisanarabs.")
+    title = title.replace(/^(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.(?:com|org|net|info|co|me|site|[a-zA-Z]{2,})\b(?:\s*[-–—_.:]\s*|\s*)/gi, '').trim();
+
+    // Remove known library prefix names without extensions
+    title = title.replace(/^(?:marfat|lisanarabs|archive|waqfeya|al-maktaba|ketaab|al-fiker|books-pdf)\b(?:\s*[-–—_.:]\s*|\s*)/gi, '').trim();
+  }
+
+  // Remove trailing file extension or pdf markers e.g., ".pdf", " Pdf", " - marfat.com"
+  title = title.replace(/\.(pdf|epub|mobi)$/i, '');
+  title = title.replace(/\s+(pdf|epub|mobi)$/i, '');
+  title = title.replace(/(?:\s*[-–—_.:]\s*|\s+)(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.(?:com|org|net|info|co|me|site|[a-zA-Z]{2,})$/gi, '');
+
+  // Remove standalone "pdf", "PDF", "pdf" tokens
   title = title.replace(/\bpdf\b/gi, '');
 
-  // 4. Cleanup trailing/leading dashes, dots, underscores, and extra whitespace
+  // Final cleanup of extra whitespace and leading/trailing separators
   title = title.replace(/^[\s\-.:_]+|[\s\-.:_]+$/g, '').replace(/\s+/g, ' ').trim();
 
-  return title;
+  return title || rawTitle;
 }
 
 /**
