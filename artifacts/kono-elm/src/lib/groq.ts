@@ -121,12 +121,12 @@ ${snippetsText ? `- Web Search Snippets:\n"""${snippetsText}"""` : ''}
 
 ${englishStyles[styleIndex]}
 
-RULES:
-1. STRICT SOURCE GROUNDING: Use clear facts present in metadata/OCR. Do NOT invent chapters, methodology, or history. Omit doubtful details.
-2. FLEXIBLE LENGTH: Rich data -> 150-220 words; Limited data -> concise short description (60-100 words). Accuracy > length.
-3. NO CLICHÉS: Avoid boilerplate ("This book explores...", "Must-read reference..."). Vary sentence structures.
-4. SEMANTIC SEO: Use authentic discipline terms naturally. Mention "PDF download" or "read online" at most once.
-5. ${validAuthor ? `Include author "${validAuthor}" naturally.` : `Omit any mention of unknown/missing author.`}
+STRICT RULES:
+1. SOURCE FIDELITY & NO EXTRAPOLATION: Focus strictly on explicit facts in Archive.org metadata, description, and OCR headings/TOC. Do NOT invent or infer author objectives, methodology, target audience, speculative conclusions, publication details, or unconfirmed chapters.
+2. USE CLEAR OCR STRUCTURE: Include clear headings, section topics, and table of contents entries extracted from OCR, as they provide rich factual value for SEO.
+3. NO EVALUATIVE CLAIMS OR MARKETING: Do NOT use phrases like "important reference", "reliable source", "pioneering study", "essential reading", or any site features like "download PDF", "read online", "PDF format". Focus 100% on the textual content of the book.
+4. FLEXIBLE LENGTH & ACCURACY: Rich data -> ~150-220 words. Moderate/Limited data -> concise, accurate description (60-100 words). Delete doubtful information.
+5. AUTHOR: ${validAuthor ? `Include author "${validAuthor}" naturally.` : `Do NOT mention that author is unknown or missing.`}
 
 JSON format strictly:
 {
@@ -160,12 +160,12 @@ ${snippetsText ? `- نتائج الويب المطابقة:\n"""${snippetsText}"
 
 ${arabicStyles[styleIndex]}
 
-ضوابط صريحة:
-1. المصدرية والدقة: اعتمد فقط على الحقائق المذكورة صراحة في الميتاداتا أو OCR المفلتر. لا تخترع فصولاً أو مناهج أو أهدافاً غير موجودة. عند الشك احذف المعلومة.
-2. مرونة الطول: معلومات غنية -> ~150-220 كلمة؛ معلومات محدودة -> وصف قصير ودقيق (60-100 كلمة). الدقة والتثبت أهم من الطول.
-3. التنوع ومنع العبارات المكررة: تجنب القوالب الجاهزة والعبارات التسويقية ("مرجع لا غنى عنه"، "كنز علمي"، "يسلط الضوء").
-4. SEO الدلالي والتنزيل: ادمج مصطلحات المادة بأسلوب طبيعي، واذكر "تحميل PDF" أو "قراءة أونلاين" مرة واحدة بأسلوب سلس.
-5. المؤلف: ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بأسلوب طبيعي.` : `لا تذكر مطلقاً أن المؤلف غير معروف، بل ركز الوصف على المتن.`}
+ضوابط صريحة ومصدرية صارمة:
+1. الالتزام الحصري بالمصادر والامتناع عن التخمين: التزم فقط بالحقائق المذكورة صراحة في ميتاداتا Archive.org، أو الوصف الأصلي، أو عينة OCR المفلترة، أو نتائج الويب. يمنع منعاً باتاً استنتاج أهداف الكتاب، أو منهجه، أو الفئة المستهدفة، أو نتائجه، أو معلومات نشر غير مؤكدة. عند وجود أي معلومة غير مؤكدة يجب حذفها فوراً.
+2. استغلال الفهرس والعناوين من OCR: استخدم عناوين الأبواب والفصول والفهرس الواضحة الواردة في OCR لأنها تمثل حقائق موضوعية غنية ومفيدة جداً لـ SEO.
+3. منع الأحكام التقييمية وإشارات الموقع: يمنع منعاً باتاً استخدام عبارات مثل ("مرجع مهم"، "مصدر موثوق"، "دراسة رائدة"، "لا غنى عنه"). كما يُمنع مطلقاً التحدث عن "تحميل PDF"، "قراءة أونلاين"، "تحميل مجاني" أو أي من خصائص الموقع والملفات، فالوصف مخصص لمحتوى الكتاب المعرفي فقط.
+4. مرونة الطول والدقة: معلومات غنية -> ~150-220 كلمة؛ معلومات محدودة -> وصف قصير ودقيق (60-100 كلمة). الدقة والتثبت أولوية قصوى.
+5. المؤلف: ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بأسلوب طبيعي وسلس.` : `لا تذكر مطلقاً أن المؤلف غير معروف أو مفقود، بل ركز الوصف بالكامل على المادة المعرفية.`}
 
 تنسيق JSON حصراً:
 {
