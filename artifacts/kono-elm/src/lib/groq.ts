@@ -87,36 +87,49 @@ export function buildGroqDynamicPrompt(payload: BookMetadataPayload) {
 
   if (isEnglish) {
     const englishStyles = [
-      `STYLE PERSPECTIVE 1: Analytical & Direct Subject Focus.
-Begin directly with the primary subject matter and analytical core of the work.`,
-      `STYLE PERSPECTIVE 2: Scope & Structural Overview.
-Open with the main thematic sections and content breakdown of the text.`,
-      `STYLE PERSPECTIVE 3: Conceptual & Methodological Perspective.
-Start with the discipline's central concepts and how the text addresses them.`,
-      `STYLE PERSPECTIVE 4: Contextual & Functional Overview.
-Provide a direct synthesis of what the work covers and its specific subject focus.`
+      `STYLE PERSPECTIVE 1: Direct Subject Synthesis.
+Present the factual content directly using the available source metadata and verified background facts.`,
+      `STYLE PERSPECTIVE 2: Context & Domain Focus.
+Situate the book cleanly within its field based exclusively on the provided metadata.`,
+      `STYLE PERSPECTIVE 3: Factual Material Breakdown.
+Focus strictly on the verified subject elements without speculative extrapolations.`,
+      `STYLE PERSPECTIVE 4: Concise Informative Overview.
+Provide a clear, objective summary reflecting only the confirmed source details.`
     ];
 
     return `
-You are a professional scholarly editor for an English digital library catalog.
-Generate an authentic, natural, and highly informative SEO description for:
-Book Title: "${payload.title}"
-${validAuthor ? `Author: "${validAuthor}"` : ''}
-${validEditor ? `Editor/Translator/Muhaqqiq: "${validEditor}"` : ''}
-${categoryContext ? `Category/Field: "${categoryContext}"` : ''}
-${existingDesc ? `Existing Metadata/Notes: "${existingDesc.substring(0, 300)}"` : ''}
-${snippetsText ? `Verified Search Results Background:\n- ${snippetsText}` : ''}
+You are a professional scholarly book editor for a digital library catalog. Your objective is to write an authentic, natural, and strictly factual SEO book description based EXCLUSIVELY on the provided source metadata.
+
+SOURCE METADATA:
+- Book Title: "${payload.title}"
+${validAuthor ? `- Author: "${validAuthor}"` : ''}
+${validEditor ? `- Editor/Translator: "${validEditor}"` : ''}
+${categoryContext ? `- Category/Field: "${categoryContext}"` : ''}
+${existingDesc ? `- Original Source Metadata from Archive.org:\n"""${existingDesc.substring(0, 500)}"""` : ''}
+${snippetsText ? `- Verified Search Results Background:\n"""${snippetsText}"""` : ''}
 
 ${englishStyles[styleIndex]}
 
-STRICT ANTI-HALLUCINATION & GUIDELINES (INFORMATION FIRST, SEO SECOND):
-1. NO HALLUCINATION RULE: Do NOT extrapolate chapters, detailed content, methodology, or historical facts from the book title alone. Do NOT include any detailed fact unless it is explicitly present in the book metadata or directly supported by verified search results.
-2. NATIVE ENGLISH PROSE: Write naturally as an English scholarly editor. Avoid translationese, rigid formulas, or marketing tone.
-3. WORD COUNT: Target 150-220 words when information is adequate. If available metadata is limited, write a concise, accurate summary without adding fluff.
-4. BANNED CLICHÉS: DO NOT use repetitive sales phrases such as "This valuable work...", "This important reference...", "Perfect for scholars and students...", "It provides readers with...", "This indispensable masterpiece...", or "Written by...".
-5. SEMANTIC SEO & PDF MENTIONS: Incorporate relevant discipline terminology naturally for strong semantic SEO. Do NOT stuff keywords. Mention "PDF download" or "read online" AT MOST ONCE naturally.
-6. UNKNOWN AUTHOR HANDLING: ${validAuthor ? `Include author "${validAuthor}" naturally.` : `Do NOT mention that the author is unknown or missing. Focus entirely on the text content.`}
-7. SEO TITLE: Suggest a clean, authoritative SEO title suitable for a library catalog entry.
+STRICT ANTI-HALLUCINATION & EDITORIAL RULES:
+1. STRICT SOURCE GROUNDING & NO EXTRAPOLATION:
+   - Base your description strictly on the provided metadata and verified search results above.
+   - NEVER extrapolate or speculate the following from the book title or category alone:
+     * Specific chapters, sections, or table of contents.
+     * The author's specific methodology, objectives, or opinions.
+     * Historical context, sources, or theological/juridical schools discussed.
+     * Detailed contents not explicitly confirmed in the source text.
+2. FLEXIBLE LENGTH & NO FLUFF:
+   - Target 150-220 words ONLY when source metadata is rich.
+   - If available source information is limited, write a concise, accurate, short summary (60-100 words). Do NOT pad the text with generic filler or false statements to reach 150 words.
+3. BANNED CLICHÉS & REPETITIVE FORMULAS:
+   - DO NOT use generic boilerplate such as "This book explores...", "Highlights the...", "Offers readers...", "This valuable reference...", "Serves as an essential guide...", "Scientific methodology...", "Written by...".
+   - Vary sentence structures and paragraph openers naturally.
+4. SEMANTIC SEO & PDF MENTIONS:
+   - Incorporate relevant discipline terms naturally from the factual metadata.
+   - Mention "PDF download" or "read online" AT MOST ONCE naturally if appropriate. Never make it the focus.
+5. UNKNOWN AUTHOR HANDLING:
+   - ${validAuthor ? `Include author "${validAuthor}" naturally.` : `Do NOT mention that the author is unknown or omitted. Focus entirely on the confirmed text content.`}
+6. SEO TITLE: Suggest a clean, authoritative SEO title suitable for a library catalog entry.
 
 Format response strictly as JSON:
 {
@@ -126,35 +139,53 @@ Format response strictly as JSON:
 `;
   } else {
     const arabicStyles = [
-      `أسلوب العرض الأول: التحليلي المباشر.
-ابدأ الجملة الأولى فوراً بتناول القضايا والمسائل العلمية التي يعالجها الكتاب.`,
-      `أسلوب العرض الثاني: التناول المحوري والأبواب.
-ركز على الأبواب والمحاور العلمية الأساسية للمتن دون مقدمات تسويقية.`,
-      `أسلوب العرض الثالث: المنظور المنهجي والمعرفي.
-سلط الضوء على المنهجية والأصول العلمية الواردة في النص بأسلوب علمي رصين.`,
-      `أسلوب العرض الرابع: التناول السياقي والمكثف.
-قدم عرضاً جامعاً ومكثفاً لموضوع السفر وفائدته العلمية دون حشو.`
+      `طريقة التقديم الأولى: العرض المباشر للحقائق المصدرية.
+ابسط المادة العلمية المؤكدة مباشرة استناداً إلى بيانات الكتاب المتاحة والنتائج الموثوقة.`,
+      `طريقة التقديم الثانية: التأصيل الموضوعي ضمن المجال.
+ضع الكتاب في نطاقه العلمي بأسلوب فصيح يعتمد حصراً على المعلومات الجوهرية المتوفرة.`,
+      `طريقة التقديم الثالثة: الإيجاز المعرفي المباشر.
+ركز على العرض الموضوعي الدقيق للبيانات المؤكدة دون افتراض أو تخمين.`,
+      `طريقة التقديم الرابعة: التركيز السياقي المستند للبيانات.
+قدم ملخصاً صادقاً وموضوعياً يعبر عن محتوى السفر بناءً على المعطيات المصدرية فقط.`
     ];
 
     return `
-أنت محرر كتب متخصص في مكتبة إسلامية ومعرفية. قم بكتابة وصف طبيعي، فريد، بليغ، وغني بالمعلومات لكتاب:
-عنوان الكتاب: "${payload.title}"
-${validAuthor ? `المؤلف: "${validAuthor}"` : ''}
-${validEditor ? `المحقق/المترجم: "${validEditor}"` : ''}
-${categoryContext ? `التصنيف/المجال: "${categoryContext}"` : ''}
-${existingDesc ? `بيانات/ملاحظات سابقة: "${existingDesc.substring(0, 300)}"` : ''}
-${snippetsText ? `نتائج البحث المؤكدة عن الكتاب:\n- ${snippetsText}` : ''}
+أنت محرر كتب محترف وموثوق في مكتبة علمية. مهمتك كتابة وصف دقيق، بليغ، وأصيل لكتاب بناءً حصراً على البيانات الحقيقية المتاحة.
+
+المعطيات المصدرية المتاحة:
+- عنوان الكتاب: "${payload.title}"
+${validAuthor ? `- المؤلف: "${validAuthor}"` : ''}
+${validEditor ? `- المحقق/المترجم: "${validEditor}"` : ''}
+${categoryContext ? `- المجال/التصنيف: "${categoryContext}"` : ''}
+${existingDesc ? `- النص/الوصف الأصلي المتوفر من Archive.org:\n"""${existingDesc.substring(0, 500)}"""` : ''}
+${snippetsText ? `- نتائج البحث الموثوقة من الويب المرتبطة بالكتاب:\n"""${snippetsText}"""` : ''}
 
 ${arabicStyles[styleIndex]}
 
-قواعد وضوابط كتابة الوصف ومنع الهلوسة (المعلومات أولاً، SEO ثانياً، والتسويق في الحد الأدنى):
-1. قاعدة منع الهلوسة القاطعة: «لا تستنتج محتوى أو فصولًا أو منهجًا أو معلومات تاريخية من عنوان الكتاب وحده. لا تضف أي معلومة تفصيلية إلا إذا كانت موجودة في بيانات الكتاب أو مدعومة بنتيجة بحث موثوقة مرتبطة مباشرة بالكتاب.»
-2. أسلوب عربي أصيل: اكتب بلغة عربية فصيحة وسليمة وبناء تعبيري متنوع ومستقل، بعيداً عن القوالب الجاهزة أو الصياغات الآلية.
-3. الطول والعمق: استهدف 150-220 كلمة عندما تكون معلومات الكتاب كافية. إذا كانت المعلومات المتاحة محدودة، اكتب وصفاً أقصر لكنه مفيد ودقيق ودون حشو أو تكرار.
-4. منع العبارات المستهلكة: يمنع استخدام عبارات تسويقية عامة مثل ("يُعتبر مرجعًا أساسيًا"، "مورداً قيمًا"، "كنز علمي"، "المصدر المثالي للجميع"، "لا غنى عنه للباحثين والطلاب"، "يعد من أهم/أبرز...", "يقدم الباحث رؤية عميقة").
-5. SEO الدلالي والتنزيل: استخدم المصطلحات العلمية المرتبطة بموضوع الكتاب بأسلوب طبيعي لتحقيق Semantic SEO دون Keyword Stuffing. لا تجعل "تحميل PDF" و"قراءة أونلاين" محور الوصف، ويمكن ذكرهما مرة واحدة فقط بشكل طبيعي ضمن السياق.
-6. اسم المؤلف: ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بأسلوب سلس.` : `إذا كان اسم المؤلف غير معروف أو مفقوداً، فلا تذكر مطلقاً أنه غير معروف، بل ركز الوصف بالكامل على الموضوع والمتن.`}
-7. عنوان SEO: اقترح عنوان SEO جذّاباً ومتنوّعاً يعبر عن الكتاب بأسلوب بشري موثوق.
+قواعد صارمة لمنع التخمين والهلوسة والصياغات الآلية:
+1. المصدرية الحصرية والامتناع التام عن التخمين:
+   - بيانات Archive.org ونتائج البحث المؤكدة أعلاه هي المصدر الأساسي والوحيد للوصف.
+   - يمنع منعاً باتاً استنتاج أو افتراض أي من الآتي من عنوان الكتاب أو تصنيفه وحدهما:
+     * أبواب أو فصول أو أجزاء غير مذكورة صراحة.
+     * منهج المؤلف أو أهدافه أو آراؤه الخاصة.
+     * مصادر الكتاب أو المذاهب والمدارس التي يناقشها.
+     * تفاصيل تاريخية أو سياقية لم تثبت في البيانات أعلاه.
+   (مثال: إذا كان عنوان الكتاب "مختصر في العقيدة"، فلا تذكر أنه يتناول توحيد الربوبية أو الأسماء والصفات ما لم يكن ذلك مذكوراً صراحة في البيانات أعلاه).
+
+2. مرونة الطول وتجنب الحشو:
+   - إذا كانت البيانات المتاحة غنية، استهدف من 150 إلى 220 كلمة.
+   - إذا كانت البيانات المتاحة قليلة، اكتب وصفاً قصيراً ومباشراً ودقيقاً (دون إجبار النص على الوصول إلى 150 كلمة بحشو أو كلام إنشائي).
+
+3. التنويع ومنع العبارات المكررة:
+   - يمنع استخدام القوالب المتكررة مثل: ("يتناول الكتاب...", "يسلط الضوء...", "يتيح للقارئ...", "يُعد مرجعًا...", "منهجية علمية...", "مرجع لا غنى عنه"، "كنز علمي").
+   - نوّع بدايات الجمل وبنية الفقرات بأسلوب عربي فصيح وطبيعي.
+
+4. SEO الدلالي والتنزيل:
+   - ادمج المصطلحات العلمية الحقيقية الواردة في المادة بأسلوب طبيعي.
+   - لا تجعل "تحميل PDF" أو "قراءة أونلاين" محور الوصف، ويمكن ذكرهما مرة واحدة فقط بأسلوب غير متكلف.
+
+5. اسم المؤلف:
+   - ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بأسلوب سلس.` : `إذا كان اسم المؤلف غير معروف أو مفقوداً، فلا تذكر مطلقاً أنه غير معروف، بل ركز الوصف بالكامل على المادة المعرفية للكتاب.`}
 
 أريد النتيجة بتنسيق JSON حصراً:
 {
