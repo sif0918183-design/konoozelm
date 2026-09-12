@@ -227,30 +227,84 @@ export async function generateBookDescription(
     lang
   });
 
-  const response = await fetch(GROQ_API_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'openai/gpt-oss-120b',
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      response_format: { type: 'json_object' },
-    }),
-  });
+  // Call Groq API with automatic retry on Rate Limit (429 / TPM) and OpenAI gpt-4o-mini fallback
+  let attempts = 0;
+  const maxAttempts = 3;
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(`Groq API error: ${errorData.error?.message || response.statusText}`);
+  while (attempts < maxAttempts) {
+    attempts++;
+    try {
+      const response = await fetch(GROQ_API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-oss-120b',
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          response_format: { type: 'json_object' },
+        }),
+      });
+
+      if (response.status === 429) {
+        const errorData = await response.json().catch(() => ({}));
+        const retryMsg = errorData.error?.message || '';
+        console.warn(`[Groq API Rate Limit] 429 hit on attempt ${attempts}/${maxAttempts}. Msg: ${retryMsg}`);
+
+        if (attempts < maxAttempts) {
+          // Wait 2 seconds before retrying Groq
+          await new Promise(r => setTimeout(r, 2000));
+          continue;
+        }
+      } else if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Groq API error (${response.status}): ${errorData.error?.message || response.statusText}`);
+      } else {
+        const data = await response.json();
+        const content = JSON.parse(data.choices[0].message.content);
+        return content as { seoTitle: string; description: string };
+      }
+    } catch (err: any) {
+      if (attempts >= maxAttempts) {
+        console.warn('[Groq Generator] Max Groq retries reached, attempting OpenAI fallback:', err.message);
+        break;
+      }
+    }
   }
 
-  const data = await response.json();
-  const content = JSON.parse(data.choices[0].message.content);
-  return content as { seoTitle: string; description: string };
+  // Fallback to OpenAI gpt-4o-mini if Groq is rate limited or unavailable
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (openaiKey) {
+    try {
+      console.log('[Groq Generator Fallback] Executing OpenAI gpt-4o-mini fallback...');
+      const openAiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' },
+        }),
+      });
+
+      if (openAiRes.ok) {
+        const openAiData = await openAiRes.json();
+        const content = JSON.parse(openAiData.choices[0].message.content);
+        return content as { seoTitle: string; description: string };
+      }
+    } catch (openAiErr: any) {
+      console.error('[Groq Generator Fallback] OpenAI fallback also failed:', openAiErr.message);
+    }
+  }
+
+  throw new Error('Failed to generate description via Groq API (Rate limit / TPM exhausted) and fallback failed.');
 }

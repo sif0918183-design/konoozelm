@@ -76,6 +76,9 @@ export async function POST(request: Request) {
         }
 
         formattedResults.push({ id: book.id, status: 'success' });
+
+        // Add 1.5s pacing delay between sequential bulk additions to prevent TPM burst spikes on Groq
+        await new Promise(r => setTimeout(r, 1500));
       } catch (err: any) {
         console.error(`[Bulk Add Error] Failed adding book ${book.id}:`, err);
         formattedResults.push({ id: book.id, status: 'error', message: err?.message || 'Error processing book' });
