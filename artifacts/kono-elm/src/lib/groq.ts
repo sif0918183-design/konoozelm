@@ -229,7 +229,7 @@ export async function generateBookDescription(
 
   // Call Groq API with automatic retry on Rate Limit (429 / TPM) and OpenAI gpt-4o-mini fallback
   let attempts = 0;
-  const maxAttempts = 3;
+  const maxAttempts = 5;
 
   while (attempts < maxAttempts) {
     attempts++;
@@ -258,8 +258,17 @@ export async function generateBookDescription(
         console.warn(`[Groq API Rate Limit] 429 hit on attempt ${attempts}/${maxAttempts}. Msg: ${retryMsg}`);
 
         if (attempts < maxAttempts) {
-          // Wait 2 seconds before retrying Groq
-          await new Promise(r => setTimeout(r, 2000));
+          // Parse dynamic wait time from Groq's error message e.g. "Please try again in 3.9375s."
+          let waitMs = 4000;
+          const match = retryMsg.match(/try again in ([0-9.]+)\s*s/i);
+          if (match && match[1]) {
+            const parsedSec = parseFloat(match[1]);
+            if (!isNaN(parsedSec)) {
+              waitMs = Math.ceil(parsedSec * 1000) + 500; // Add 500ms safety buffer
+            }
+          }
+          console.log(`[Groq Rate Limit Backoff] Waiting ${waitMs}ms before retry ${attempts + 1}...`);
+          await new Promise(r => setTimeout(r, waitMs));
           continue;
         }
       } else if (!response.ok) {
