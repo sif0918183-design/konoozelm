@@ -62,6 +62,7 @@ export async function POST(request: Request) {
         revalidatePath(`/en/${categorySlug}`);
         revalidatePath(`/book/${bookPayload.slug}`);
         revalidatePath(`/en/book/${bookPayload.slug}`);
+        revalidatePath('/sitemap.xml');
 
         if (supabaseAdmin) {
           await supabaseAdmin
