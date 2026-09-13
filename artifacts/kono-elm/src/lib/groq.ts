@@ -116,14 +116,14 @@ ${validAuthor ? `- Author: "${validAuthor}"` : ''}
 ${validEditor ? `- Editor/Translator: "${validEditor}"` : ''}
 ${categoryContext ? `- Category: "${categoryContext}"` : ''}
 ${existingDesc ? `- Original Source Desc: "${existingDesc.substring(0, 300)}"` : ''}
-${ocrText ? `- Verified Book OCR Sample (Table of Contents / Preface):\n"""${ocrText}"""` : ''}
+${ocrText ? `- Verified Book Content & Table of Contents:\n"""${ocrText}"""` : ''}
 ${snippetsText ? `- Web Search Snippets:\n"""${snippetsText}"""` : ''}
 
 ${englishStyles[styleIndex]}
 
 STRICT RULES:
-1. SOURCE FIDELITY & NO EXTRAPOLATION: Focus strictly on explicit facts in Archive.org metadata, description, and OCR headings/TOC. Do NOT invent or infer author objectives, methodology, target audience, speculative conclusions, publication details, or unconfirmed chapters.
-2. USE CLEAR OCR STRUCTURE: Include clear headings, section topics, and table of contents entries extracted from OCR, as they provide rich factual value for SEO.
+1. SOURCE FIDELITY & NO EXTRAPOLATION: Focus strictly on explicit facts in source metadata, description, and headings/TOC. Do NOT invent or infer author objectives, methodology, target audience, speculative conclusions, publication details, or unconfirmed chapters.
+2. INTEGRATE TOPICS NATURALLY (NO META/OCR MENTIONS): Incorporate section topics, headings, and table of contents naturally into the prose. Do NOT mention "OCR", "extracted from OCR", "text recognition", "scanned text", or any processing source in the description.
 3. NO EVALUATIVE CLAIMS OR MARKETING: Do NOT use phrases like "important reference", "reliable source", "pioneering study", "essential reading", or any site features like "download PDF", "read online", "PDF format". Focus 100% on the textual content of the book.
 4. FLEXIBLE LENGTH & ACCURACY: Rich data -> ~150-220 words. Moderate/Limited data -> concise, accurate description (60-100 words). Delete doubtful information.
 5. AUTHOR: ${validAuthor ? `Include author "${validAuthor}" naturally.` : `Do NOT mention that author is unknown or missing.`}
@@ -155,14 +155,14 @@ ${validAuthor ? `- المؤلف: "${validAuthor}"` : ''}
 ${validEditor ? `- المحقق/المترجم: "${validEditor}"` : ''}
 ${categoryContext ? `- المجال: "${categoryContext}"` : ''}
 ${existingDesc ? `- الوصف الأصلي: "${existingDesc.substring(0, 300)}"` : ''}
-${ocrText ? `- عينة OCR المفلترة (المقدمة والفهرس):\n"""${ocrText}"""` : ''}
+${ocrText ? `- محتوى وفهرس الكتاب:\n"""${ocrText}"""` : ''}
 ${snippetsText ? `- نتائج الويب المطابقة:\n"""${snippetsText}"""` : ''}
 
 ${arabicStyles[styleIndex]}
 
 ضوابط صريحة ومصدرية صارمة:
-1. الالتزام الحصري بالمصادر والامتناع عن التخمين: التزم فقط بالحقائق المذكورة صراحة في ميتاداتا Archive.org، أو الوصف الأصلي، أو عينة OCR المفلترة، أو نتائج الويب. يمنع منعاً باتاً استنتاج أهداف الكتاب، أو منهجه، أو الفئة المستهدفة، أو نتائجه، أو معلومات نشر غير مؤكدة. عند وجود أي معلومة غير مؤكدة يجب حذفها فوراً.
-2. استغلال الفهرس والعناوين من OCR: استخدم عناوين الأبواب والفصول والفهرس الواضحة الواردة في OCR لأنها تمثل حقائق موضوعية غنية ومفيدة جداً لـ SEO.
+1. الالتزام الحصري بالمصادر والامتناع عن التخمين: التزم فقط بالحقائق المذكورة صراحة في بيانات الكتاب، أو الوصف الأصلي، أو الفهرس والمحتوى المتاح، أو نتائج الويب. يمنع منعاً باتاً استنتاج أهداف الكتاب، أو منهجه، أو الفئة المستهدفة، أو نتائجه، أو معلومات نشر غير مؤكدة. عند وجود أي معلومة غير مؤكدة يجب حذفها فوراً.
+2. استغلال الفهرس والعناوين بأسلوب طبيعي (منع إشارات OCR): استخدم عناوين الأبواب والفصول والفهرس لبسط محتوى الكتاب المعرفي بأسلوب فصيح وطبيعي. يُمنع منعاً باتاً ذكر مصطلحات مثل ("OCR"، "مستخلص من OCR"، "بحسب النص الضوئي"، "النص المستخرج") أو أي إشارة تقنية لطريقة جلب البيانات، بل صَغ الموضوعات كجزء أصيل من محتوى الكتاب.
 3. منع الأحكام التقييمية وإشارات الموقع: يمنع منعاً باتاً استخدام عبارات مثل ("مرجع مهم"، "مصدر موثوق"، "دراسة رائدة"، "لا غنى عنه"). كما يُمنع مطلقاً التحدث عن "تحميل PDF"، "قراءة أونلاين"، "تحميل مجاني" أو أي من خصائص الموقع والملفات، فالوصف مخصص لمحتوى الكتاب المعرفي فقط.
 4. مرونة الطول والدقة: معلومات غنية -> ~150-220 كلمة؛ معلومات محدودة -> وصف قصير ودقيق (60-100 كلمة). الدقة والتثبت أولوية قصوى.
 5. المؤلف: ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بأسلوب طبيعي وسلس.` : `لا تذكر مطلقاً أن المؤلف غير معروف أو مفقود، بل ركز الوصف بالكامل على المادة المعرفية.`}
