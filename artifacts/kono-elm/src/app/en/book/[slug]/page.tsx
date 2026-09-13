@@ -70,7 +70,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // If not in database, try to generate using Groq for better SEO metadata
   if (!description && archiveDetails) {
     try {
-      const generated = await generateBookDescription(archiveDetails.title, archiveDetails.author || 'Unknown', 'en');
+      const generated = await generateBookDescription(archiveDetails.title, archiveDetails.author || 'Unknown', 'en', seoBook?.category, undefined, archiveDetails.description, archiveId);
       title = title || generated.seoTitle;
       description = generated.description;
     } catch (e) {
@@ -191,7 +191,7 @@ export default async function EnglishBookPage({ params }: Props) {
           let aiDesc = `Read and download ${archiveBook.title} by ${archiveBook.author || 'Unknown'} in PDF format for free.`;
 
           try {
-            const generated = await generateBookDescription(archiveBook.title, archiveBook.author || 'Unknown', 'en');
+            const generated = await generateBookDescription(archiveBook.title, archiveBook.author || 'Unknown', 'en', 'General', undefined, archiveBook.description, extractedId);
             aiTitle = generated.seoTitle;
             aiDesc = generated.description;
           } catch (aiError) {
@@ -263,7 +263,7 @@ export default async function EnglishBookPage({ params }: Props) {
 
   if (!displayDescription && archiveBook) {
     try {
-      const generated = await generateBookDescription(displayTitle, displayAuthor, 'en');
+      const generated = await generateBookDescription(displayTitle, displayAuthor, 'en', displayCategory, undefined, archiveBook.description, finalArchiveId);
       displayDescription = generated.description;
       dynamicSeoTitle = generated.seoTitle;
     } catch (e) {

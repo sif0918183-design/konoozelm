@@ -22,61 +22,69 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Books, category title, and category slug are required' }, { status: 400 });
     }
 
-    const results = await Promise.allSettled(books.map(async (book) => {
-      // Basic timeout check per book (though allSettled will run them all)
+    const formattedResults = [];
+
+    for (const book of books) {
       if (Date.now() - startTime > MAX_RUNTIME) {
-        throw new Error('Timeout');
+        formattedResults.push({ id: book.id, status: 'error', message: 'Timeout' });
+        continue;
       }
 
-      const files = await getBookFiles(book.id);
-      const partsCount = files.length || 1;
+      try {
+        let files = [];
+        try {
+          files = await getBookFiles(book.id);
+        } catch (fileError) {
+          console.warn(`[Bulk Add] Graceful fallback for files on ${book.id}:`, fileError);
+        }
+        const partsCount = files.length || 1;
 
-      const seoContent = await generateEnhancedSeoContent(book.title, book.author, category, book.title, lang);
+        const seoContent = await generateEnhancedSeoContent(book.title, book.author, category, book.title, lang, book.description, book.id);
 
-      const bookPayload = {
-        slug: `${slugify(seoContent.title)}--${book.id}`,
-        title: seoContent.title,
-        author: seoContent.author,
-        description: seoContent.description,
-        category: category,
-        category_slug: categorySlug,
-        archiveId: book.id,
-        seoTitle: seoContent.seoTitle,
-        parts_count: partsCount,
-        lang: lang,
-        is_english_verified: book.is_english_verified || false
-      };
+        const bookPayload = {
+          slug: `${slugify(seoContent.title)}--${book.id}`,
+          title: seoContent.title,
+          author: seoContent.author,
+          description: seoContent.description,
+          category: category,
+          category_slug: categorySlug,
+          archiveId: book.id,
+          seoTitle: seoContent.seoTitle,
+          parts_count: partsCount,
+          lang: lang,
+          is_english_verified: book.is_english_verified || false
+        };
 
-      await saveSeoBook(bookPayload as any);
+        await saveSeoBook(bookPayload as any);
 
-      // On-demand revalidation
-      revalidatePath(`/${categorySlug}`);
-      revalidatePath(`/en/${categorySlug}`);
-      revalidatePath(`/book/${bookPayload.slug}`);
-      revalidatePath(`/en/book/${bookPayload.slug}`);
+        // On-demand revalidation
+        revalidatePath(`/${categorySlug}`);
+        revalidatePath(`/en/${categorySlug}`);
+        revalidatePath(`/book/${bookPayload.slug}`);
+        revalidatePath(`/en/book/${bookPayload.slug}`);
+        revalidatePath('/sitemap.xml');
 
-      if (supabaseAdmin) {
-        await supabaseAdmin
-          .from('smart_book_feedback')
-          .upsert({
-            archive_id: book.id,
-            category_slug: categorySlug,
-            status: 'selected',
-            lang: lang,
-            metadata: { original_title: book.title }
-          }, { onConflict: 'archive_id,category_slug,lang' });
+        if (supabaseAdmin) {
+          await supabaseAdmin
+            .from('smart_book_feedback')
+            .upsert({
+              archive_id: book.id,
+              category_slug: categorySlug,
+              status: 'selected',
+              lang: lang,
+              metadata: { original_title: book.title }
+            }, { onConflict: 'archive_id,category_slug,lang' });
+        }
+
+        formattedResults.push({ id: book.id, status: 'success' });
+
+        // Add 4.5s pacing delay between sequential bulk additions to safely manage Groq's 8000 TPM rolling window
+        await new Promise(r => setTimeout(r, 4500));
+      } catch (err: any) {
+        console.error(`[Bulk Add Error] Failed adding book ${book.id}:`, err);
+        formattedResults.push({ id: book.id, status: 'error', message: err?.message || 'Error processing book' });
       }
-
-      return { id: book.id };
-    }));
-
-    const formattedResults = results.map((res, index) => {
-      if (res.status === 'fulfilled') {
-        return { id: books[index].id, status: 'success' };
-      } else {
-        return { id: books[index].id, status: 'error', message: res.reason?.message || 'Unknown error' };
-      }
-    });
+    }
 
     const successCount = formattedResults.filter(r => r.status === 'success').length;
     const failedCount = formattedResults.filter(r => r.status === 'error').length;

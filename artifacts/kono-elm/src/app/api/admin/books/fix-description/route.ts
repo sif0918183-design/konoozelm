@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { checkAuth } from '@/lib/admin-auth';
 import { getBookByArchiveId, saveSeoBook } from '@/lib/seo-data';
-import { generateBookDescription } from '@/lib/openai';
+import { generateBookDescription } from '@/lib/groq';
 
 export async function POST(request: Request) {
   if (!checkAuth()) {
@@ -21,8 +21,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
-    // Use AI to regenerate content with the new "no-unknown-author" rules
-    const aiContent = await generateBookDescription(book.title, book.author, lang);
+    // Use AI to regenerate content with Archive.org OCR and category context
+    const aiContent = await generateBookDescription(book.title, book.author, lang === 'en' ? 'en' : 'ar', book.category, undefined, book.description, book.archiveId);
 
     const updatedBook = {
       ...book,

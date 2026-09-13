@@ -69,6 +69,7 @@ export async function DELETE(request: Request) {
             revalidatePath(`/book/${book.slug}`);
             revalidatePath(`/en/book/${book.slug}`);
         }
+        revalidatePath('/sitemap.xml');
     }
 
     return NextResponse.json({ success: true });
@@ -94,6 +95,7 @@ export async function POST(request: Request) {
       revalidatePath(`/book/${book.slug}`);
       revalidatePath(`/en/book/${book.slug}`);
     }
+    revalidatePath('/sitemap.xml');
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

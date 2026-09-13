@@ -62,44 +62,92 @@ export async function filterAndRankBooks(category: string, books: any[]) {
   }));
 }
 
+let globalStyleCounter = 0;
+
 /**
- * Generates SEO description for a book using GPT-4.1-mini
+ * Generates dynamic prompt for book description with structural and stylistic variation.
  */
-export async function generateBookDescription(title: string, author: string, lang: string = 'ar') {
+export function buildDynamicPrompt(title: string, author: string, lang: string = 'ar', category?: string) {
   const isEnglish = lang === 'en';
+  const validAuthor = author && author !== 'Unknown' && author !== 'غير معروف' && author !== 'null' ? author : null;
+  const categoryContext = category && category !== 'عام' && category !== 'General' ? category : null;
 
-  const prompt = isEnglish ? `
-You are a professional SEO and library expert. Write a compelling, natural, and comprehensive SEO description for a book titled "${title}"${author && author !== 'Unknown' && author !== 'غير معروف' ? ` by author "${author}"` : ''}.
+  const titleHash = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const styleIndex = (globalStyleCounter + titleHash) % 6;
+  globalStyleCounter = (globalStyleCounter + 1) % 6;
 
-Requirements:
-1. Style: The style must be very natural and human-like (critical for Google indexing), eloquent and suitable for scholarly content.
-2. Content:
-   - An introduction about the book's importance and value.
-   - A brief and focused overview of the book's topic and main sections.
-   - Naturally integrated keywords (e.g., Download PDF, Read Online, Islamic books, etc.).
-   - Important: If the author's name is not provided or is "Unknown", DO NOT mention that the author is unknown. Instead, focus entirely on the book and its value.
-3. Length: Between 200 to 400 words to ensure SEO performance.
-4. No AI mention: Start the description directly and do not mention being an AI assistant.
-5. Enhanced Title: Suggest a catchy SEO title that includes "Download & Read PDF" and sounds authoritative.
+  if (isEnglish) {
+    const englishStyles = [
+      `STRUCTURAL PERSPECTIVE 1: Direct Noun/Subject Opening.
+Begin immediately with a descriptive noun phrase or subject assertion regarding the book's specific domain matter.`,
+      `STRUCTURAL PERSPECTIVE 2: Thematic Focus & Conceptual Scope.
+Open with the primary scholarly concepts or subject areas explored in this text.`,
+      `STRUCTURAL PERSPECTIVE 3: Content Structure Breakdown.
+Focus directly on the thematic sections and subject organization of the work.`,
+      `STRUCTURAL PERSPECTIVE 4: Discipline & Methodological Context.
+Start with the central principles of the discipline and how this work addresses them.`,
+      `STRUCTURAL PERSPECTIVE 5: Textual Overview.
+Provide a direct synthesis of what the work covers and its core focus within its category.`,
+      `STRUCTURAL PERSPECTIVE 6: Subject-First Functional Guide.
+Open directly with the primary subject matter and its specific relevance for readers.`
+    ];
 
-I want the result strictly in JSON format:
+    return `
+You are a professional book editor and library specialist writing for an English-language digital catalog.
+Write an authentic, highly informative, and natural SEO book description for:
+Book Title: "${title}"
+${validAuthor ? `Author: "${validAuthor}"` : ''}
+${categoryContext ? `Category/Subject: "${categoryContext}"` : ''}
+
+${englishStyles[styleIndex]}
+
+GUIDELINES & PRINCIPLES (INFORMATION FIRST, SEO SECOND):
+1. NATIVE ENGLISH EDITORIAL PROSE: Write naturally as a native English book editor. Avoid translationese, rigid formulas, or marketing tone.
+2. WORD COUNT: Aim for 150-220 words when sufficient metadata is provided. If metadata is minimal, write a concise, accurate, and informative summary without adding artificial fluff or filler.
+3. FACTUAL GROUNDING: Base the text strictly on verified book data (title, author, category, subject area). Do NOT extrapolate speculative details or invent unconfirmed facts.
+4. BANNED CLICHÉS: DO NOT use repetitive sales pitch phrases such as "This valuable work...", "This important reference...", "Perfect for scholars and students...", "It provides readers with...", "This indispensable masterpiece...", or "Written by...".
+5. SEMANTIC SEO & PDF MENTIONS: Incorporate relevant discipline terminology naturally for strong semantic SEO. Do NOT stuff keywords. Mention "PDF download" or "read online" AT MOST ONCE naturally if relevant, never as a primary focus.
+6. UNKNOWN AUTHOR HANDLING: ${validAuthor ? `Include author "${validAuthor}" naturally.` : `Do NOT mention that the author is unknown or missing. Focus entirely on the text content.`}
+7. SEO TITLE: Suggest a clean, authoritative SEO title that reads like a professional library catalog entry.
+
+Format response strictly as JSON:
 {
   "seoTitle": "SEO Title here",
   "description": "Full description here"
 }
-` : `
-أنت خبير SEO ومكتبات إسلامية محترف. قم بكتابة وصف جذاب، طبيعي، وشامل لمحركات البحث (SEO) لكتاب بعنوان "${title}"${author && author !== 'Unknown' && author !== 'غير معروف' ? ` للمؤلف "${author}"` : ''}.
+`;
+  } else {
+    const arabicStyles = [
+      `نمط البناء الأول: البداية المباشرة باسم الموضوع أو المجال.
+ابدأ الجملة الأولى فوراً باسم الموضوع أو الجملة الاسمية التي تحدد مضمون الكتاب دون أفعال تمهيدية مكررة.`,
+      `نمط البناء الثاني: التناول القضائي والتحليلي.
+ركز على المسائل العلمية والقضايا التي يطرحها المتن في سياق موضوعه بتركيب لغوي فريد.`,
+      `نمط البناء الثالث: التركيز على المحاور والأبواب.
+ابسط المحاور والموضوعات الأساسية للكتاب مباشرة دون مقدمات إنشائية، بأسلوب بليغ يناسب فن العلم.`,
+      `نمط البناء الرابع: المنظور المنهجي والمعرفي.
+سلط الضوء على المنهجية والأصول العلمية الواردة في النص بأسلوب علمي رصين.`,
+      `نمط البناء الخامس: العرض المباشر والمكثف.
+قدم عرضاً شاملاً ومكثفاً لمحتوى السفر وموضوعه الأساسي دون حشو.`,
+      `نمط البناء السادس: التناول السياقي للموضوع.
+ابدأ فوراً بتأصيل المادة العلمية ومجالها المعرفي، بأسلوب يعبر عن خصوصية هذا الكتاب.`
+    ];
 
-المتطلبات:
-1. الأسلوب: يجب أن يكون الأسلوب طبيعياً جداً ويشبه كتابة البشر (مهم جداً لقبول Google)، بليغاً ومناسباً للمحتوى الإسلامي.
-2. المحتوى:
-   - مقدمة عن أهمية الكتاب وقيمته العلمية في التراث الإسلامي.
-   - نبذة مختصرة ومركزة عن موضوع الكتاب وأهم الأبواب التي يتناولها.
-   - كلمات مفتاحية مدمجة بصورة طبيعية تماماً (مثل: تحميل PDF، قراءة أونلاين، كتب إسلامية، إلخ).
-   - ملاحظة هامة: إذا كان اسم المؤلف غير متوفر أو "غير معروف"، فلا تذكر أبداً أن المؤلف غير معروف، بل ركز الوصف بالكامل على متن الكتاب وقيمته العلمية.
-3. الطول: بين 200 إلى 400 كلمة لضمان تفوقه في نتائج البحث.
-4. عدم ذكر الذكاء الاصطناعي: ابدأ الوصف مباشرة ولا تذكر أنك مساعد ذكي.
-5. العنوان المحسن: اقترح عنوان SEO جذاب يتضمن "تحميل وقراءة PDF" ويوحي بالموثوقية.
+    return `
+أنت محرر كتب متخصص في مكتبة إسلامية ومعرفية. قم بكتابة وصف طبيعي، فريد، بليغ، وغني بالمعلومات لكتاب:
+عنوان الكتاب: "${title}"
+${validAuthor ? `المؤلف: "${validAuthor}"` : ''}
+${categoryContext ? `التصنيف/المجال: "${categoryContext}"` : ''}
+
+${arabicStyles[styleIndex]}
+
+قواعد وضوابط كتابة الوصف (المعلومات أولاً، SEO ثانياً، والتسويق في الحد الأدنى):
+1. أسلوب عربي أصيل: اكتب بلغة عربية فصيحة وسليمة وبناء تعبيري متنوع ومستقل، بعيداً عن القوالب الجاهزة أو الصياغات الآلية.
+2. الطول والعمق: استهدف 150-220 كلمة عندما تكون معلومات الكتاب كافية. إذا كانت المعلومات المتاحة محدودة، اكتب وصفاً أقصر لكنه مفيد ودقيق ودون حشو أو تكرار.
+3. الالتزام بالحقائق: استند حصراً إلى المعطيات المتوفرة (العنوان، المؤلف، التصنيف، المجال). لا تضف معلومات غير موجودة ولا تستنتج محتوى تفصيلياً غير مؤكد.
+4. منع العبارات المستهلكة: يمنع استخدام عبارات تسويقية عامة مثل ("مرجع لا غنى عنه"، "كنز علمي"، "مطلب ضروري لكل باحث"، "يعد هذا الكتاب من أهم/أبرز...", "يقدم الباحث رؤية عميقة").
+5. SEO الدلالي والتنزيل: استخدم المصطلحات العلمية المرتبطة بموضوع الكتاب بأسلوب طبيعي لتحقيق Semantic SEO دون Keyword Stuffing. لا تجعل "تحميل PDF" و"قراءة أونلاين" محور الوصف، ويمكن ذكرهما مرة واحدة فقط بشكل طبيعي ضمن السياق.
+6. اسم المؤلف: ${validAuthor ? `أدرج اسم المؤلف "${validAuthor}" بأسلوب سلس.` : `إذا كان اسم المؤلف غير معروف أو مفقوداً، فلا تذكر مطلقاً أنه غير معروف، بل ركز الوصف بالكامل على الموضوع والمتن.`}
+7. عنوان SEO: اقترح عنوان SEO جذّاباً ومتنوّعاً يعبر عن الكتاب بأسلوب بشري موثوق.
 
 أريد النتيجة بتنسيق JSON حصراً:
 {
@@ -107,6 +155,14 @@ I want the result strictly in JSON format:
   "description": "الوصف الكامل هنا"
 }
 `;
+  }
+}
+
+/**
+ * Generates SEO description for a book using GPT-4.1-mini with dynamic prompts
+ */
+export async function generateBookDescription(title: string, author: string, lang: string = 'ar', category?: string) {
+  const prompt = buildDynamicPrompt(title, author, lang, category);
 
   const result = await callOpenAI(
     SEO_MODEL,
@@ -163,16 +219,54 @@ I want the result strictly in JSON format:
 }
 
 /**
- * Standardizes and improves book titles using GPT-4.1-nano
+ * Cleans new book titles by stripping catalog numbers, zero-padded prefixes,
+ * website domain prefixes (e.g. lisanarabs., marfat.com), and "Pdf" noise.
+ */
+export function cleanBookTitle(rawTitle: string): string {
+  if (!rawTitle) return '';
+  let title = rawTitle.trim();
+
+  // Iteratively clean prefixes until stable
+  let prev = '';
+  while (title !== prev) {
+    prev = title;
+
+    // Remove leading catalog numbers, zero-padded IDs, and dashes/dots e.g. "129708 - ", "00116 "
+    title = title.replace(/^(?:\d+|-|\s|_|\.)+/g, '').trim();
+
+    // Remove website domain prefixes (e.g., "marfat.com - ", "lisanarabs.com - ", "lisanarabs.")
+    title = title.replace(/^(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.(?:com|org|net|info|co|me|site|[a-zA-Z]{2,})\b(?:\s*[-–—_.:]\s*|\s*)/gi, '').trim();
+
+    // Remove known library prefix names without extensions
+    title = title.replace(/^(?:marfat|lisanarabs|archive|waqfeya|al-maktaba|ketaab|al-fiker|books-pdf)\b(?:\s*[-–—_.:]\s*|\s*)/gi, '').trim();
+  }
+
+  // Remove trailing file extension or pdf markers e.g., ".pdf", " Pdf", " - marfat.com"
+  title = title.replace(/\.(pdf|epub|mobi)$/i, '');
+  title = title.replace(/\s+(pdf|epub|mobi)$/i, '');
+  title = title.replace(/(?:\s*[-–—_.:]\s*|\s+)(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.(?:com|org|net|info|co|me|site|[a-zA-Z]{2,})$/gi, '');
+
+  // Remove standalone "pdf", "PDF", "pdf" tokens
+  title = title.replace(/\bpdf\b/gi, '');
+
+  // Final cleanup of extra whitespace and leading/trailing separators
+  title = title.replace(/^[\s\-.:_]+|[\s\-.:_]+$/g, '').replace(/\s+/g, ' ').trim();
+
+  return title || rawTitle;
+}
+
+/**
+ * Standardizes and improves book titles using cleanBookTitle and GPT-4.1-nano
  */
 export async function normalizeTitle(title: string, author?: string, lang: string = 'ar') {
-  if (!OPENAI_API_KEY) return title;
+  const cleanedTitle = cleanBookTitle(title);
+  if (!OPENAI_API_KEY) return cleanedTitle;
 
   const isEnglish = lang === 'en';
 
   const prompt = isEnglish ? `
 Standardize and improve the following book title to be suitable for SEO and a professional library.
-Original Title: "${title}"
+Original Title: "${cleanedTitle}"
 ${author && author !== 'Unknown' && author !== 'غير معروف' ? `Author: "${author}"` : ''}
 
 Requirements:
@@ -183,7 +277,7 @@ Requirements:
 5. Return the result as JSON: {"normalizedTitle": "..."}
 ` : `
 قم بتوحيد وتحسين عنوان الكتاب التالي ليكون مناسباً لـ SEO ومكتبة احترافية.
-العنوان الأصلي: "${title}"
+العنوان الأصلي: "${cleanedTitle}"
 ${author && author !== 'Unknown' && author !== 'غير معروف' ? `المؤلف: "${author}"` : ''}
 
 المطلوب:
@@ -201,9 +295,9 @@ ${author && author !== 'Unknown' && author !== 'غير معروف' ? `المؤل
       { type: 'json_object' },
       '[FILTER]'
     );
-    return result.normalizedTitle;
+    return cleanBookTitle(result.normalizedTitle);
   } catch (error) {
-    return title;
+    return cleanedTitle;
   }
 }
 

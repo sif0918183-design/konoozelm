@@ -1,6 +1,9 @@
 import { getSeoBooks, getCategories, getAuthors } from '@/lib/seo-data';
 import { getShortSlug } from '@/lib/slug-utils';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   const { host } = new URL(request.url);
   const protocol = host.includes('localhost') ? 'http' : 'https';
@@ -81,6 +84,7 @@ export async function GET(request: Request) {
   return new Response(sitemap, {
     headers: {
       'Content-Type': 'application/xml',
+      'Cache-Control': 'public, max-age=0, s-maxage=0, must-revalidate',
     },
   });
 }

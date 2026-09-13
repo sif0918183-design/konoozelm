@@ -31,6 +31,94 @@ export interface SearchResult {
   hasMore: boolean;
 }
 
+/**
+ * Sanitizes and extracts a concise, high-value sample from full OCR text.
+ * Strips technical noise, email addresses, web URLs, and Archive.org uploader artifacts.
+ * Priority: Beginning/Preface (first 1000 chars) + End/Table of Contents (last 1200 chars)
+ */
+export function extractOcrSample(fullText: string): string | null {
+  if (!fullText) return null;
+
+  let cleaned = fullText
+    // Remove email addresses
+    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '')
+    // Remove web links & domain noise
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/www\.\S+/gi, '')
+    .replace(/(?:archive\.org|marfat\.com|lisanarabs\.com|waqfeya\.net|al-maktaba\.org)\S*/gi, '')
+    // Remove uploader / scanner technical lines
+    .replace(/(?:Paging|OCR|Scanner|Identifier|Digitizing|Sponsor|Contributor|Bookplate):\s*[^\n]+/gi, '')
+    // Remove repeated non-alphanumeric noise symbols
+    .replace(/[-_=*#~]{3,}/g, ' ')
+    // Normalize whitespace
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n+/g, '\n')
+    .trim();
+
+  if (!cleaned || cleaned.length < 30) return null;
+
+  // Optimized token extraction: focus on high-value headings, TOC, and preface (max ~1400 chars)
+  if (cleaned.length <= 1400) {
+    return cleaned;
+  }
+
+  // Extract first 700 chars (preface/headings) and last 700 chars (table of contents/index)
+  const beginning = cleaned.substring(0, 700).trim();
+  const ending = cleaned.substring(cleaned.length - 700).trim();
+  return `[المقدمة والعناوين]: ${beginning}\n\n[فهرس الموضوعات]: ${ending}`;
+}
+
+/**
+ * Helper: Local silent fetch with timeout for optional OCR operations.
+ * Catches AbortError and network issues silently without logging console.error.
+ */
+async function silentFetch(url: string, timeout = 3500): Promise<Response | null> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (e) {
+    clearTimeout(id);
+    return null;
+  }
+}
+
+/**
+ * Discovers and fetches a limited OCR text sample from Archive.org with a strict 3.5s timeout.
+ * Operates purely as a silent enhancement; aborts/errors gracefully return null without interrupting flow or filling logs.
+ */
+export async function fetchBookOcrSample(identifier: string): Promise<string | null> {
+  if (!identifier) return null;
+
+  try {
+    const metaUrl = `${ARCHIVE_METADATA_BASE}${identifier}`;
+    const metaRes = await silentFetch(metaUrl, 3500);
+    if (!metaRes || !metaRes.ok) return null;
+
+    const data = await metaRes.json();
+    const files = data.files || [];
+
+    const ocrFile = files.find((f: any) =>
+      f.name && (f.name.toLowerCase().endsWith('_djvu.txt') || f.format === 'DjVuTXT')
+    );
+
+    if (!ocrFile) return null;
+
+    const ocrUrl = `https://archive.org/download/${identifier}/${encodeURIComponent(ocrFile.name)}`;
+    const ocrRes = await silentFetch(ocrUrl, 3500);
+
+    if (!ocrRes || !ocrRes.ok) return null;
+
+    const rawText = await ocrRes.text();
+    return extractOcrSample(rawText);
+  } catch (error) {
+    return null;
+  }
+}
+
 const ARCHIVE_API_BASE = 'https://archive.org/advancedsearch.php';
 const ARCHIVE_METADATA_BASE = 'https://archive.org/metadata/';
 

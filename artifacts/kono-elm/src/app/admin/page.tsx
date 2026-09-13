@@ -702,34 +702,50 @@ export default function AdminDashboard() {
         is_english_verified: s.isVerified
       }));
 
+    const BATCH_SIZE = 3;
+    const allResults: any[] = [];
+
     try {
-      const res = await fetch('/api/admin/books/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          books: selectedBooks,
-          category: selectedCategoryForSuggestions.title,
-          categorySlug: selectedCategoryForSuggestions.slug,
-          lang: lang
-        }),
-      });
+      for (let i = 0; i < selectedBooks.length; i += BATCH_SIZE) {
+        const batch = selectedBooks.slice(i, i + BATCH_SIZE);
 
-      if (res.ok) {
-        const data = await res.json();
-        const failures = data.results?.filter((r: any) => r.status === 'error') || [];
+        try {
+          const res = await fetch('/api/admin/books/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              books: batch,
+              category: selectedCategoryForSuggestions.title,
+              categorySlug: selectedCategoryForSuggestions.slug,
+              lang: lang
+            }),
+          });
 
-        if (failures.length > 0) {
-            alert(t.admin_bulk_partial_error.replace('{count}', failures.length.toString()));
-        } else {
-            alert(t.admin_bulk_success);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.results)) {
+              allResults.push(...data.results);
+            }
+          } else {
+            console.error(`[Bulk Batch Error] Batch starting at index ${i} failed`);
+            batch.forEach(b => allResults.push({ id: b.id, status: 'error', message: 'Batch HTTP error' }));
+          }
+        } catch (batchErr) {
+          console.error(`[Bulk Batch Exception] Error in batch ${i}:`, batchErr);
+          batch.forEach(b => allResults.push({ id: b.id, status: 'error', message: 'Batch network exception' }));
         }
-
-        setSelectedCategoryForSuggestions(null);
-        fetchExistingBooks();
-      } else {
-        const err = await res.json();
-        alert(t.admin_bulk_error + ': ' + (err.error || ''));
       }
+
+      const failures = allResults.filter(r => r.status === 'error');
+
+      if (failures.length > 0) {
+        alert(t.admin_bulk_partial_error.replace('{count}', failures.length.toString()));
+      } else {
+        alert(t.admin_bulk_success);
+      }
+
+      setSelectedCategoryForSuggestions(null);
+      fetchExistingBooks();
     } catch (err) {
       alert(t.admin_conn_error);
     } finally {

@@ -1,4 +1,5 @@
-import { normalizeTitle, generateBookDescription as generateWithOpenAI } from './openai';
+import { normalizeTitle, cleanBookTitle } from './openai';
+import { generateBookDescription } from './groq';
 
 export interface SeoContent {
   seoTitle: string;
@@ -8,21 +9,30 @@ export interface SeoContent {
 }
 
 /**
- * Generates high-quality SEO content using OpenAI GPT-4o.
- * OpenAI is used for title normalization and human-like description generation.
+ * Generates high-quality SEO content using Groq and title normalization.
  */
 export async function generateEnhancedSeoContent(
   originalTitle: string,
   originalAuthor: string,
   category: string,
   preNormalizedTitle?: string,
-  lang: string = 'ar'
+  lang: string = 'ar',
+  existingDescription?: string,
+  archiveId?: string
 ): Promise<SeoContent> {
-  // Step 1: Use pre-normalized title if provided, otherwise normalize using OpenAI
-  const normalizedTitle = preNormalizedTitle || await normalizeTitle(originalTitle, originalAuthor, lang);
+  const cleanedOriginal = cleanBookTitle(originalTitle);
+  const normalizedTitle = preNormalizedTitle ? cleanBookTitle(preNormalizedTitle) : await normalizeTitle(cleanedOriginal, originalAuthor, lang);
 
-  // Step 2: Generate SEO description and Title using OpenAI (for Admin operations)
-  const aiContent = await generateWithOpenAI(normalizedTitle, originalAuthor, lang);
+  // Generate SEO description and Title using Groq with existing metadata & Archive.org OCR
+  const aiContent = await generateBookDescription(
+    normalizedTitle,
+    originalAuthor,
+    lang === 'en' ? 'en' : 'ar',
+    category,
+    undefined,
+    existingDescription,
+    archiveId
+  );
 
   return {
     title: normalizedTitle,
