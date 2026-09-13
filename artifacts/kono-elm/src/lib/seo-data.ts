@@ -39,17 +39,41 @@ export interface Author {
 
 export async function getSeoBooks(lang: string = 'ar'): Promise<SeoBook[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('seo_books')
-    .select('*')
-    .eq('lang', lang)
-    .order('created_at', { ascending: true });
 
-  if (error) {
-    console.error('Supabase error (getSeoBooks):', error);
-    throw error;
+  const pageSize = 1000;
+  let allBooks: any[] = [];
+  let page = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error } = await supabase
+      .from('seo_books')
+      .select('*')
+      .eq('lang', lang)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error('Supabase error (getSeoBooks):', error);
+      throw error;
+    }
+
+    if (data && data.length > 0) {
+      allBooks = allBooks.concat(data);
+      if (data.length < pageSize) {
+        hasMore = false;
+      } else {
+        page++;
+      }
+    } else {
+      hasMore = false;
+    }
   }
-  return data.map(b => ({
+
+  return allBooks.map(b => ({
     ...b,
     archiveId: b.archive_id,
     seoTitle: b.seo_title
