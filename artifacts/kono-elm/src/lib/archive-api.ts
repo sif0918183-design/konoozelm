@@ -69,14 +69,33 @@ export function extractOcrSample(fullText: string): string | null {
 }
 
 /**
+ * Helper: Local silent fetch with timeout for optional OCR operations.
+ * Catches AbortError and network issues silently without logging console.error.
+ */
+async function silentFetch(url: string, timeout = 3500): Promise<Response | null> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (e) {
+    clearTimeout(id);
+    return null;
+  }
+}
+
+/**
  * Discovers and fetches a limited OCR text sample from Archive.org with a strict 3.5s timeout.
+ * Operates purely as a silent enhancement; aborts/errors gracefully return null without interrupting flow or filling logs.
  */
 export async function fetchBookOcrSample(identifier: string): Promise<string | null> {
   if (!identifier) return null;
 
   try {
     const metaUrl = `${ARCHIVE_METADATA_BASE}${identifier}`;
-    const metaRes = await safeFetch(metaUrl, {}, 3500);
+    const metaRes = await silentFetch(metaUrl, 3500);
     if (!metaRes || !metaRes.ok) return null;
 
     const data = await metaRes.json();
@@ -89,14 +108,13 @@ export async function fetchBookOcrSample(identifier: string): Promise<string | n
     if (!ocrFile) return null;
 
     const ocrUrl = `https://archive.org/download/${identifier}/${encodeURIComponent(ocrFile.name)}`;
-    const ocrRes = await safeFetch(ocrUrl, {}, 3500);
+    const ocrRes = await silentFetch(ocrUrl, 3500);
 
     if (!ocrRes || !ocrRes.ok) return null;
 
     const rawText = await ocrRes.text();
     return extractOcrSample(rawText);
   } catch (error) {
-    console.warn(`[OCR Extraction Fallback] Could not fetch OCR for ${identifier}:`, error);
     return null;
   }
 }
