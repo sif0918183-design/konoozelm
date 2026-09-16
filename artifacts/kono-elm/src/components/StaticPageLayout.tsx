@@ -7,6 +7,7 @@ import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
+import AdverticaAd from '@/components/AdverticaAd';
 
 interface StaticPageLayoutProps {
   children: React.ReactNode;
@@ -40,7 +41,10 @@ export default function StaticPageLayout({ children, title, lang }: StaticPageLa
         </span>
       </nav>
 
-      <main className="max-w-4xl mx-auto w-full px-4 py-8 flex-grow">
+      <main className="max-w-4xl mx-auto w-full px-4 py-8 flex-grow space-y-8">
+        <div className="flex justify-center my-4">
+          <AdverticaAd />
+        </div>
         <article className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden p-8 md:p-12">
           <h1 className="text-3xl md:text-4xl font-amiri font-bold text-primary-900 mb-8 border-b border-gray-100 pb-6 leading-tight">
             {title}
@@ -49,6 +53,9 @@ export default function StaticPageLayout({ children, title, lang }: StaticPageLa
             {children}
           </div>
         </article>
+        <div className="flex justify-center my-4">
+          <AdverticaAd />
+        </div>
       </main>
 
       <Footer lang={lang} />

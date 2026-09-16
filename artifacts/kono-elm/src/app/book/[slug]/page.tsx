@@ -402,6 +402,9 @@ export default async function BookPage({ params }: Props) {
                 <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                   {displayDescription}
                 </div>
+                <div className="mt-6 flex justify-center">
+                  <AdverticaAd />
+                </div>
               </section>
 
               {/* FAQ Section */}
@@ -450,6 +453,9 @@ export default async function BookPage({ params }: Props) {
                         </div>
                       </Link>
                     ))}
+                  </div>
+                  <div className="mt-8 flex justify-center">
+                    <AdverticaAd />
                   </div>
                 </section>
               )}

@@ -1,3 +1,4 @@
+import React, { Fragment } from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -89,25 +90,32 @@ export default async function CategoryPage({ params }: Props) {
         <AdverticaAd className="mb-8" />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {books.map((book) => (
-            <div key={book.archiveId}>
-              <BookCard
-                book={{
-                  identifier: book.archiveId,
-                  title: book.title,
-                  author: book.author,
-                  previewLink: `https://archive.org/details/${book.archiveId}`,
-                  coverImage: `https://archive.org/services/img/${book.archiveId}`,
-                }}
-                initialSeoSlug={book.slug}
-                initialFiles={[
-                  {
-                    name: book.title,
-                    url: `https://archive.org/download/${book.archiveId}/${book.archiveId}.pdf`
-                  }
-                ]}
-              />
-            </div>
+          {books.map((book, index) => (
+            <Fragment key={book.archiveId}>
+              <div>
+                <BookCard
+                  book={{
+                    identifier: book.archiveId,
+                    title: book.title,
+                    author: book.author,
+                    previewLink: `https://archive.org/details/${book.archiveId}`,
+                    coverImage: `https://archive.org/services/img/${book.archiveId}`,
+                  }}
+                  initialSeoSlug={book.slug}
+                  initialFiles={[
+                    {
+                      name: book.title,
+                      url: `https://archive.org/download/${book.archiveId}/${book.archiveId}.pdf`
+                    }
+                  ]}
+                />
+              </div>
+              {(index + 1) % 6 === 0 && (
+                <div className="col-span-full my-4 flex justify-center">
+                  <AdverticaAd />
+                </div>
+              )}
+            </Fragment>
           ))}
         </div>
 
