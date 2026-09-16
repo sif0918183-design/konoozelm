@@ -5,6 +5,7 @@ import { X, Download, Info } from 'lucide-react';
 import { cn, optimizeArchiveUrl, formatBytes } from '@/lib/utils';
 import { translations } from '@/lib/translations';
 import { usePathname } from 'next/navigation';
+import AdverticaAd from '@/components/AdverticaAd';
 
 interface DownloadModalProps {
   isOpen: boolean;
@@ -113,12 +114,9 @@ export default function DownloadModal({
               </p>
             </div>
 
-            {/* Placeholder for actual advertisement or extra message */}
-            <div className="mt-12 p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <p className="text-sm font-medium text-gold-200 mb-2">{t.did_you_know}</p>
-              <p className="text-sm text-white/70">
-                {t.did_you_know_desc}
-              </p>
+            {/* Advertisement Area inside Download Modal */}
+            <div className="mt-8 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex flex-col items-center justify-center">
+              <AdverticaAd className="my-2" />
             </div>
           </div>
         </div>
