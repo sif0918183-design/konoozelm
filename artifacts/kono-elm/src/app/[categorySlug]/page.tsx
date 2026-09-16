@@ -1,3 +1,4 @@
+import React, { Fragment } from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -13,6 +14,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
 import { getSiteUrl } from '@/lib/utils';
 import Footer from '@/components/Footer';
+import AdverticaAd from '@/components/AdverticaAd';
 
 interface Props {
   params: { categorySlug: string };
@@ -84,26 +86,36 @@ export default async function CategoryPage({ params }: Props) {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-12 -mt-8">
+        {/* Top Ad Placement */}
+        <AdverticaAd className="mb-8" />
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {books.map((book) => (
-            <div key={book.archiveId}>
-              <BookCard
-                book={{
-                  identifier: book.archiveId,
-                  title: book.title,
-                  author: book.author,
-                  previewLink: `https://archive.org/details/${book.archiveId}`,
-                  coverImage: `https://archive.org/services/img/${book.archiveId}`,
-                }}
-                initialSeoSlug={book.slug}
-                initialFiles={[
-                  {
-                    name: book.title,
-                    url: `https://archive.org/download/${book.archiveId}/${book.archiveId}.pdf`
-                  }
-                ]}
-              />
-            </div>
+          {books.map((book, index) => (
+            <Fragment key={book.archiveId}>
+              <div>
+                <BookCard
+                  book={{
+                    identifier: book.archiveId,
+                    title: book.title,
+                    author: book.author,
+                    previewLink: `https://archive.org/details/${book.archiveId}`,
+                    coverImage: `https://archive.org/services/img/${book.archiveId}`,
+                  }}
+                  initialSeoSlug={book.slug}
+                  initialFiles={[
+                    {
+                      name: book.title,
+                      url: `https://archive.org/download/${book.archiveId}/${book.archiveId}.pdf`
+                    }
+                  ]}
+                />
+              </div>
+              {(index + 1) % 6 === 0 && (
+                <div className="col-span-full my-4 flex justify-center">
+                  <AdverticaAd />
+                </div>
+              )}
+            </Fragment>
           ))}
         </div>
 
@@ -113,6 +125,9 @@ export default async function CategoryPage({ params }: Props) {
             <p className="text-gray-500 font-bold mb-2">{t.no_books_in_category}</p>
           </div>
         )}
+
+        {/* Bottom Ad Placement */}
+        <AdverticaAd className="mt-12" />
       </main>
       <Footer lang="ar" />
     </div>

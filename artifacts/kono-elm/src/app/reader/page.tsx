@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { addToRecentBooks } from '@/lib/recent-books';
 import { optimizeArchiveUrl } from '@/lib/archive-utils';
 import { getCachedPDF } from '@/lib/pdf-cache';
+import AdverticaAd from '@/components/AdverticaAd';
 
 // CDN for PDF.js
 const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
@@ -497,6 +498,9 @@ function ReaderContent() {
       </header>
 
       <main className="pt-24 pb-12 px-4 flex flex-col items-center">
+        {/* Top Ad Placement in Reader */}
+        <AdverticaAd className="mb-6 max-w-5xl" />
+
         <div className="w-full max-w-5xl">
           {Array.from({ length: numPages }, (_, i) => (
             <div key={i + 1} id={`page-${i + 1}`}>

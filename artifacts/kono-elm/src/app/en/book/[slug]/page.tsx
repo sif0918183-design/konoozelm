@@ -16,6 +16,7 @@ import { generateBookDescription } from '@/lib/groq';
 import Logo from '@/components/Logo';
 import BookSchema from '@/components/BookSchema';
 import Footer from '@/components/Footer';
+import AdverticaAd from '@/components/AdverticaAd';
 
 interface Props {
   params: { slug: string };
@@ -389,6 +390,9 @@ export default async function EnglishBookPage({ params }: Props) {
                   </div>
                 )}
               </div>
+
+              {/* Sidebar Ad Placement */}
+              <AdverticaAd className="mt-6" />
             </aside>
 
             {/* Description & Actions */}
@@ -414,6 +418,9 @@ export default async function EnglishBookPage({ params }: Props) {
                 <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                   {displayDescription}
                 </div>
+                <div className="mt-6 flex justify-center">
+                  <AdverticaAd />
+                </div>
               </section>
 
               {/* FAQ Section */}
@@ -431,6 +438,9 @@ export default async function EnglishBookPage({ params }: Props) {
                   ))}
                 </div>
               </section>
+
+              {/* Mid-content Ad Placement */}
+              <AdverticaAd className="my-8" />
 
               {/* Internal Linking: Related Content */}
               {otherBooks.length > 0 && (
@@ -459,6 +469,9 @@ export default async function EnglishBookPage({ params }: Props) {
                         </div>
                       </Link>
                     ))}
+                  </div>
+                  <div className="mt-8 flex justify-center">
+                    <AdverticaAd />
                   </div>
                 </section>
               )}

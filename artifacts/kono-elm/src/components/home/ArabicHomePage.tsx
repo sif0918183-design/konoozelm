@@ -12,6 +12,7 @@ import Link from 'next/link';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
+import AdverticaAd from '@/components/AdverticaAd';
 
 
 interface Props {
@@ -192,6 +193,9 @@ export default function Home({ initialCategories = [] }: Props) {
       {/* Results Section */}
       <main className="max-w-7xl mx-auto px-4 -mt-10 relative z-20 pb-20">
 
+        {/* Top Ad Placement */}
+        <AdverticaAd className="my-6" />
+
         {/* Recent Books (Always visible if exists) */}
         {!hasSearched && !isLoading && (
           <div className="mb-12">
@@ -305,6 +309,9 @@ export default function Home({ initialCategories = [] }: Props) {
             <p className="text-gray-400 mt-2">{t.search_start_desc}</p>
           </div>
         )}
+
+        {/* Bottom Ad Placement */}
+        <AdverticaAd className="mt-12" />
       </main>
 
       <Footer lang="ar" />
