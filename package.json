@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "pnpm --filter kono-elm build",
+    "build": "pnpm --filter kono-elm run build:worker",
     "dev": "pnpm --filter kono-elm dev"
   },
   "private": true,
