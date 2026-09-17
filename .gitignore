@@ -2,6 +2,10 @@
 
 # compiled output
 dist
+.next
+.open-next
+**/.next/
+**/.open-next/
 tmp
 out-tsc
 *.tsbuildinfo
