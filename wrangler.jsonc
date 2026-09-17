@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "konoozelm",
+  "main": "artifacts/kono-elm/.open-next/worker.js",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": "artifacts/kono-elm/.open-next/assets",
+    "binding": "ASSETS"
+  }
+}
