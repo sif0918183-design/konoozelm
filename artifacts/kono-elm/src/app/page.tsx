@@ -17,6 +17,9 @@ export const metadata: Metadata = {
       'en': `${siteUrl}/en`,
     },
   },
+  other: {
+    '0e169a7940e76d19058f3b059aff0fdc12c4d5c9': '0e169a7940e76d19058f3b059aff0fdc12c4d5c9',
+  },
 };
 
 export default async function Home() {
