@@ -9,8 +9,8 @@ interface AdverticaAdProps {
 /**
  * AdverticaAd Component
  *
- * Renders the Advertica responsive ad banner.
- * Uses client-side DOM injection to ensure the responsive script
+ * Renders the advertisement banner script.
+ * Uses client-side DOM injection to ensure the script
  * executes correctly within React component lifecycle and SPA navigation.
  */
 export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
@@ -22,23 +22,17 @@ export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
     // Clear previous ad content to support SPA navigation
     containerRef.current.innerHTML = '';
 
-    // Create ins element with required Advertica attributes
-    const ins = document.createElement('ins');
-    ins.style.width = '0px';
-    ins.style.height = '0px';
-    ins.setAttribute('data-width', '0');
-    ins.setAttribute('data-height', '0');
-    ins.className = 'a5fc7a60ee6';
-    ins.setAttribute('data-domain', '//data527.click');
-    ins.setAttribute('data-affquery', '/b71419b3fe82c7034708/5fc7a60ee6/?placementName=default');
-
-    // Create script element with async loading
-    const script = document.createElement('script');
-    script.src = '//data527.click/js/responsive.js';
-    script.async = true;
-
-    ins.appendChild(script);
-    containerRef.current.appendChild(ins);
+    (function (iqgg: Record<string, unknown>) {
+      const d = document;
+      const s = d.createElement('script');
+      (s as unknown as { settings: unknown }).settings = iqgg || {};
+      s.src = '//fond-appointment.com/bEXjVns.d-Goli0OYwWecl/SeomZ9Vu-ZnUNlqkxPiTzcT0GM/zzgmwvOoDrk/t/NBzFQHzfOCDAAH5SMYwQ';
+      s.async = true;
+      s.referrerPolicy = 'no-referrer-when-downgrade';
+      if (containerRef.current) {
+        containerRef.current.appendChild(s);
+      }
+    })({});
   }, []);
 
   return (
