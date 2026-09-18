@@ -9,8 +9,8 @@ interface AdverticaAdProps {
 /**
  * AdverticaAd Component
  *
- * Renders the Advertica responsive ad banner.
- * Uses client-side DOM injection to ensure the responsive script
+ * Renders the primary responsive ad placement.
+ * Uses client-side DOM injection to ensure the ad script
  * executes correctly within React component lifecycle and SPA navigation.
  */
 export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
@@ -22,23 +22,18 @@ export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
     // Clear previous ad content to support SPA navigation
     containerRef.current.innerHTML = '';
 
-    // Create ins element with required Advertica attributes
-    const ins = document.createElement('ins');
-    ins.style.width = '0px';
-    ins.style.height = '0px';
-    ins.setAttribute('data-width', '0');
-    ins.setAttribute('data-height', '0');
-    ins.className = 'a5fc7a60ee6';
-    ins.setAttribute('data-domain', '//data527.click');
-    ins.setAttribute('data-affquery', '/b71419b3fe82c7034708/5fc7a60ee6/?placementName=default');
+    // Create ad container div
+    const adDiv = document.createElement('div');
+    adDiv.id = 'container-17b6b0643dfbdfa818ed3b6b64955569';
 
     // Create script element with async loading
     const script = document.createElement('script');
-    script.src = '//data527.click/js/responsive.js';
+    script.src = 'https://pl29421746.profitableratecpmnetwork.com/17b6b0643dfbdfa818ed3b6b64955569/invoke.js';
     script.async = true;
+    script.setAttribute('data-cfasync', 'false');
 
-    ins.appendChild(script);
-    containerRef.current.appendChild(ins);
+    containerRef.current.appendChild(adDiv);
+    containerRef.current.appendChild(script);
   }, []);
 
   return (
