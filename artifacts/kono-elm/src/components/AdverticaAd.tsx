@@ -64,7 +64,7 @@ export default function AdverticaAd({ className = '', adIndex }: AdverticaAdProp
   return (
     <div
       ref={containerRef}
-      className={`my-6 mx-auto flex justify-center items-center overflow-hidden w-full max-w-full min-h-[60px] text-center ${className}`}
+      className={`my-4 mx-auto flex justify-center items-center overflow-hidden w-full max-w-full min-h-[250px] min-w-[250px] text-center ${className}`}
     />
   );
 }

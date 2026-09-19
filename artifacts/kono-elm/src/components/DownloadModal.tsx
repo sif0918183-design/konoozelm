@@ -39,8 +39,8 @@ export default function DownloadModal({
       return;
     }
 
-    const duration = 6000; // 6 seconds
-    const interval = 50;
+    const duration = 15000; // 15 seconds
+    const interval = 100;
     const increment = (interval / duration) * 100;
 
     const timer = setInterval(() => {
@@ -73,15 +73,12 @@ export default function DownloadModal({
     document.body.removeChild(link);
   }, [fileUrl, bookTitle]);
 
+  // Trigger automatic download when complete, but do NOT close the window automatically
   useEffect(() => {
     if (isComplete && isOpen) {
       handleStartDownload();
-      const closeTimer = setTimeout(() => {
-        onClose();
-      }, 1000);
-      return () => clearTimeout(closeTimer);
     }
-  }, [isComplete, isOpen, onClose, handleStartDownload]);
+  }, [isComplete, isOpen, handleStartDownload]);
 
   if (!isOpen) return null;
 
@@ -157,14 +154,24 @@ export default function DownloadModal({
                   </div>
                 </div>
 
-                <div className="mt-3 text-xs text-primary-200 text-center font-medium">
+                <div className="mt-3 text-xs text-primary-200 text-center font-medium w-full">
                   {fileSize && (
                     <span className="block mb-1 opacity-80" dir={isEnglish ? 'ltr' : 'rtl'}>
                       {formatBytes((Number(fileSize) * progress) / 100)} {t.of_label} {formatBytes(fileSize)}
                     </span>
                   )}
-                  <span>{isComplete ? t.preparing_download : t.dont_close_page}</span>
+                  <span>{isComplete ? (isEnglish ? 'Ready! If download did not start automatically, click below:' : 'جاهز! إذا لم يبدأ التحميل تلقائياً، اضغط الزر أدناه:') : t.dont_close_page}</span>
                 </div>
+
+                {isComplete && (
+                  <button
+                    onClick={handleStartDownload}
+                    className="mt-4 w-full py-3 px-6 bg-gold-400 hover:bg-gold-300 text-primary-950 font-black rounded-2xl text-base shadow-lg transition-transform transform active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-5 h-5 animate-bounce" />
+                    <span>{isEnglish ? 'Download Book Now' : 'تحميل الكتاب الآن'}</span>
+                  </button>
+                )}
               </div>
 
             </div>
@@ -173,32 +180,32 @@ export default function DownloadModal({
           {/* 6 Advertisements Grid Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                 {lang === 'ar' ? 'إعلانات راعية' : 'Sponsored Ads'}
               </span>
-              <span className="text-xs font-medium text-gold-600 bg-gold-50 px-3 py-1 rounded-full border border-gold-200">
+              <span className="text-xs font-medium text-gold-700 bg-gold-50 px-3 py-1 rounded-full border border-gold-200">
                 {lang === 'ar' ? 'يدعم استمرار المكتبة المجانية' : 'Supports free access'}
               </span>
             </div>
 
-            {/* Grid displaying 6 Ad Slots (3x2 on desktop, 2x3 on tablet, 1x6 on mobile) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="p-4 bg-white rounded-3xl border border-gray-200/80 shadow-sm flex items-center justify-center min-h-[90px] transition-all hover:shadow-md">
+            {/* Grid displaying 6 Ad Slots sizing for 300x250 / 250x300 ads */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[280px] w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd adIndex={1} className="my-0" />
               </div>
-              <div className="p-4 bg-white rounded-3xl border border-gray-200/80 shadow-sm flex items-center justify-center min-h-[90px] transition-all hover:shadow-md">
+              <div className="p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[280px] w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd adIndex={2} className="my-0" />
               </div>
-              <div className="p-4 bg-white rounded-3xl border border-gray-200/80 shadow-sm flex items-center justify-center min-h-[90px] transition-all hover:shadow-md">
+              <div className="p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[280px] w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd adIndex={3} className="my-0" />
               </div>
-              <div className="p-4 bg-white rounded-3xl border border-gray-200/80 shadow-sm flex items-center justify-center min-h-[90px] transition-all hover:shadow-md">
+              <div className="p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[280px] w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd adIndex={4} className="my-0" />
               </div>
-              <div className="p-4 bg-white rounded-3xl border border-gray-200/80 shadow-sm flex items-center justify-center min-h-[90px] transition-all hover:shadow-md">
+              <div className="p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[280px] w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd adIndex={5} className="my-0" />
               </div>
-              <div className="p-4 bg-white rounded-3xl border border-gray-200/80 shadow-sm flex items-center justify-center min-h-[90px] transition-all hover:shadow-md">
+              <div className="p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[280px] w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd adIndex={6} className="my-0" />
               </div>
             </div>
