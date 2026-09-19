@@ -9,6 +9,8 @@ const AD_SCRIPTS = [
   '//fond-appointment.com/beXxVnsXd.G/ls0LYMW/cK/teMmD9/ugZRUQlrkUP/T/cW0bMbzLgFzDOdD/k/t/NhzFQWzPO/D/M-5/MXwl',
   '//fond-appointment.com/bIXAVms.dpG/lS0BYwWfc_/ieomU9OurZyUrl/k/PpT/cB0/MUzdcdxdNWjDkmtDN/zZQezWN/zaEZ3cMIwZ',
   '//fond-appointment.com/bOX.V/sVd/G/lu0AYFW/ce/_eamW9/u/ZHUGlnkIPrTucP0IMsz_Q/zcNjjaEjtzN/zsQ_zkNRDLM/2hNuQH',
+  '//fond-appointment.com/bLX.VgsWdDGclj0-YtWKcI/ue/m_9JulZfUwlik/PFTDch0tNhDOEm1sOdT/MFtVNjzIQ/0fMjTcU/5YNZwi',
+  '//fond-appointment.com/b.XnVIszdMGtlR0dY/WRcO/ueEmn9/uwZrU/lrkJPmTHcb0ENkDwEc2KMJDPUQtxNNz/Qy0lM/T-YvwROOQC',
 ];
 
 let globalAdCount = 0;
@@ -62,7 +64,7 @@ export default function AdverticaAd({ className = '', adIndex }: AdverticaAdProp
   return (
     <div
       ref={containerRef}
-      className={`my-6 mx-auto flex justify-center items-center overflow-hidden w-full max-w-full min-h-[60px] text-center ${className}`}
+      className={`my-4 mx-auto flex justify-center items-center overflow-hidden w-full max-w-full min-h-[250px] min-w-[250px] text-center ${className}`}
     />
   );
 }

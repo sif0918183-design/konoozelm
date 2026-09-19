@@ -203,8 +203,11 @@ export default function Home({ initialCategories = [] }: Props) {
       {/* Results Section */}
       <main className="max-w-7xl mx-auto px-4 -mt-10 relative z-20 pb-20">
 
-        {/* Top Ad Placement */}
-        <AdverticaAd className="my-6" />
+        {/* Top Ad Placement - Multi Ad Row for Desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+          <AdverticaAd className="my-0" />
+          <AdverticaAd className="my-0 hidden md:flex" />
+        </div>
 
         {/* Recent Books (Always visible if exists) */}
         {!hasSearched && !isLoading && (
@@ -240,6 +243,14 @@ export default function Home({ initialCategories = [] }: Props) {
             ) : (
               <p className="text-gray-400 text-sm font-medium">{t.no_books_in_category}</p>
             )}
+          </div>
+        )}
+
+        {/* Mid-Page Ad Placement - Multi Ad Row for Desktop */}
+        {!hasSearched && !isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
+            <AdverticaAd className="my-0" />
+            <AdverticaAd className="my-0 hidden md:flex" />
           </div>
         )}
 

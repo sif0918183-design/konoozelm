@@ -86,8 +86,11 @@ export default async function EnglishCategoryPage({ params }: Props) {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-12 -mt-8">
-        {/* Top Ad Placement */}
-        <AdverticaAd className="mb-8" />
+        {/* Top Ad Placement - Multi Ad Row for Desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <AdverticaAd className="my-0" />
+          <AdverticaAd className="my-0 hidden md:flex" />
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {books.map((book, index) => (
@@ -112,8 +115,11 @@ export default async function EnglishCategoryPage({ params }: Props) {
                 />
               </div>
               {(index + 1) % 6 === 0 && (
-                <div className="col-span-full my-4 flex justify-center">
-                  <AdverticaAd />
+                <div className="col-span-full my-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                    <AdverticaAd className="my-0" />
+                    <AdverticaAd className="my-0 hidden md:flex" />
+                  </div>
                 </div>
               )}
             </Fragment>
@@ -127,8 +133,11 @@ export default async function EnglishCategoryPage({ params }: Props) {
           </div>
         )}
 
-        {/* Bottom Ad Placement */}
-        <AdverticaAd className="mt-12" />
+        {/* Bottom Ad Placement - Multi Ad Row for Desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-12">
+          <AdverticaAd className="my-0" />
+          <AdverticaAd className="my-0 hidden md:flex" />
+        </div>
       </main>
       <Footer lang="en" />
     </div>
