@@ -90,39 +90,44 @@ export default function DownloadModal({
       <div className="bg-white rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(21,71,52,0.15)] w-full max-w-5xl min-h-[70vh] overflow-hidden border border-gold-100 flex flex-col md:flex-row animate-in slide-in-from-bottom-8 duration-700">
 
         {/* Left side: Advertising/Awareness Area */}
-        <div className="w-full md:w-1/2 bg-gradient-to-br from-primary-900 to-primary-800 p-8 md:p-12 text-white flex flex-col justify-center relative overflow-hidden">
+        <div className="w-full md:w-1/2 bg-gradient-to-br from-primary-900 to-primary-800 p-6 md:p-8 text-white flex flex-col justify-between relative overflow-hidden overflow-y-auto max-h-[90vh]">
           {/* Decorative elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-gold-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-400/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
 
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/20 border border-gold-500/30 text-gold-200 text-xs font-bold mb-6">
+          <div className="relative z-10 space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/20 border border-gold-500/30 text-gold-200 text-xs font-bold">
               <Info className="w-4 h-4" />
               {t.edu_notice}
             </div>
 
-            <h2 className="text-3xl md:text-4xl font-black mb-6 text-gold-100 leading-tight">
+            <h2 className="text-2xl md:text-3xl font-black text-gold-100 leading-tight">
               {t.edu_title}
             </h2>
 
-            <div className="space-y-6 text-primary-50/90 leading-relaxed text-lg italic">
+            <div className="space-y-3 text-primary-50/90 leading-relaxed text-sm md:text-base italic">
               <p>
                 {t.edu_quote}
               </p>
-              <p className={`text-base not-italic text-primary-200 ${isEnglish ? 'border-l-4' : 'border-r-4'} border-gold-500 ${isEnglish ? 'pl-4' : 'pr-4'}`}>
+              <p className={`text-xs md:text-sm not-italic text-primary-200 ${isEnglish ? 'border-l-4' : 'border-r-4'} border-gold-500 ${isEnglish ? 'pl-3' : 'pr-3'}`}>
                 {t.edu_desc}
               </p>
             </div>
 
-            {/* Advertisement Area inside Download Modal */}
-            <div className="mt-8 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex flex-col items-center justify-center">
-              <AdverticaAd className="my-2" />
+            {/* Modal Ads 1 & 2 */}
+            <div className="mt-4 grid grid-cols-1 gap-3">
+              <div className="p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-center justify-center">
+                <AdverticaAd adIndex={1} className="my-1" />
+              </div>
+              <div className="p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm flex items-center justify-center">
+                <AdverticaAd adIndex={2} className="my-1" />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Right side: Download Process */}
-        <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col items-center justify-center bg-white relative">
+        <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col items-center justify-between bg-white relative overflow-y-auto max-h-[90vh]">
           <button
             onClick={onClose}
             className={`absolute top-6 ${isEnglish ? 'right-6' : 'left-6'} p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600`}
@@ -181,10 +186,26 @@ export default function DownloadModal({
 
             <button
               onClick={onClose}
-              className="w-full py-4 rounded-2xl border-2 border-gray-100 text-gray-500 font-bold hover:bg-gray-50 hover:text-red-600 hover:border-red-100 transition-all duration-300"
+              className="w-full py-3 rounded-2xl border-2 border-gray-100 text-gray-500 font-bold hover:bg-gray-50 hover:text-red-600 hover:border-red-100 transition-all duration-300 text-sm"
             >
               {t.cancel_and_return}
             </button>
+          </div>
+
+          {/* Modal Ads 3, 4, 5, 6 Grid inside right panel */}
+          <div className="w-full mt-6 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+              <AdverticaAd adIndex={3} className="my-1" />
+            </div>
+            <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+              <AdverticaAd adIndex={4} className="my-1" />
+            </div>
+            <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+              <AdverticaAd adIndex={5} className="my-1" />
+            </div>
+            <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+              <AdverticaAd adIndex={6} className="my-1" />
+            </div>
           </div>
         </div>
       </div>
