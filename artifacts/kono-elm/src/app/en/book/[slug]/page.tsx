@@ -145,13 +145,12 @@ export default async function EnglishBookPage({ params }: Props) {
     console.error('Lookup Error:', error);
   }
 
-  // 3. REDIRECT CHECK & JIT MIGRATION/CREATION
+  // 3. REDIRECT CHECK FOR EXISTING BOOKS IN DB
   if (seoBook) {
     const idealSlug = getShortSlug(seoBook.title, seoBook.archiveId, lang);
     const isLegacy = decodedSlug.includes('--') || (seoBook.slug === decodedSlug && seoBook.new_slug && seoBook.new_slug !== decodedSlug);
 
     if (isLegacy || (decodedSlug !== idealSlug && !isNewDeterministicSlug(decodedSlug))) {
-       // JIT Migration
        try {
          console.log(`[JIT-EN] Migrating to new_slug: ${decodedSlug} -> ${idealSlug}`);
          await saveSeoBook({
@@ -165,72 +164,8 @@ export default async function EnglishBookPage({ params }: Props) {
        permanentRedirect(`/en/book/${encodeURIComponent(idealSlug)}`);
     }
   } else if (decodedSlug.includes('--')) {
-    // 4. JIT CREATION: Book found on Archive but not in our DB
-    const extractedId = decodedSlug.split('--').pop();
-    if (extractedId) {
-      const archiveBook = await getBookDetails(extractedId);
-      if (archiveBook) {
-        const idealSlug = getShortSlug(archiveBook.title, extractedId, lang);
-
-        try {
-          console.log(`[JIT-CREATE-EN] Creating new book record for: ${archiveBook.title} (${extractedId})`);
-
-          // Ensure "General" category exists to avoid FK constraint violation
-          try {
-            await saveCategory({
-              title: 'General',
-              slug: 'general',
-              description: 'General Islamic books and miscellaneous knowledge.',
-              lang: 'en'
-            });
-          } catch (catError) {
-            console.warn('JIT Category creation (en) failed or exists:', catError);
-          }
-
-          // Generate professional description using Groq AI
-          let aiTitle = `Download ${archiveBook.title} PDF - Read Online - Huda Library`;
-          let aiDesc = `Read and download ${archiveBook.title} by ${archiveBook.author || 'Unknown'} in PDF format for free.`;
-
-          try {
-            const generated = await generateBookDescription(archiveBook.title, archiveBook.author || 'Unknown', 'en', 'General', undefined, archiveBook.description, extractedId);
-            aiTitle = generated.seoTitle;
-            aiDesc = generated.description;
-          } catch (aiError) {
-            console.error('AI Generation failed for JIT creation:', aiError);
-          }
-
-          await saveSeoBook({
-            archiveId: extractedId,
-            title: archiveBook.title,
-            author: archiveBook.author || 'Unknown',
-            description: aiDesc,
-            seoTitle: aiTitle,
-            category: 'General',
-            category_slug: 'general',
-            slug: idealSlug,
-            new_slug: idealSlug,
-            lang: 'en',
-            parts_count: archiveBook.files?.length || 1,
-            suffix: extractSuffix(idealSlug) || undefined
-          });
-        } catch (saveError) {
-          console.error('JIT Creation failed:', saveError);
-        }
-        // Ensure archiveId is set for the rest of the component
-        archiveId = extractedId;
-      }
-    }
-  }
-
-  // 4.5. REDIRECT AFTER SUCCESSFUL JIT CREATION
-  if (archiveId && !seoBook && decodedSlug.includes('--')) {
-    const archiveBookData = await getBookDetails(archiveId);
-    if (archiveBookData) {
-      const idealSlug = getShortSlug(archiveBookData.title, archiveId, lang);
-      if (decodedSlug !== idealSlug) {
-        permanentRedirect(`/en/book/${encodeURIComponent(idealSlug)}`);
-      }
-    }
+    // Ephemeral on-the-fly generation for books from search results not in DB
+    archiveId = decodedSlug.split('--').pop() || null;
   }
 
   // 5. DATA FETCHING (for normal display or JIT fallback)
@@ -256,8 +191,8 @@ export default async function EnglishBookPage({ params }: Props) {
   const displayAuthor = seoBook?.author || archiveBook?.author || 'Unknown';
   const hasAuthor = !isAuthorUnknown(displayAuthor);
   const authorSlug = generateEnglishSlug(displayAuthor);
-  const displayCategory = seoBook?.category || 'General';
-  const categorySlug = seoBook?.category_slug || generateEnglishSlug(displayCategory);
+  const displayCategory = seoBook?.category || '';
+  const categorySlug = seoBook?.category_slug || (displayCategory ? generateEnglishSlug(displayCategory) : '');
 
   let displayDescription = seoBook?.description ? cleanDescription(seoBook.description) : undefined;
   let dynamicSeoTitle = seoBook?.seoTitle;
@@ -302,7 +237,7 @@ export default async function EnglishBookPage({ params }: Props) {
 
   const breadcrumbs = [
     { name: t.home, item: `${siteUrl}/en` },
-    { name: displayCategory, item: `${siteUrl}/en/${categorySlug}` },
+    ...(displayCategory ? [{ name: displayCategory, item: `${siteUrl}/en/${categorySlug}` }] : []),
     { name: displayTitle, item: `${siteUrl}/en/book/${encodeURIComponent(idealSlug)}` }
   ];
 

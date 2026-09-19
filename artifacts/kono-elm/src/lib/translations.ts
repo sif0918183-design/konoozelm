@@ -11,6 +11,7 @@ export interface TranslationKeys {
   results_found: string;
   back_to_home: string;
   featured_categories: string;
+  general_library_categories: string;
   read_more: string;
   offline_notice: string;
   footer_text: string;
@@ -222,7 +223,8 @@ export const translations: Record<Language, TranslationKeys> = {
     try_another_word: 'جرب البحث بكلمة أخرى',
     results_found: 'تم العثور على {count} كتاب',
     back_to_home: 'العودة للرئيسية',
-    featured_categories: 'أقسام الموسوعة',
+    featured_categories: 'أقسام المكتبة الإسلامية',
+    general_library_categories: 'أقسام المكتبة العامة',
     read_more: 'اقرأ المزيد',
     offline_notice: '📚 يتم حفظ موضع قراءتك تلقائيًا لتيسير استكمال المطالعة من حيث توقفت',
     footer_text: 'مشروع غير ربحي يهدف لتيسير الوصول للكتب الإسلامية القيمة والمخطوطات النادرة من أرشيف المكتبات العالمية.',
@@ -432,7 +434,8 @@ export const translations: Record<Language, TranslationKeys> = {
     try_another_word: 'Try searching for another word',
     results_found: 'Found {count} books',
     back_to_home: 'Back to Home',
-    featured_categories: 'Library Sections',
+    featured_categories: 'Islamic Library Sections',
+    general_library_categories: 'General Library Sections',
     read_more: 'Read More',
     offline_notice: '📚 Your reading position is automatically saved for easy continuation.',
     footer_text: 'A non-profit project aimed at facilitating access to valuable Islamic books and rare manuscripts from global library archives.',

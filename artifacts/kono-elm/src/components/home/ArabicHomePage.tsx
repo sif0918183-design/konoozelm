@@ -15,8 +15,14 @@ import Footer from '@/components/Footer';
 import AdverticaAd from '@/components/AdverticaAd';
 
 
+interface CategoryItem {
+  title: string;
+  slug: string;
+  section_type?: 'islamic' | 'general';
+}
+
 interface Props {
-  initialCategories?: { title: string, slug: string }[];
+  initialCategories?: CategoryItem[];
 }
 
 export default function Home({ initialCategories = [] }: Props) {
@@ -117,7 +123,7 @@ export default function Home({ initialCategories = [] }: Props) {
     localStorage.removeItem('searchState');
   };
 
-  const [featuredCategories, setFeaturedCategories] = useState<{title: string, slug: string}[]>(initialCategories);
+  const [featuredCategories, setFeaturedCategories] = useState<CategoryItem[]>(initialCategories);
 
   useEffect(() => {
     if (initialCategories.length > 0) return;
@@ -131,6 +137,10 @@ export default function Home({ initialCategories = [] }: Props) {
       })
       .catch(() => {});
   }, [initialCategories]);
+
+  const filteredCategories = featuredCategories.filter(c => c.slug !== 'عام' && c.slug !== 'general');
+  const islamicCategories = filteredCategories.filter(c => c.section_type !== 'general');
+  const generalCategories = filteredCategories.filter(c => c.section_type === 'general');
 
   return (
     <div className="min-h-screen bg-transparent font-tajawal">
@@ -203,29 +213,63 @@ export default function Home({ initialCategories = [] }: Props) {
           </div>
         )}
 
-        {/* Featured Categories */}
-        {!hasSearched && !isLoading && featuredCategories.length > 0 && (
+        {/* Islamic Library Sections */}
+        {!hasSearched && !isLoading && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-primary-900 mb-8 border-r-4 border-gold-500 pr-4">{t.featured_categories}</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-5">
-              {featuredCategories.map((cat) => (
-                <Link
-                  key={cat.slug}
-                  href={`/${cat.slug}`}
-                  className="group relative flex flex-col items-center justify-center p-6 bg-white rounded-[2rem] border border-primary-900/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(15,46,34,0.12)] hover:-translate-y-1.5 transition-all duration-500 text-center min-h-[140px]"
-                >
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary-50/30 rounded-bl-[4rem] -z-0 transition-all duration-500 group-hover:bg-gold-50/50 group-hover:w-full group-hover:h-full group-hover:rounded-[2rem]" />
-                  <div className="relative z-10">
-                    <div className="w-12 h-12 bg-primary-900 rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg group-hover:scale-110 transition-transform duration-500">
-                      <BookOpen className="w-6 h-6 text-gold-200" />
+            {islamicCategories.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-5">
+                {islamicCategories.map((cat) => (
+                  <Link
+                    key={cat.slug}
+                    href={`/${cat.slug}`}
+                    className="group relative flex flex-col items-center justify-center p-6 bg-white rounded-[2rem] border border-primary-900/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(15,46,34,0.12)] hover:-translate-y-1.5 transition-all duration-500 text-center min-h-[140px]"
+                  >
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary-50/30 rounded-bl-[4rem] -z-0 transition-all duration-500 group-hover:bg-gold-50/50 group-hover:w-full group-hover:h-full group-hover:rounded-[2rem]" />
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 bg-primary-900 rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg group-hover:scale-110 transition-transform duration-500">
+                        <BookOpen className="w-6 h-6 text-gold-200" />
+                      </div>
+                      <p className="text-sm md:text-base font-bold text-gray-900 group-hover:text-primary-900 transition-colors leading-relaxed line-clamp-3">
+                        {cat.title}
+                      </p>
                     </div>
-                    <p className="text-sm md:text-base font-bold text-gray-900 group-hover:text-primary-900 transition-colors leading-relaxed line-clamp-3">
-                      {cat.title}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-400 text-sm font-medium">{t.no_books_in_category}</p>
+            )}
+          </div>
+        )}
+
+        {/* General Library Sections */}
+        {!hasSearched && !isLoading && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-primary-900 mb-8 border-r-4 border-gold-500 pr-4">{t.general_library_categories}</h2>
+            {generalCategories.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-5">
+                {generalCategories.map((cat) => (
+                  <Link
+                    key={cat.slug}
+                    href={`/${cat.slug}`}
+                    className="group relative flex flex-col items-center justify-center p-6 bg-white rounded-[2rem] border border-primary-900/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(15,46,34,0.12)] hover:-translate-y-1.5 transition-all duration-500 text-center min-h-[140px]"
+                  >
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary-50/30 rounded-bl-[4rem] -z-0 transition-all duration-500 group-hover:bg-gold-50/50 group-hover:w-full group-hover:h-full group-hover:rounded-[2rem]" />
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 bg-primary-900 rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg group-hover:scale-110 transition-transform duration-500">
+                        <BookOpen className="w-6 h-6 text-gold-200" />
+                      </div>
+                      <p className="text-sm md:text-base font-bold text-gray-900 group-hover:text-primary-900 transition-colors leading-relaxed line-clamp-3">
+                        {cat.title}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-400 text-sm font-medium">{t.no_books_in_category}</p>
+            )}
           </div>
         )}
 

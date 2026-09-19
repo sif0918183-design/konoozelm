@@ -60,6 +60,7 @@ interface Category {
   description: string;
   display_order?: number;
   lang?: string;
+  section_type?: 'islamic' | 'general';
 }
 
 interface Author {
@@ -126,7 +127,7 @@ export default function AdminDashboard() {
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [newCategory, setNewCategory] = useState({ title: '', slug: '', description: '' });
+  const [newCategory, setNewCategory] = useState<{ title: string; slug: string; description: string; section_type: 'islamic' | 'general' }>({ title: '', slug: '', description: '', section_type: 'islamic' });
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [isGeneratingCategory, setIsGeneratingCategory] = useState(false);
 
@@ -448,7 +449,8 @@ export default function AdminDashboard() {
     } catch (e) {}
 
     const cleanSlug = lang === 'ar' ? slugify(book.title) : generateEnglishSlug(book.title);
-    const defaultCategory = categories[0] || { title: lang === 'ar' ? 'عام' : 'General', slug: lang === 'ar' ? 'عام' : 'general' };
+    const validCategories = categories.filter(c => c.slug !== 'عام' && c.slug !== 'general');
+    const defaultCategory = validCategories[0] || { title: '', slug: '' };
 
     setFormData({
       slug: cleanSlug,
@@ -543,7 +545,7 @@ export default function AdminDashboard() {
       if (res.ok) {
         if (!categoryData) {
           alert(t.admin_success_save_cat);
-          setNewCategory({ title: '', slug: '', description: '' });
+          setNewCategory({ title: '', slug: '', description: '', section_type: 'islamic' });
           setShowCategoryForm(false);
         }
         fetchCategories();
@@ -933,14 +935,13 @@ export default function AdminDashboard() {
                           value={formData.category_slug}
                           onChange={(e) => {
                               const cat = categories.find(c => c.slug === e.target.value);
-                              setFormData({...formData, category_slug: e.target.value, category: cat?.title || 'عام'});
+                              setFormData({...formData, category_slug: e.target.value, category: cat?.title || ''});
                           }}
                           className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-500 outline-none bg-white"
                         >
-                          {categories.map(c => (
+                          {categories.filter(c => c.slug !== 'عام' && c.slug !== 'general').map(c => (
                             <option key={c.slug} value={c.slug}>{c.title}</option>
                           ))}
-                          <option value="عام">عام</option>
                         </select>
                       </div>
                     </div>
@@ -1005,22 +1006,28 @@ export default function AdminDashboard() {
               ) : (
                 <div className="space-y-6">
                   {/* Category Management */}
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-center mb-4">
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-3">
                       <h2 className="text-lg font-bold flex items-center gap-2 text-primary-900">
                         <FolderPlus className="w-5 h-5" />
                         {t.admin_categories_suggestions}
                       </h2>
-                      <button
-                        onClick={() => setShowCategoryForm(!showCategoryForm)}
-                        className="text-xs bg-gold-50 text-gold-700 px-3 py-1 rounded-lg font-bold"
-                      >
-                        {showCategoryForm ? t.admin_cancel : t.admin_add_category}
-                      </button>
                     </div>
 
                     {showCategoryForm && (
-                      <form onSubmit={handleSaveCategory} className="space-y-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gold-100">
+                      <form onSubmit={handleSaveCategory} className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gold-200">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-xs font-bold text-primary-900">
+                            {newCategory.section_type === 'general' ? t.general_library_categories : t.featured_categories}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowCategoryForm(false)}
+                            className="text-xs text-gray-400 hover:text-gray-600 font-bold"
+                          >
+                            {t.admin_cancel}
+                          </button>
+                        </div>
                         <input
                           placeholder={t.admin_cat_placeholder}
                           className="w-full px-4 py-2 rounded-lg border border-gray-200"
@@ -1054,40 +1061,114 @@ export default function AdminDashboard() {
                       </form>
                     )}
 
-                    <div className="grid grid-cols-1 gap-2">
-                      {categories.map((c, idx) => (
-                        <div key={c.slug} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-gold-300 transition-all">
-                          <div className="flex items-center gap-3">
-                            <div className="flex flex-col gap-1">
-                              <button
-                                onClick={() => updateCategoryOrder(c, 'up')}
-                                disabled={idx === 0}
-                                className="p-0.5 hover:bg-gold-100 rounded disabled:opacity-30"
-                              >
-                                <ChevronUp className="w-4 h-4 text-gold-600" />
-                              </button>
-                              <button
-                                onClick={() => updateCategoryOrder(c, 'down')}
-                                disabled={idx === categories.length - 1}
-                                className="p-0.5 hover:bg-gold-100 rounded disabled:opacity-30"
-                              >
-                                <ChevronDown className="w-4 h-4 text-gold-600" />
-                              </button>
+                    {/* Section 1: Islamic Library Sections */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center bg-primary-50/50 p-2.5 rounded-xl border border-primary-100">
+                        <h3 className="text-sm font-bold text-primary-900">{t.featured_categories}</h3>
+                        <button
+                          onClick={() => {
+                            setNewCategory({ title: '', slug: '', description: '', section_type: 'islamic' });
+                            setShowCategoryForm(true);
+                          }}
+                          className="text-xs bg-gold-500 text-primary-950 hover:bg-gold-400 px-3 py-1 rounded-lg font-bold transition-all"
+                        >
+                          {t.admin_add_category}
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2">
+                        {categories.filter(c => c.slug !== 'عام' && c.slug !== 'general' && c.section_type !== 'general').map((c, idx) => (
+                          <div key={c.slug} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-gold-300 transition-all">
+                            <div className="flex items-center gap-3">
+                              <div className="flex flex-col gap-1">
+                                <button
+                                  onClick={() => updateCategoryOrder(c, 'up')}
+                                  disabled={idx === 0}
+                                  className="p-0.5 hover:bg-gold-100 rounded disabled:opacity-30"
+                                >
+                                  <ChevronUp className="w-4 h-4 text-gold-600" />
+                                </button>
+                                <button
+                                  onClick={() => updateCategoryOrder(c, 'down')}
+                                  disabled={idx === categories.filter(cat => cat.slug !== 'عام' && cat.slug !== 'general' && cat.section_type !== 'general').length - 1}
+                                  className="p-0.5 hover:bg-gold-100 rounded disabled:opacity-30"
+                                >
+                                  <ChevronDown className="w-4 h-4 text-gold-600" />
+                                </button>
+                              </div>
+                              <div className="flex flex-col">
+                                  <span className="font-bold text-gray-700">{c.title}</span>
+                                  <span className="text-[10px] text-gray-400 font-mono" dir="ltr">{c.slug}</span>
+                              </div>
                             </div>
-                            <div className="flex flex-col">
-                                <span className="font-bold text-gray-700">{c.title}</span>
-                                <span className="text-[10px] text-gray-400 font-mono" dir="ltr">{c.slug}</span>
-                            </div>
+                            <button
+                              onClick={() => handleSuggestBooks(c)}
+                              className="flex items-center gap-1 text-xs bg-gold-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-gold-700 transition-all shadow-sm"
+                            >
+                              <Zap className="w-3.5 h-3.5" />
+                              {t.admin_smart_suggestions}
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleSuggestBooks(c)}
-                            className="flex items-center gap-1 text-xs bg-gold-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-gold-700 transition-all shadow-sm"
-                          >
-                            <Zap className="w-3.5 h-3.5" />
-                            {t.admin_smart_suggestions}
-                          </button>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Section 2: General Library Sections */}
+                    <div className="space-y-3 pt-4 border-t border-gray-100">
+                      <div className="flex justify-between items-center bg-gray-100 p-2.5 rounded-xl border border-gray-200">
+                        <h3 className="text-sm font-bold text-primary-900">{t.general_library_categories}</h3>
+                        <button
+                          onClick={() => {
+                            setNewCategory({ title: '', slug: '', description: '', section_type: 'general' });
+                            setShowCategoryForm(true);
+                          }}
+                          className="text-xs bg-gold-500 text-primary-950 hover:bg-gold-400 px-3 py-1 rounded-lg font-bold transition-all"
+                        >
+                          {t.admin_add_category}
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2">
+                        {categories.filter(c => c.slug !== 'عام' && c.slug !== 'general' && c.section_type === 'general').length === 0 ? (
+                          <p className="text-xs text-gray-400 italic text-center py-3">
+                            {lang === 'ar' ? 'لا توجد تصنيفات حالياً في أقسام المكتبة العامة' : 'No categories currently in General Library Sections'}
+                          </p>
+                        ) : (
+                          categories.filter(c => c.slug !== 'عام' && c.slug !== 'general' && c.section_type === 'general').map((c, idx) => (
+                            <div key={c.slug} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-gold-300 transition-all">
+                              <div className="flex items-center gap-3">
+                                <div className="flex flex-col gap-1">
+                                  <button
+                                    onClick={() => updateCategoryOrder(c, 'up')}
+                                    disabled={idx === 0}
+                                    className="p-0.5 hover:bg-gold-100 rounded disabled:opacity-30"
+                                  >
+                                    <ChevronUp className="w-4 h-4 text-gold-600" />
+                                  </button>
+                                  <button
+                                    onClick={() => updateCategoryOrder(c, 'down')}
+                                    disabled={idx === categories.filter(cat => cat.slug !== 'عام' && cat.slug !== 'general' && cat.section_type === 'general').length - 1}
+                                    className="p-0.5 hover:bg-gold-100 rounded disabled:opacity-30"
+                                  >
+                                    <ChevronDown className="w-4 h-4 text-gold-600" />
+                                  </button>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="font-bold text-gray-700">{c.title}</span>
+                                    <span className="text-[10px] text-gray-400 font-mono" dir="ltr">{c.slug}</span>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleSuggestBooks(c)}
+                                className="flex items-center gap-1 text-xs bg-gold-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-gold-700 transition-all shadow-sm"
+                              >
+                                <Zap className="w-3.5 h-3.5" />
+                                {t.admin_smart_suggestions}
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1168,7 +1249,7 @@ export default function AdminDashboard() {
                 {/* Categories Sidebar */}
                 <div className="lg:col-span-1 border-l border-gray-100 p-4 space-y-2 max-h-[600px] overflow-y-auto">
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-2">{lang === 'ar' ? 'التصنيفات' : 'Categories'}</h3>
-                  {categories.map(cat => (
+                  {categories.filter(c => c.slug !== 'عام' && c.slug !== 'general').map(cat => (
                     <button
                       key={cat.slug}
                       onClick={() => setSelectedCategoryForManagement(cat.slug)}
