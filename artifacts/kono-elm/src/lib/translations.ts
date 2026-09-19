@@ -11,6 +11,7 @@ export interface TranslationKeys {
   results_found: string;
   back_to_home: string;
   featured_categories: string;
+  general_library_categories: string;
   read_more: string;
   offline_notice: string;
   footer_text: string;
@@ -222,7 +223,8 @@ export const translations: Record<Language, TranslationKeys> = {
     try_another_word: 'جرب البحث بكلمة أخرى',
     results_found: 'تم العثور على {count} كتاب',
     back_to_home: 'العودة للرئيسية',
-    featured_categories: 'أقسام الموسوعة',
+    featured_categories: 'أقسام المكتبة الإسلامية',
+    general_library_categories: 'أقسام المكتبة العامة',
     read_more: 'اقرأ المزيد',
     offline_notice: '📚 يتم حفظ موضع قراءتك تلقائيًا لتيسير استكمال المطالعة من حيث توقفت',
     footer_text: 'مشروع غير ربحي يهدف لتيسير الوصول للكتب الإسلامية القيمة والمخطوطات النادرة من أرشيف المكتبات العالمية.',
@@ -414,7 +416,7 @@ export const translations: Record<Language, TranslationKeys> = {
     completion_rate: 'نسبة الإنجاز',
     global_digital_library: 'المكتبة الرقمية العالمية',
     search_header_title: 'ابحث في الموسوعة',
-    search_header_subtitle: 'استكشف وابحث في قاعدة بيانات تضم أكثر من 500,000 كتاب ومخطوط إسلامي، واعثر على الكتب الإسلامية بمختلف اللغات بسهولة وسرعة.',
+    search_header_subtitle: 'استكشف وابحث في قاعدة بيانات تضم أكثر من 500,000 كتاب ومخطوط، واعثر على الكتب بمختلف اللغات بسهولة وسرعة.',
     pin_offline_hint: '📍 اضغط علامة التثبيت لتتمكن من قراءة الكتاب في أي وقت',
     about_us: 'من نحن',
     contact_us: 'اتصل بنا',
@@ -432,7 +434,8 @@ export const translations: Record<Language, TranslationKeys> = {
     try_another_word: 'Try searching for another word',
     results_found: 'Found {count} books',
     back_to_home: 'Back to Home',
-    featured_categories: 'Library Sections',
+    featured_categories: 'Islamic Library Sections',
+    general_library_categories: 'General Library Sections',
     read_more: 'Read More',
     offline_notice: '📚 Your reading position is automatically saved for easy continuation.',
     footer_text: 'A non-profit project aimed at facilitating access to valuable Islamic books and rare manuscripts from global library archives.',
@@ -624,7 +627,7 @@ export const translations: Record<Language, TranslationKeys> = {
     completion_rate: 'Completion Rate',
     global_digital_library: 'Global Digital Library',
     search_header_title: 'Search the Encyclopedia',
-    search_header_subtitle: 'Explore and search a database containing over 500,000 Islamic books and manuscripts, and find Islamic books in various languages easily and quickly.',
+    search_header_subtitle: 'Explore and search a database containing over 500,000 books and manuscripts, and find books in various languages easily and quickly.',
     pin_offline_hint: '📍 Click the pin icon to read the book anytime',
     about_us: 'About Us',
     contact_us: 'Contact Us',

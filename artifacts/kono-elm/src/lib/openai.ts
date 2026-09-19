@@ -180,28 +180,30 @@ export async function generateCategoryDescription(categoryTitle: string, lang: s
   const isEnglish = lang === 'en';
 
   const prompt = isEnglish ? `
-You are an SEO expert specialized in digital libraries. Write a compelling category description (Meta Description/Category Description) for a library section named "${categoryTitle}".
+You are an SEO expert specialized in digital libraries and general literature catalogs. Write a compelling category description (Meta Description/Category Description) for a library section named "${categoryTitle}".
 
 Requirements:
-1. Write a natural and engaging description that encourages readers and researchers to browse the section.
-2. Explain the importance of this field of knowledge and the key books a reader might find here.
-3. Integrate natural keywords (e.g., Download books, PDF library, major works in ${categoryTitle}).
-4. Length: About 150-250 words.
-5. Ensure the style is human-like and eloquent.
+1. Write a natural and engaging description that encourages readers, scholars, and general readers to browse this section.
+2. Adapt the tone naturally to the category field (e.g. general literature, science, children's books, humanities, history, or specialized disciplines). Do NOT restrict the description to religious or Islamic contexts unless the category title explicitly calls for it.
+3. Explain the value of this field of knowledge and the types of books a reader might discover here.
+4. Integrate natural search terms smoothly (e.g., Download PDF books, digital library, essential references in ${categoryTitle}).
+5. Length: About 150-250 words.
+6. Ensure the prose is articulate, human, and publication-ready.
 
-I want the result strictly in JSON format:
+Format response strictly as JSON:
 {
   "description": "Description here"
 }
 ` : `
-أنت خبير SEO متخصص في المواقع الإسلامية. قم بكتابة وصف تعريفي (Meta Description/Category Description) لقسم في مكتبة إلكترونية يسمى "${categoryTitle}".
+أنت خبير SEO ومحرر في مكتبة رقمية شاملة. قم بكتابة وصف تعريفي (Meta Description/Category Description) لقسم في المكتبة يسمى "${categoryTitle}".
 
 المتطلبات:
-1. اكتب وصفاً طبيعياً وجذاباً يشجع القراء والباحثين على تصفح القسم.
-2. وضح أهمية هذا الفن من فنون العلم (مثلاً الفقه، الحديث، التفسير) وأهم الكتب التي قد يجدها القارئ هنا.
-3. ادمج كلمات بحثية طبيعية (مثل: تحميل كتب، مكتبة PDF، أمهات الكتب في ${categoryTitle}).
-4. الطول: حوالي 150-250 كلمة.
-5. اجعل الأسلوب بشرياً بليغاً بعيداً عن الركاكة الآلية.
+1. اكتب وصفاً طبيعياً ورصيناً يصف هذا المجال المعرفي ويشجع القراء والباحثين على تصفح القسم.
+2. اجعل صياغة الوصف مرنة ومتناسبة مع طبيعة التصنيف (مثل: كتب الأطفال، العلوم العامة، الأدب، التاريخ، أو العلوم التخصصية)، ولا تحصر الوصف بالجانب الديني أو الإسلامي إلا إذا كان اسم التصنيف صريحاً في ذلك.
+3. وضح أهمية هذا المجال المعرفي وأهم ما قد يجده القارئ من مصادر ومؤلفات نافعة هنا.
+4. ادمج كلمات بحثية طبيعية (مثل: تحميل كتب PDF، مكتبة إلكترونية، أمهات الكتب في ${categoryTitle}).
+5. الطول: حوالي 150-250 كلمة.
+6. اجعل الأسلوب بشرياً بليغاً، بعيداً عن الركاكة الآلية أو التكرار الشكلي.
 
 أريد النتيجة بتنسيق JSON حصراً:
 {

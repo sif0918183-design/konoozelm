@@ -23,6 +23,7 @@ export interface Category {
   description: string;
   display_order?: number;
   lang?: string;
+  section_type?: 'islamic' | 'general';
 }
 
 export interface Author {
@@ -214,16 +215,38 @@ export async function saveCategory(category: Category) {
 
   const payload = {
     ...category,
-    lang: category.lang || 'ar'
+    lang: category.lang || 'ar',
+    section_type: category.section_type || 'islamic'
   };
 
-  const { error } = await supabaseAdmin
-    .from('seo_categories')
-    .upsert(payload, { onConflict: 'slug' });
+  try {
+    const { error } = await supabaseAdmin
+      .from('seo_categories')
+      .upsert(payload, { onConflict: 'slug' });
 
-  if (error) {
-    console.error('Supabase Save Error (Category):', error);
-    throw error;
+    if (error) {
+      const isMissingColumn = error.code === 'PGRST204' ||
+                             error.message?.toLowerCase().includes('section_type') ||
+                             error.message?.toLowerCase().includes('column');
+
+      if (isMissingColumn) {
+        console.warn('⚠️ [Supabase] Column "section_type" not found. Retrying update without it...');
+        const { section_type, ...fallbackPayload } = payload;
+        const { error: retryError } = await supabaseAdmin
+          .from('seo_categories')
+          .upsert(fallbackPayload, { onConflict: 'slug' });
+
+        if (retryError) {
+          console.error('[Supabase] Category retry failed:', retryError);
+          throw new Error(retryError.message);
+        }
+        return;
+      }
+      throw new Error(error.message);
+    }
+  } catch (err: any) {
+    console.error('Supabase Save Error (Category):', err);
+    throw err;
   }
 }
 
