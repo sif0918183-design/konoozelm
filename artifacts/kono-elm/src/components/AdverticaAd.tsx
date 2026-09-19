@@ -28,7 +28,7 @@ interface AdverticaAdProps {
  * within React component lifecycle and SPA navigation.
  */
 export default function AdverticaAd({ className = '', adIndex }: AdverticaAdProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const assignedIndexRef = useRef<number | null>(null);
 
   if (assignedIndexRef.current === null) {
@@ -41,30 +41,65 @@ export default function AdverticaAd({ className = '', adIndex }: AdverticaAdProp
   }
 
   useEffect(() => {
-    if (!containerRef.current || assignedIndexRef.current === null) return;
+    if (!iframeRef.current || assignedIndexRef.current === null) return;
 
     const scriptSrc = AD_SCRIPTS[assignedIndexRef.current];
     if (!scriptSrc) return;
 
-    // Clear previous ad content to support SPA navigation
-    containerRef.current.innerHTML = '';
+    const iframe = iframeRef.current;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
 
-    const d = document;
-    const s = d.createElement('script');
-    (s as unknown as { settings: unknown }).settings = {};
-    s.src = scriptSrc;
-    s.async = true;
-    s.referrerPolicy = 'no-referrer-when-downgrade';
-
-    if (containerRef.current) {
-      containerRef.current.appendChild(s);
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+  </style>
+</head>
+<body>
+  <script>
+    (function(vobigb){
+      var d = document,
+          s = d.createElement('script'),
+          l = d.currentScript || d.scripts[d.scripts.length - 1];
+      s.settings = vobigb || {};
+      s.src = "${scriptSrc}";
+      s.async = true;
+      s.referrerPolicy = 'no-referrer-when-downgrade';
+      l.parentNode.insertBefore(s, l);
+    })({});
+  </script>
+</body>
+</html>`;
+
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      className={`my-4 mx-auto flex justify-center items-center overflow-hidden w-full max-w-full min-h-[250px] min-w-[250px] text-center ${className}`}
-    />
+    <div className={`my-2 mx-auto flex justify-center items-center overflow-hidden w-full max-w-full text-center ${className}`}>
+      <iframe
+        ref={iframeRef}
+        title="Sponsored Advertisement"
+        width="300"
+        height="250"
+        className="border-0 overflow-hidden bg-transparent"
+        style={{ border: 0, width: '300px', height: '250px', overflow: 'hidden' }}
+      />
+    </div>
   );
 }
