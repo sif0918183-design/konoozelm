@@ -19,6 +19,7 @@ export const metadata: Metadata = {
   },
   other: {
     '0e169a7940e76d19058f3b059aff0fdc12c4d5c9': '0e169a7940e76d19058f3b059aff0fdc12c4d5c9',
+    '655f93d9179313933ef5423ee5d45c4e8e6f3c2b': '655f93d9179313933ef5423ee5d45c4e8e6f3c2b',
   },
 };
 
