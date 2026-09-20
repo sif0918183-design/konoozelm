@@ -187,22 +187,22 @@ export default function DownloadModal({
             {/* Grid displaying 6 Ad Slots sizing for 300x250 / 250x300 ads */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd adIndex={1} className="my-0" />
+                <AdverticaAd className="my-0" />
               </div>
               <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd adIndex={2} className="my-0" />
+                <AdverticaAd className="my-0" />
               </div>
               <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd adIndex={3} className="my-0" />
+                <AdverticaAd className="my-0" />
               </div>
               <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd adIndex={4} className="my-0" />
+                <AdverticaAd className="my-0" />
               </div>
               <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd adIndex={5} className="my-0" />
+                <AdverticaAd className="my-0" />
               </div>
               <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd adIndex={6} className="my-0" />
+                <AdverticaAd className="my-0" />
               </div>
             </div>
           </div>
