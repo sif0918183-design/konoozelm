@@ -174,7 +174,7 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
             onClick={handleRead}
             disabled={isLoadingFiles}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
+              "flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
               "bg-primary-900 text-white hover:bg-primary-800 hover:shadow-[0_10px_20px_rgba(15,46,34,0.2)] active:scale-95 disabled:opacity-50"
             )}
           >
@@ -190,7 +190,7 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
             onClick={handleDownload}
             disabled={isLoadingFiles || files.length === 0}
             className={cn(
-              "px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
+              "flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300",
               "bg-white text-primary-900 border-2 border-primary-900/10 hover:bg-primary-50 hover:border-primary-900/20 active:scale-95 disabled:opacity-50"
             )}
             title={t.download}
@@ -200,6 +200,7 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
             ) : (
               <Download className="w-4 h-4 flex-shrink-0" />
             )}
+            <span className="whitespace-nowrap">{t.download}</span>
           </button>
         </div>
       </div>

@@ -310,8 +310,11 @@ export default async function BookPage({ params }: Props) {
                 )}
               </div>
 
-              {/* Sidebar Ad Placement */}
-              <AdverticaAd className="mt-6" />
+              {/* Vertical Stacked Sidebar Ad Placement */}
+              <div className="space-y-4 mt-6">
+                <AdverticaAd />
+                <AdverticaAd />
+              </div>
             </aside>
 
             {/* Left: Description & Actions */}
@@ -336,8 +339,9 @@ export default async function BookPage({ params }: Props) {
                 <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                   {displayDescription}
                 </div>
-                <div className="mt-6 flex justify-center">
-                  <AdverticaAd />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                  <AdverticaAd className="my-0" />
+                  <AdverticaAd className="my-0 hidden sm:flex" />
                 </div>
               </section>
 
@@ -357,8 +361,11 @@ export default async function BookPage({ params }: Props) {
                 </div>
               </section>
 
-              {/* Mid-content Ad Placement */}
-              <AdverticaAd className="my-8" />
+              {/* Mid-content Multi Ad Placement */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-8">
+                <AdverticaAd className="my-0" />
+                <AdverticaAd className="my-0 hidden sm:flex" />
+              </div>
 
               {/* Internal Linking: Related Content */}
               {otherBooks.length > 0 && (
@@ -388,8 +395,9 @@ export default async function BookPage({ params }: Props) {
                       </Link>
                     ))}
                   </div>
-                  <div className="mt-8 flex justify-center">
-                    <AdverticaAd />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+                    <AdverticaAd className="my-0" />
+                    <AdverticaAd className="my-0 hidden sm:flex" />
                   </div>
                 </section>
               )}

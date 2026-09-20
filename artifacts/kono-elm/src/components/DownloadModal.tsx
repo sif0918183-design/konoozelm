@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Download, Info } from 'lucide-react';
 import { cn, optimizeArchiveUrl, formatBytes } from '@/lib/utils';
 import { translations } from '@/lib/translations';
@@ -31,6 +31,8 @@ export default function DownloadModal({
 
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const progressBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -39,8 +41,19 @@ export default function DownloadModal({
       return;
     }
 
-    const duration = 6000; // 6 seconds
-    const interval = 50;
+    // Scroll to top on open, then smooth scroll towards progress indicator after a short delay
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+
+    const scrollTimer = setTimeout(() => {
+      if (progressBoxRef.current) {
+        progressBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 1200);
+
+    const duration = 15000; // 15 seconds
+    const interval = 100;
     const increment = (interval / duration) * 100;
 
     const timer = setInterval(() => {
@@ -54,7 +67,10 @@ export default function DownloadModal({
       });
     }, interval);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearTimeout(scrollTimer);
+      clearInterval(timer);
+    };
   }, [isOpen]);
 
   const handleStartDownload = useCallback(() => {
@@ -73,120 +89,157 @@ export default function DownloadModal({
     document.body.removeChild(link);
   }, [fileUrl, bookTitle]);
 
+  // Trigger automatic download when complete, but do NOT close the window automatically
   useEffect(() => {
     if (isComplete && isOpen) {
       handleStartDownload();
-      const closeTimer = setTimeout(() => {
-        onClose();
-      }, 1000);
-      return () => clearTimeout(closeTimer);
     }
-  }, [isComplete, isOpen, onClose, handleStartDownload]);
+  }, [isComplete, isOpen, handleStartDownload]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#fcfcf8]/90 backdrop-blur-md animate-in fade-in duration-500" dir={isEnglish ? 'ltr' : 'rtl'}>
-      <div className="bg-white rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(21,71,52,0.15)] w-full max-w-5xl min-h-[70vh] overflow-hidden border border-gold-100 flex flex-col md:flex-row animate-in slide-in-from-bottom-8 duration-700">
+    <div
+      ref={containerRef}
+      className="fixed inset-0 z-[100] bg-[#fcfcf8] overflow-y-auto animate-in fade-in duration-300"
+      dir={isEnglish ? 'ltr' : 'rtl'}
+    >
+      <div className="min-h-screen flex flex-col justify-between p-3 sm:p-4 md:p-8 max-w-7xl mx-auto relative">
 
-        {/* Left side: Advertising/Awareness Area */}
-        <div className="w-full md:w-1/2 bg-gradient-to-br from-primary-900 to-primary-800 p-8 md:p-12 text-white flex flex-col justify-center relative overflow-hidden">
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gold-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-400/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
-
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/20 border border-gold-500/30 text-gold-200 text-xs font-bold mb-6">
-              <Info className="w-4 h-4" />
-              {t.edu_notice}
+        {/* Top Header Bar */}
+        <div className="flex items-center justify-between pb-4 border-b border-gold-200/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-primary-900 text-gold-200 flex items-center justify-center font-bold shadow-md">
+              <Download className="w-5 h-5 animate-bounce" />
             </div>
-
-            <h2 className="text-3xl md:text-4xl font-black mb-6 text-gold-100 leading-tight">
-              {t.edu_title}
-            </h2>
-
-            <div className="space-y-6 text-primary-50/90 leading-relaxed text-lg italic">
-              <p>
-                {t.edu_quote}
+            <div>
+              <h1 className="text-lg md:text-2xl font-bold text-primary-900">
+                {t.preparing_book}
+              </h1>
+              <p className="text-xs text-gray-500 font-medium line-clamp-1 max-w-xs sm:max-w-md md:max-w-xl">
+                {bookTitle}
               </p>
-              <p className={`text-base not-italic text-primary-200 ${isEnglish ? 'border-l-4' : 'border-r-4'} border-gold-500 ${isEnglish ? 'pl-4' : 'pr-4'}`}>
-                {t.edu_desc}
-              </p>
-            </div>
-
-            {/* Advertisement Area inside Download Modal */}
-            <div className="mt-8 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex flex-col items-center justify-center">
-              <AdverticaAd className="my-2" />
             </div>
           </div>
-        </div>
 
-        {/* Right side: Download Process */}
-        <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col items-center justify-center bg-white relative">
           <button
             onClick={onClose}
-            className={`absolute top-6 ${isEnglish ? 'right-6' : 'left-6'} p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600`}
+            className="p-2.5 sm:p-3 bg-white hover:bg-gray-100 border border-gray-200 rounded-2xl text-gray-500 hover:text-gray-800 transition-colors shadow-sm flex items-center gap-2 text-xs md:text-sm font-bold"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
+            <span className="hidden sm:inline">{t.cancel_and_return}</span>
           </button>
+        </div>
 
-          <div className="w-full max-w-sm flex flex-col items-center">
-            <div className="mb-10">
-              <div className="w-24 h-24 bg-primary-50 rounded-3xl flex items-center justify-center mb-6 relative rotate-3 group">
-                <Download className={cn(
-                  "w-12 h-12 text-primary-900 transition-all duration-700",
-                  isComplete ? "scale-110" : "animate-bounce"
-                )} />
-                <div className="absolute -inset-2 border-2 border-gold-200 rounded-[2rem] opacity-50 group-hover:rotate-6 transition-transform duration-500" />
-                {isComplete && (
-                  <div className="absolute inset-0 border-4 border-gold-500 rounded-3xl animate-ping opacity-20" />
-                )}
-              </div>
-            </div>
+        {/* Center Content: Download Progress + Ads Grid + Compact Notice Box */}
+        <div className="my-6 space-y-6">
 
-            <h3 className="text-2xl font-bold text-primary-900 mb-3 text-center">
-              {t.preparing_book}
-            </h3>
-            <p className="text-gray-500 text-center mb-10 font-medium leading-relaxed">
-              {bookTitle}
-            </p>
+          {/* Main Download Progress Banner */}
+          <div
+            ref={progressBoxRef}
+            className="bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 text-white rounded-3xl p-5 md:p-8 shadow-xl border border-gold-400/20 relative overflow-hidden"
+          >
+            <div className="absolute -top-24 -right-24 w-72 h-72 bg-gold-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-primary-400/10 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Progress Section */}
-            <div className="w-full space-y-4 mb-10">
-              <div className="flex justify-between items-end mb-2">
-                <div className="flex flex-col">
-                  <span className="text-sm font-bold text-primary-700">{t.preparation_progress}</span>
+            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
+
+              {/* Progress Indicator */}
+              <div className="w-full bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/15 flex flex-col items-center">
+                <div className="flex justify-between items-center w-full mb-3 text-sm">
+                  <span className="font-bold text-gold-200">{t.preparation_progress}</span>
+                  <span className="text-2xl font-black text-white">{Math.round(progress)}%</span>
+                </div>
+
+                <div className="w-full bg-black/20 h-5 rounded-2xl overflow-hidden p-1 relative shadow-inner">
+                  <div
+                    className="h-full bg-gradient-to-r from-gold-500 via-gold-400 to-amber-300 rounded-xl transition-all duration-300 ease-out relative"
+                    style={{ width: `${progress}%` }}
+                  >
+                    <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:1.5rem_1.5rem] animate-[progress-stripe_2s_linear_infinite]" />
+                  </div>
+                </div>
+
+                <div className="mt-3 text-xs text-primary-200 text-center font-medium w-full">
                   {fileSize && (
-                    <span className="text-[10px] text-gray-400 font-medium" dir={isEnglish ? 'ltr' : 'rtl'}>
+                    <span className="block mb-1 opacity-80" dir={isEnglish ? 'ltr' : 'rtl'}>
                       {formatBytes((Number(fileSize) * progress) / 100)} {t.of_label} {formatBytes(fileSize)}
                     </span>
                   )}
-                </div>
-                <span className="text-2xl font-black text-primary-900">{Math.round(progress)}%</span>
-              </div>
-
-              <div className="w-full bg-gray-100 h-6 rounded-2xl overflow-hidden relative shadow-inner p-1">
-                <div
-                  className="h-full bg-gradient-to-l from-primary-900 via-primary-700 to-primary-600 rounded-xl transition-all duration-500 ease-out relative"
-                  style={{ width: `${progress}%` }}
-                >
-                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.15)_50%,rgba(255,255,255,0.15)_75%,transparent_75%,transparent)] bg-[length:1.5rem_1.5rem] animate-[progress-stripe_2s_linear_infinite]" />
+                  <span>{isComplete ? (isEnglish ? 'Download starting automatically...' : 'جاري بدء التحميل تلقائياً...') : t.dont_close_page}</span>
                 </div>
               </div>
 
-              <p className="text-xs text-center text-gray-400 font-medium">
-                {isComplete ? t.preparing_download : t.dont_close_page}
-              </p>
+            </div>
+          </div>
+
+          {/* 6 Advertisements Grid Section (Placed Above Educational Notice on Mobile & Desktop) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-2">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                {lang === 'ar' ? 'إعلانات راعية' : 'Sponsored Ads'}
+              </span>
+              <span className="text-xs font-medium text-gold-700 bg-gold-50 px-3 py-1 rounded-full border border-gold-200">
+                {lang === 'ar' ? 'يدعم استمرار المكتبة المجانية' : 'Supports free access'}
+              </span>
             </div>
 
-            <button
-              onClick={onClose}
-              className="w-full py-4 rounded-2xl border-2 border-gray-100 text-gray-500 font-bold hover:bg-gray-50 hover:text-red-600 hover:border-red-100 transition-all duration-300"
-            >
-              {t.cancel_and_return}
-            </button>
+            {/* Grid displaying 6 Ad Slots sizing for 300x250 / 250x300 ads */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+                <AdverticaAd adIndex={1} className="my-0" />
+              </div>
+              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+                <AdverticaAd adIndex={2} className="my-0" />
+              </div>
+              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+                <AdverticaAd adIndex={3} className="my-0" />
+              </div>
+              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+                <AdverticaAd adIndex={4} className="my-0" />
+              </div>
+              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+                <AdverticaAd adIndex={5} className="my-0" />
+              </div>
+              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+                <AdverticaAd adIndex={6} className="my-0" />
+              </div>
+            </div>
           </div>
+
+          {/* Compact Educational Notice Box */}
+          <div className="bg-gradient-to-r from-primary-950 via-primary-900 to-primary-950 text-white rounded-2xl p-4 sm:p-6 border border-gold-400/20 shadow-md">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold-500/20 border border-gold-500/30 text-gold-200 text-xs font-bold">
+                  <Info className="w-3.5 h-3.5" />
+                  {t.edu_notice}
+                </div>
+                <h2 className="text-base sm:text-lg font-bold text-gold-100">
+                  {t.edu_title}
+                </h2>
+              </div>
+              <p className="text-xs sm:text-sm text-primary-100/90 italic leading-relaxed max-w-xl">
+                &ldquo;{t.edu_quote}&rdquo;
+              </p>
+            </div>
+          </div>
+
         </div>
+
+        {/* Bottom Footer Action */}
+        <div className="pt-4 border-t border-gray-200/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-gray-500 font-medium">
+            {t.edu_desc}
+          </p>
+          <button
+            onClick={onClose}
+            className="w-full sm:w-auto px-8 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-2xl text-xs sm:text-sm transition-colors"
+          >
+            {t.cancel_and_return}
+          </button>
+        </div>
+
       </div>
 
       <style jsx>{`
