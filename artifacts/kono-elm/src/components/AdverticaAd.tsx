@@ -1,11 +1,33 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 const ADSTERRA_SCRIPT_SRC = "https://pl29421746.profitableratecpmnetwork.com/17b6b0643dfbdfa818ed3b6b64955569/invoke.js";
 const ADSTERRA_CONTAINER_ID = "container-17b6b0643dfbdfa818ed3b6b64955569";
 
-const IFRAME_CONTENT = `<!DOCTYPE html>
+interface AdverticaAdProps {
+  className?: string;
+}
+
+/**
+ * AdsterraUnit / AdverticaAd Component
+ *
+ * Renders Adsterra CPM banner script inside an isolated iframe unit.
+ * Monkey-patches document.write inside the iframe so async ad scripts don't
+ * reopen and wipe the iframe document when injecting ad markup.
+ */
+export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const loadedRef = useRef(false);
+
+  useEffect(() => {
+    if (!iframeRef.current || loadedRef.current) return;
+
+    const iframe = iframeRef.current;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+
+    const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -34,6 +56,21 @@ const IFRAME_CONTENT = `<!DOCTYPE html>
       justify-content: flex-start;
     }
   </style>
+  <script>
+    // Intercept document.write calls from async ad script to prevent document wipeout after doc.close()
+    document.write = function(html) {
+      var container = document.getElementById('${ADSTERRA_CONTAINER_ID}') || document.body;
+      if (container) {
+        var range = document.createRange();
+        range.selectNode(container);
+        var fragment = range.createContextualFragment(html);
+        container.appendChild(fragment);
+      }
+    };
+    document.writeln = function(html) {
+      document.write(html + '\\n');
+    };
+  </script>
 </head>
 <body>
   <div id="${ADSTERRA_CONTAINER_ID}"></div>
@@ -41,23 +78,17 @@ const IFRAME_CONTENT = `<!DOCTYPE html>
 </body>
 </html>`;
 
-interface AdverticaAdProps {
-  className?: string;
-}
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
 
-/**
- * AdsterraUnit / AdverticaAd Component
- *
- * Renders Adsterra CPM banner script inside an isolated iframe unit.
- * Each instance runs in its own window/document context, preventing container ID collisions
- * and allowing multiple independent ad units on the same page.
- * Height is set to 500px with scroll support to fully display stacked ads.
- */
-export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
+    loadedRef.current = true;
+  }, []);
+
   return (
     <div className={`my-2 mx-auto flex justify-center items-center overflow-hidden w-full max-w-full text-center ${className}`}>
       <iframe
-        srcDoc={IFRAME_CONTENT}
+        ref={iframeRef}
         title="Sponsored Advertisement"
         width="300"
         height="500"
