@@ -310,6 +310,9 @@ export default async function BookPage({ params }: Props) {
                 )}
               </div>
 
+              {/* Desktop-only sidebar ad slot placed directly under category info */}
+              <AdverticaAd className="hidden md:flex my-4" />
+
               {/* Vertical Stacked Sidebar Ad Placement */}
               <div className="space-y-4 mt-6">
                 <AdverticaAd />

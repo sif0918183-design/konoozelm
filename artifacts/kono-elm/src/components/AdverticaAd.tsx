@@ -10,17 +10,28 @@ const IFRAME_CONTENT = `<!DOCTYPE html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer-when-downgrade">
+  <base target="_blank">
   <style>
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
       background: transparent;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
+    }
+    #${ADSTERRA_CONTAINER_ID} {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
     }
   </style>
 </head>
@@ -40,6 +51,7 @@ interface AdverticaAdProps {
  * Renders Adsterra CPM banner script inside an isolated iframe unit.
  * Each instance runs in its own window/document context, preventing container ID collisions
  * and allowing multiple independent ad units on the same page.
+ * Height is set to 500px with scroll support to fully display stacked ads.
  */
 export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
   return (
@@ -48,9 +60,9 @@ export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
         srcDoc={IFRAME_CONTENT}
         title="Sponsored Advertisement"
         width="300"
-        height="250"
-        className="border-0 overflow-hidden bg-transparent"
-        style={{ border: 0, width: '300px', height: '250px', overflow: 'hidden' }}
+        height="500"
+        className="border-0 overflow-y-auto overflow-x-hidden bg-transparent rounded-2xl"
+        style={{ border: 0, width: '300px', height: '500px', overflowY: 'auto', overflowX: 'hidden' }}
       />
     </div>
   );
