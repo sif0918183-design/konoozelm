@@ -36,14 +36,13 @@ export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
       margin: 0;
       padding: 0;
       width: 100%;
-      min-height: 100%;
-      overflow-x: hidden;
-      overflow-y: auto;
+      height: 100%;
+      overflow: hidden;
       background: transparent;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
     }
   </style>
 </head>
@@ -75,14 +74,14 @@ export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
   }, []);
 
   return (
-    <div className={`my-2 mx-auto flex justify-center items-center overflow-hidden w-full max-w-full text-center ${className}`}>
+    <div className={`my-1 mx-auto flex justify-center items-center overflow-hidden w-full max-w-full text-center ${className}`}>
       <iframe
         ref={iframeRef}
         title="Sponsored Advertisement"
         width="300"
-        height="500"
-        className="border-0 overflow-y-auto overflow-x-hidden bg-transparent rounded-2xl"
-        style={{ border: 0, width: '300px', height: '500px', overflowY: 'auto', overflowX: 'hidden' }}
+        height="250"
+        className="border-0 overflow-hidden bg-transparent rounded-2xl"
+        style={{ border: 0, width: '100%', maxWidth: '300px', height: '250px', overflow: 'hidden' }}
       />
     </div>
   );
