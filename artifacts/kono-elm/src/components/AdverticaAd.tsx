@@ -2,19 +2,16 @@
 
 import React, { useEffect, useRef } from 'react';
 
-const ADSTERRA_SCRIPT_SRC = "https://pl29421746.profitableratecpmnetwork.com/17b6b0643dfbdfa818ed3b6b64955569/invoke.js";
-const ADSTERRA_CONTAINER_ID = "container-17b6b0643dfbdfa818ed3b6b64955569";
+const HILLTOP_SCRIPT_SRC = "//fond-appointment.com/bSX.VDstdnGllK0DY/W/cr/deXm/9vuRZMUMlqkxPKTtcy0sNkDTcd5HN/DbkRtyNez/QJ0pNkz_kb1DM/w-";
 
 interface AdverticaAdProps {
   className?: string;
 }
 
 /**
- * AdsterraUnit / AdverticaAd Component
+ * AdsterraUnit / AdverticaAd / HilltopAdsUnit Component
  *
- * Renders Adsterra CPM banner script inside an isolated iframe unit.
- * Monkey-patches document.write inside the iframe so async ad scripts don't
- * reopen and wipe the iframe document when injecting ad markup.
+ * Renders HilltopAds CPM / Video Slider script inside an isolated iframe unit.
  */
 export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -48,33 +45,25 @@ export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
       align-items: center;
       justify-content: flex-start;
     }
-    #${ADSTERRA_CONTAINER_ID} {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-    }
   </style>
-  <script>
-    // Intercept document.write calls from async ad script to prevent document wipeout after doc.close()
-    document.write = function(html) {
-      var container = document.getElementById('${ADSTERRA_CONTAINER_ID}') || document.body;
-      if (container) {
-        var range = document.createRange();
-        range.selectNode(container);
-        var fragment = range.createContextualFragment(html);
-        container.appendChild(fragment);
-      }
-    };
-    document.writeln = function(html) {
-      document.write(html + '\\n');
-    };
-  </script>
 </head>
 <body>
-  <div id="${ADSTERRA_CONTAINER_ID}"></div>
-  <script async="async" data-cfasync="false" src="${ADSTERRA_SCRIPT_SRC}"></script>
+  <script>
+    (function(dnl){
+    var d = document,
+        s = d.createElement('script'),
+        l = d.currentScript || d.scripts[d.scripts.length - 1];
+    s.settings = dnl || {};
+    s.src = "${HILLTOP_SCRIPT_SRC}";
+    s.async = true;
+    s.referrerPolicy = 'no-referrer-when-downgrade';
+    if (l && l.parentNode) {
+      l.parentNode.insertBefore(s, l);
+    } else {
+      (d.head || d.body).appendChild(s);
+    }
+    })({})
+  </script>
 </body>
 </html>`;
 

@@ -48,12 +48,12 @@ export default function DownloadModal({
     // Preconnect to ad CDN for fast resource loading
     const preconnect1 = document.createElement('link');
     preconnect1.rel = 'preconnect';
-    preconnect1.href = 'https://pl29421746.profitableratecpmnetwork.com';
+    preconnect1.href = 'https://fond-appointment.com';
     preconnect1.crossOrigin = 'anonymous';
 
     const dnsPrefetch = document.createElement('link');
     dnsPrefetch.rel = 'dns-prefetch';
-    dnsPrefetch.href = 'https://pl29421746.profitableratecpmnetwork.com';
+    dnsPrefetch.href = 'https://fond-appointment.com';
 
     document.head.appendChild(preconnect1);
     document.head.appendChild(dnsPrefetch);

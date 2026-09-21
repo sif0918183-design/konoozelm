@@ -2,13 +2,12 @@
 
 import { useEffect, useRef } from 'react';
 
-const SCRIPT_URL = 'https://pl31445480.profitableratecpmnetwork.com/92/4c/e3/924ce388363294956d45883edb23c466.js';
+const HILLTOP_SCRIPT_SRC = '//fond-appointment.com/bSX.VDstdnGllK0DY/W/cr/deXm/9vuRZMUMlqkxPKTtcy0sNkDTcd5HN/DbkRtyNez/QJ0pNkz_kb1DM/w-';
 
 /**
- * AdsterraSocialBar Component
+ * AdsterraSocialBar / HilltopAds Component
  *
- * This component manages the lazy loading of the Adsterra Social Bar advertisement.
- * It is designed to be non-intrusive and optimized for Core Web Vitals.
+ * This component manages the dynamic loading of the HilltopAds MultiTag Video Slider advertisement.
  */
 export default function AdsterraSocialBar() {
   const injectedRef = useRef(false);
@@ -21,21 +20,29 @@ export default function AdsterraSocialBar() {
       if (injectedRef.current) return;
 
       // Avoid duplicate script tags in the DOM
-      if (document.querySelector(`script[src="${SCRIPT_URL}"]`)) {
+      if (document.querySelector(`script[src="${HILLTOP_SCRIPT_SRC}"]`)) {
         injectedRef.current = true;
         return;
       }
 
-      const script = document.createElement('script');
-      script.src = SCRIPT_URL;
-      script.async = true;
-      // data-cfasync="false" helps prevent issues with Cloudflare Rocket Loader
-      script.setAttribute('data-cfasync', 'false');
+      (function(dnl: Record<string, unknown>){
+        var d = document,
+            s = d.createElement('script'),
+            l = d.currentScript || d.scripts[d.scripts.length - 1];
+        (s as unknown as Record<string, unknown>).settings = dnl || {};
+        s.src = HILLTOP_SCRIPT_SRC;
+        s.async = true;
+        s.referrerPolicy = 'no-referrer-when-downgrade';
+        if (l && l.parentNode) {
+          l.parentNode.insertBefore(s, l);
+        } else {
+          (d.head || d.body).appendChild(s);
+        }
+      })({});
 
-      document.body.appendChild(script);
       injectedRef.current = true;
 
-      // Once injected, we can stop listening for interactions
+      // Once injected, stop listening for interactions
       removeInteractionListeners();
     };
 
@@ -57,14 +64,11 @@ export default function AdsterraSocialBar() {
       window.addEventListener('touchstart', handleInteraction, { once: true, passive: true });
     };
 
-    // 1. Guaranteed injection after a 4-second delay (as requested: 3-5 seconds)
-    // This ensures maximum impressions even if the user doesn't interact immediately.
+    // Guaranteed injection after a delay or on first interaction
     const timerId = setTimeout(() => {
       injectScript();
     }, 4000);
 
-    // 2. Immediate injection on first user interaction
-    // This makes the ad load "on-demand" as the user engages with the page.
     setupInteractionListeners();
 
     return () => {
