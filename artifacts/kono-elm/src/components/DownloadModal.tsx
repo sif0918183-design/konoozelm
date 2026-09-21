@@ -32,7 +32,6 @@ export default function DownloadModal({
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const progressBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -41,16 +40,23 @@ export default function DownloadModal({
       return;
     }
 
-    // Scroll to top on open, then smooth scroll towards progress indicator after a short delay
+    // Scroll container to top immediately when opened
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
     }
 
-    const scrollTimer = setTimeout(() => {
-      if (progressBoxRef.current) {
-        progressBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 1200);
+    // Preconnect to ad CDN for fast resource loading
+    const preconnect1 = document.createElement('link');
+    preconnect1.rel = 'preconnect';
+    preconnect1.href = 'https://pl29421746.profitableratecpmnetwork.com';
+    preconnect1.crossOrigin = 'anonymous';
+
+    const dnsPrefetch = document.createElement('link');
+    dnsPrefetch.rel = 'dns-prefetch';
+    dnsPrefetch.href = 'https://pl29421746.profitableratecpmnetwork.com';
+
+    document.head.appendChild(preconnect1);
+    document.head.appendChild(dnsPrefetch);
 
     const duration = 15000; // 15 seconds
     const interval = 100;
@@ -68,8 +74,9 @@ export default function DownloadModal({
     }, interval);
 
     return () => {
-      clearTimeout(scrollTimer);
       clearInterval(timer);
+      if (document.head.contains(preconnect1)) document.head.removeChild(preconnect1);
+      if (document.head.contains(dnsPrefetch)) document.head.removeChild(dnsPrefetch);
     };
   }, [isOpen]);
 
@@ -135,10 +142,7 @@ export default function DownloadModal({
         <div className="my-6 space-y-6">
 
           {/* Main Download Progress Banner */}
-          <div
-            ref={progressBoxRef}
-            className="bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 text-white rounded-3xl p-5 md:p-8 shadow-xl border border-gold-400/20 relative overflow-hidden"
-          >
+          <div className="bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 text-white rounded-3xl p-5 md:p-8 shadow-xl border border-gold-400/20 relative overflow-hidden">
             <div className="absolute -top-24 -right-24 w-72 h-72 bg-gold-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-primary-400/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -184,24 +188,24 @@ export default function DownloadModal({
               </span>
             </div>
 
-            {/* Grid displaying 6 Ad Slots sizing for 300x250 / 250x300 ads */}
+            {/* Grid displaying 6 Ad Slots */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd className="my-0" />
               </div>
-              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd className="my-0" />
               </div>
-              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd className="my-0" />
               </div>
-              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd className="my-0" />
               </div>
-              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd className="my-0" />
               </div>
-              <div className="p-3 sm:p-4 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[260px] w-full overflow-hidden transition-all hover:shadow-md">
+              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
                 <AdverticaAd className="my-0" />
               </div>
             </div>
