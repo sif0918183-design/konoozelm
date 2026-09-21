@@ -1,50 +1,27 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
-const AD_SCRIPTS = [
-  '//fond-appointment.com/bEXjVns.d-Goli0OYwWecl/SeomZ9Vu-ZnUNlqkxPiTzcT0GM/zzgmwvOoDrk/t/NBzFQHzfOCDAAH5SMYwQ',
-  '//fond-appointment.com/bEXmV.s/d/GKlj0VYJWtcg/_eKmS9QuOZ/Unl/kLPaTtck0/Mkz/gAzqM/zPMvthNizkQOz-OnD/MSz/NWwm',
-  '//fond-appointment.com/bZX/V/s.dtG/ln0zYZWmcv/qe/mE9Wu/Z/UHlTk/PPTmc_0JMLzEgZzHN/DMkOtINyzxQSzXO/DLM_1IMywN',
-  '//fond-appointment.com/beXxVnsXd.G/ls0LYMW/cK/teMmD9/ugZRUQlrkUP/T/cW0bMbzLgFzDOdD/k/t/NhzFQWzPO/D/M-5/MXwl',
-  '//fond-appointment.com/bIXAVms.dpG/lS0BYwWfc_/ieomU9OurZyUrl/k/PpT/cB0/MUzdcdxdNWjDkmtDN/zZQezWN/zaEZ3cMIwZ',
-  '//fond-appointment.com/bOX.V/sVd/G/lu0AYFW/ce/_eamW9/u/ZHUGlnkIPrTucP0IMsz_Q/zcNjjaEjtzN/zsQ_zkNRDLM/2hNuQH',
-  '//fond-appointment.com/bLX.VgsWdDGclj0-YtWKcI/ue/m_9JulZfUwlik/PFTDch0tNhDOEm1sOdT/MFtVNjzIQ/0fMjTcU/5YNZwi',
-  '//fond-appointment.com/b.XnVIszdMGtlR0dY/WRcO/ueEmn9/uwZrU/lrkJPmTHcb0ENkDwEc2KMJDPUQtxNNz/Qy0lM/T-YvwROOQC',
-];
-
-let globalAdCount = 0;
+const ADSTERRA_SCRIPT_SRC = "https://pl29421746.profitableratecpmnetwork.com/17b6b0643dfbdfa818ed3b6b64955569/invoke.js";
+const ADSTERRA_CONTAINER_ID = "container-17b6b0643dfbdfa818ed3b6b64955569";
 
 interface AdverticaAdProps {
   className?: string;
-  adIndex?: number;
 }
 
 /**
- * AdverticaAd Component
+ * AdsterraUnit / AdverticaAd Component
  *
- * Renders advertisement banner scripts sequentially (1 to 6).
- * Uses client-side DOM injection to ensure scripts execute correctly
- * within React component lifecycle and SPA navigation.
+ * Renders Adsterra CPM banner script inside an isolated iframe unit.
+ * Monkey-patches document.write inside the iframe so async ad scripts don't
+ * reopen and wipe the iframe document when injecting ad markup.
  */
-export default function AdverticaAd({ className = '', adIndex }: AdverticaAdProps) {
+export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const assignedIndexRef = useRef<number | null>(null);
-
-  if (assignedIndexRef.current === null) {
-    if (typeof adIndex === 'number' && adIndex >= 1 && adIndex <= AD_SCRIPTS.length) {
-      assignedIndexRef.current = adIndex - 1;
-    } else {
-      assignedIndexRef.current = globalAdCount % AD_SCRIPTS.length;
-      globalAdCount++;
-    }
-  }
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    if (!iframeRef.current || assignedIndexRef.current === null) return;
-
-    const scriptSrc = AD_SCRIPTS[assignedIndexRef.current];
-    if (!scriptSrc) return;
+    if (!iframeRef.current || loadedRef.current) return;
 
     const iframe = iframeRef.current;
     const doc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -55,39 +32,57 @@ export default function AdverticaAd({ className = '', adIndex }: AdverticaAdProp
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer-when-downgrade">
+  <base target="_blank">
   <style>
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
       background: transparent;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
+    }
+    #${ADSTERRA_CONTAINER_ID} {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
     }
   </style>
+  <script>
+    // Intercept document.write calls from async ad script to prevent document wipeout after doc.close()
+    document.write = function(html) {
+      var container = document.getElementById('${ADSTERRA_CONTAINER_ID}') || document.body;
+      if (container) {
+        var range = document.createRange();
+        range.selectNode(container);
+        var fragment = range.createContextualFragment(html);
+        container.appendChild(fragment);
+      }
+    };
+    document.writeln = function(html) {
+      document.write(html + '\\n');
+    };
+  </script>
 </head>
 <body>
-  <script>
-    (function(vobigb){
-      var d = document,
-          s = d.createElement('script'),
-          l = d.currentScript || d.scripts[d.scripts.length - 1];
-      s.settings = vobigb || {};
-      s.src = "${scriptSrc}";
-      s.async = true;
-      s.referrerPolicy = 'no-referrer-when-downgrade';
-      l.parentNode.insertBefore(s, l);
-    })({});
-  </script>
+  <div id="${ADSTERRA_CONTAINER_ID}"></div>
+  <script async="async" data-cfasync="false" src="${ADSTERRA_SCRIPT_SRC}"></script>
 </body>
 </html>`;
 
     doc.open();
     doc.write(htmlContent);
     doc.close();
+
+    loadedRef.current = true;
   }, []);
 
   return (
@@ -96,10 +91,13 @@ export default function AdverticaAd({ className = '', adIndex }: AdverticaAdProp
         ref={iframeRef}
         title="Sponsored Advertisement"
         width="300"
-        height="250"
-        className="border-0 overflow-hidden bg-transparent"
-        style={{ border: 0, width: '300px', height: '250px', overflow: 'hidden' }}
+        height="500"
+        className="border-0 overflow-y-auto overflow-x-hidden bg-transparent rounded-2xl"
+        style={{ border: 0, width: '300px', height: '500px', overflowY: 'auto', overflowX: 'hidden' }}
       />
     </div>
   );
 }
+
+export const AdsterraUnit = AdverticaAd;
+export const HilltopAdsUnit = AdverticaAd;

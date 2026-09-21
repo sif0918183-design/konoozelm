@@ -86,9 +86,10 @@ export default async function CategoryPage({ params }: Props) {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-12 -mt-8">
-        {/* Top Ad Placement - Multi Ad Row for Desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        {/* Top Ad Placement - 3 Ads Row for Desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <AdverticaAd className="my-0" />
+          <AdverticaAd className="my-0 hidden md:flex" />
           <AdverticaAd className="my-0 hidden md:flex" />
         </div>
 
@@ -115,8 +116,9 @@ export default async function CategoryPage({ params }: Props) {
               </div>
               {(index + 1) % 6 === 0 && (
                 <div className="col-span-full my-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
                     <AdverticaAd className="my-0" />
+                    <AdverticaAd className="my-0 hidden md:flex" />
                     <AdverticaAd className="my-0 hidden md:flex" />
                   </div>
                 </div>
@@ -132,9 +134,10 @@ export default async function CategoryPage({ params }: Props) {
           </div>
         )}
 
-        {/* Bottom Ad Placement - Multi Ad Row for Desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-12">
+        {/* Bottom Ad Placement - 3 Ads Row for Desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12">
           <AdverticaAd className="my-0" />
+          <AdverticaAd className="my-0 hidden md:flex" />
           <AdverticaAd className="my-0 hidden md:flex" />
         </div>
       </main>
