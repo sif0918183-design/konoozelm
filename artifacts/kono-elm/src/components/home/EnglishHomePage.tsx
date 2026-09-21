@@ -240,10 +240,11 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
           </div>
         )}
 
-        {/* Mid-Page Ad Placement - Multi Ad Row for Desktop */}
+        {/* Mid-Page Ad Placement - 3 Ads Row for Desktop */}
         {!hasSearched && !isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-8">
             <AdverticaAd className="my-0" />
+            <AdverticaAd className="my-0 hidden md:flex" />
             <AdverticaAd className="my-0 hidden md:flex" />
           </div>
         )}
@@ -359,8 +360,12 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
           </div>
         )}
 
-        {/* Bottom Ad Placement */}
-        <AdverticaAd className="mt-12" />
+        {/* Bottom Ad Placement - 3 Ads Row for Desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12">
+          <AdverticaAd className="my-0" />
+          <AdverticaAd className="my-0 hidden md:flex" />
+          <AdverticaAd className="my-0 hidden md:flex" />
+        </div>
       </main>
 
       <Footer lang="en" />
