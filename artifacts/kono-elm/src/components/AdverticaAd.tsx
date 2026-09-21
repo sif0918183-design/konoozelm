@@ -2,7 +2,8 @@
 
 import React from 'react';
 
-const HILLTOP_SCRIPT_SRC = "//fond-appointment.com/brXDVxswd.GRlO0_YpWIcA/reQmP9mu/ZxU/lLkZPdTTc_0UM/zUgnwSO/DJkMtkNPzUQFz/OADpAm5ZM/wG";
+const ADSTERRA_SCRIPT_SRC = "https://pl29421746.profitableratecpmnetwork.com/17b6b0643dfbdfa818ed3b6b64955569/invoke.js";
+const ADSTERRA_CONTAINER_ID = "container-17b6b0643dfbdfa818ed3b6b64955569";
 
 const IFRAME_CONTENT = `<!DOCTYPE html>
 <html>
@@ -24,18 +25,8 @@ const IFRAME_CONTENT = `<!DOCTYPE html>
   </style>
 </head>
 <body>
-  <script>
-    (function(pxgz){
-      var d = document,
-          s = d.createElement('script'),
-          l = d.currentScript || d.scripts[d.scripts.length - 1];
-      s.settings = pxgz || {};
-      s.src = "${HILLTOP_SCRIPT_SRC}";
-      s.async = true;
-      s.referrerPolicy = 'no-referrer-when-downgrade';
-      l.parentNode.insertBefore(s, l);
-    })({})
-  </script>
+  <div id="${ADSTERRA_CONTAINER_ID}"></div>
+  <script async="async" data-cfasync="false" src="${ADSTERRA_SCRIPT_SRC}"></script>
 </body>
 </html>`;
 
@@ -44,10 +35,10 @@ interface AdverticaAdProps {
 }
 
 /**
- * HilltopAdsUnit / AdverticaAd Component
+ * AdsterraUnit / AdverticaAd Component
  *
- * Renders HilltopAds banner script inside an isolated iframe unit.
- * Each instance runs in its own window/document context, preventing script collisions
+ * Renders Adsterra CPM banner script inside an isolated iframe unit.
+ * Each instance runs in its own window/document context, preventing container ID collisions
  * and allowing multiple independent ad units on the same page.
  */
 export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
@@ -65,4 +56,5 @@ export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
   );
 }
 
+export const AdsterraUnit = AdverticaAd;
 export const HilltopAdsUnit = AdverticaAd;
