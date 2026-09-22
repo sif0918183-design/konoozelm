@@ -2,79 +2,37 @@
 
 import { useEffect, useRef } from 'react';
 
-const HILLTOP_SCRIPT_SRC = '//fond-appointment.com/bSX.VDstdnGllK0DY/W/cr/deXm/9vuRZMUMlqkxPKTtcy0sNkDTcd5HN/DbkRtyNez/QJ0pNkz_kb1DM/w-';
+const HILLTOP_SCRIPT_SRC = "//fond-appointment.com/bSX.VDstdnGllK0DY/W/cr/deXm/9vuRZMUMlqkxPKTtcy0sNkDTcd5HN/DbkRtyNez/QJ0pNkz_kb1DM/w-";
 
 /**
  * AdsterraSocialBar / HilltopAds Component
  *
- * This component manages the dynamic loading of the HilltopAds MultiTag Video Slider advertisement.
+ * Direct top-level injection of HilltopAds MultiTag Video Slider advertisement script.
  */
 export default function AdsterraSocialBar() {
   const injectedRef = useRef(false);
 
   useEffect(() => {
-    // Only run on client-side
-    if (typeof window === 'undefined') return;
+    if (injectedRef.current) return;
 
-    const injectScript = () => {
-      if (injectedRef.current) return;
-
-      // Avoid duplicate script tags in the DOM
-      if (document.querySelector(`script[src="${HILLTOP_SCRIPT_SRC}"]`)) {
-        injectedRef.current = true;
-        return;
-      }
-
-      (function(dnl: Record<string, unknown>){
-        var d = document,
-            s = d.createElement('script'),
-            l = d.currentScript || d.scripts[d.scripts.length - 1];
-        (s as unknown as Record<string, unknown>).settings = dnl || {};
-        s.src = HILLTOP_SCRIPT_SRC;
-        s.async = true;
-        s.referrerPolicy = 'no-referrer-when-downgrade';
-        if (l && l.parentNode) {
-          l.parentNode.insertBefore(s, l);
-        } else {
-          (d.head || d.body).appendChild(s);
-        }
-      })({});
-
+    // Avoid duplicate script tags
+    if (document.querySelector(`script[src="${HILLTOP_SCRIPT_SRC}"]`)) {
       injectedRef.current = true;
+      return;
+    }
 
-      // Once injected, stop listening for interactions
-      removeInteractionListeners();
-    };
+    try {
+      const script = document.createElement('script');
+      (script as unknown as Record<string, unknown>).settings = {};
+      script.src = HILLTOP_SCRIPT_SRC;
+      script.async = true;
+      script.referrerPolicy = 'no-referrer-when-downgrade';
 
-    const handleInteraction = () => {
-      injectScript();
-    };
-
-    const removeInteractionListeners = () => {
-      window.removeEventListener('scroll', handleInteraction);
-      window.removeEventListener('click', handleInteraction);
-      window.removeEventListener('mousemove', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
-    };
-
-    const setupInteractionListeners = () => {
-      window.addEventListener('scroll', handleInteraction, { once: true, passive: true });
-      window.addEventListener('click', handleInteraction, { once: true, passive: true });
-      window.addEventListener('mousemove', handleInteraction, { once: true, passive: true });
-      window.addEventListener('touchstart', handleInteraction, { once: true, passive: true });
-    };
-
-    // Guaranteed injection after a delay or on first interaction
-    const timerId = setTimeout(() => {
-      injectScript();
-    }, 4000);
-
-    setupInteractionListeners();
-
-    return () => {
-      clearTimeout(timerId);
-      removeInteractionListeners();
-    };
+      (document.body || document.head).appendChild(script);
+      injectedRef.current = true;
+    } catch (e) {
+      console.error('Failed to inject HilltopAds script:', e);
+    }
   }, []);
 
   return null;
