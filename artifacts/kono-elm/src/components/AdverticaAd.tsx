@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const HILLTOP_SCRIPT_SRC = "//fond-appointment.com/bSX.VDstdnGllK0DY/W/cr/deXm/9vuRZMUMlqkxPKTtcy0sNkDTcd5HN/DbkRtyNez/QJ0pNkz_kb1DM/w-";
 
@@ -12,10 +12,14 @@ interface AdverticaAdProps {
  * AdsterraUnit / AdverticaAd / HilltopAdsUnit Component
  *
  * Renders HilltopAds CPM / Video Slider script inside an isolated iframe unit.
+ * Automatically measures and resizes iframe height based on rendered content,
+ * collapsing to 0px / hidden state if no inline ad content is rendered to prevent blank whitespace.
  */
 export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const loadedRef = useRef(false);
+  const [hasContent, setHasContent] = useState(false);
+  const [adHeight, setAdHeight] = useState(0);
 
   useEffect(() => {
     if (!iframeRef.current || loadedRef.current) return;
@@ -36,13 +40,14 @@ export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
       margin: 0;
       padding: 0;
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      height: auto;
+      min-height: 0;
       background: transparent;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
     }
   </style>
 </head>
@@ -71,17 +76,69 @@ export default function AdverticaAd({ className = '' }: AdverticaAdProps) {
     doc.close();
 
     loadedRef.current = true;
+
+    // Monitor for content height inside the iframe
+    const updateHeight = () => {
+      try {
+        const body = doc.body;
+        if (!body) return;
+
+        let maxChildBottom = 0;
+        for (let i = 0; i < body.children.length; i++) {
+          const child = body.children[i] as HTMLElement;
+          if (child.tagName !== 'SCRIPT' && child.tagName !== 'STYLE') {
+            const rect = child.getBoundingClientRect();
+            if (rect.height > 0) {
+              maxChildBottom = Math.max(maxChildBottom, rect.bottom);
+            }
+          }
+        }
+
+        const calculatedHeight = maxChildBottom > 0 ? Math.ceil(maxChildBottom) : 0;
+        if (calculatedHeight > 0) {
+          setHasContent(true);
+          setAdHeight(calculatedHeight);
+        } else {
+          setHasContent(false);
+          setAdHeight(0);
+        }
+      } catch (e) {
+        // Ignore cross-origin errors if any
+      }
+    };
+
+    const observer = new MutationObserver(updateHeight);
+    if (doc.body) {
+      observer.observe(doc.body, { childList: true, subtree: true, attributes: true });
+    }
+
+    const intervalId = setInterval(updateHeight, 500);
+
+    return () => {
+      observer.disconnect();
+      clearInterval(intervalId);
+    };
   }, []);
 
   return (
-    <div className={`my-1 mx-auto flex justify-center items-center overflow-hidden w-full max-w-full text-center ${className}`}>
+    <div
+      className={`mx-auto flex justify-center items-center overflow-hidden w-full max-w-full text-center transition-all duration-300 ${hasContent ? 'my-2' : 'h-0 my-0 overflow-hidden'} ${className}`}
+      style={{ display: hasContent ? 'flex' : 'none' }}
+    >
       <iframe
         ref={iframeRef}
         title="Sponsored Advertisement"
         width="300"
-        height="250"
+        height={adHeight || 250}
         className="border-0 overflow-hidden bg-transparent rounded-2xl"
-        style={{ border: 0, width: '100%', maxWidth: '300px', height: '250px', overflow: 'hidden' }}
+        style={{
+          border: 0,
+          width: '100%',
+          maxWidth: '300px',
+          height: adHeight ? `${adHeight}px` : 'auto',
+          overflow: 'hidden',
+          display: hasContent ? 'block' : 'none',
+        }}
       />
     </div>
   );
