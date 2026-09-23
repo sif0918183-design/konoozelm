@@ -58,7 +58,7 @@ export default function DownloadModal({
     document.head.appendChild(preconnect1);
     document.head.appendChild(dnsPrefetch);
 
-    const duration = 15000; // 15 seconds
+    const duration = 3000; // 3 seconds
     const interval = 100;
     const increment = (interval / duration) * 100;
 
