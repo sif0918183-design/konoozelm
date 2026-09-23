@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-const SCRIPT_SRC = 'https://pl30089135.profitableratecpmnetwork.com/bd/fa/32/bdfa32cdd990b0f31e1df6d03d7e336a.js';
+const SCRIPT_SRC = '';
 
 /**
  * AdsterraPopunder component
