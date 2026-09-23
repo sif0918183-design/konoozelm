@@ -1,15 +1,16 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { User, Book as BookIcon, ChevronRight, Globe } from 'lucide-react';
+import { User, Book as BookIcon, ChevronRight } from 'lucide-react';
 import { getAuthorBySlug, getBooksByAuthor } from '@/lib/seo-data';
 import SearchStateCleaner from '@/components/SearchStateCleaner';
-
-export const revalidate = 600;
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
 import { getSiteUrl } from '@/lib/utils';
+import { getShortSlug } from '@/lib/slug-utils';
+
+export const revalidate = 600;
 
 interface Props {
   params: { slug: string };
@@ -30,6 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       languages: {
         'ar': `${siteUrl}/author/${params.slug}`,
         'en': `${siteUrl}/en/author/${params.slug}`,
+        'x-default': `${siteUrl}/author/${params.slug}`,
       },
     },
   };
@@ -89,24 +91,27 @@ export default async function AuthorPage({ params }: Props) {
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {books.map((book) => (
-            <Link
-              key={book.archiveId}
-              href={`/book/${book.slug}--${book.archiveId}`}
-              className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-gray-100 hover:border-gold-200 flex flex-col h-full"
-            >
-              <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gold-50 transition-colors">
-                <BookIcon className="w-6 h-6 text-primary-900 group-hover:text-gold-600" />
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2 group-hover:text-primary-900 transition-colors line-clamp-2">
-                {book.title}
-              </h3>
-              <div className="mt-auto flex items-center text-xs font-bold text-gold-600 group-hover:text-gold-700">
-                {t.read_more}
-                <ChevronRight className="w-4 h-4 mr-1 group-hover:translate-x-[-4px] transition-transform" />
-              </div>
-            </Link>
-          ))}
+          {books.map((book) => {
+            const bookSlug = book.new_slug || getShortSlug(book.title, book.archiveId, lang);
+            return (
+              <Link
+                key={book.archiveId}
+                href={`/book/${encodeURIComponent(bookSlug)}`}
+                className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-gray-100 hover:border-gold-200 flex flex-col h-full"
+              >
+                <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gold-50 transition-colors">
+                  <BookIcon className="w-6 h-6 text-primary-900 group-hover:text-gold-600" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2 group-hover:text-primary-900 transition-colors line-clamp-2">
+                  {book.title}
+                </h3>
+                <div className="mt-auto flex items-center text-xs font-bold text-gold-600 group-hover:text-gold-700">
+                  {t.read_more}
+                  <ChevronRight className="w-4 h-4 mr-1 group-hover:translate-x-[-4px] transition-transform" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
 
         {books.length === 0 && (

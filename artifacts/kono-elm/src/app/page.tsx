@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import ArabicHomePage from '@/components/home/ArabicHomePage';
 import { getSiteUrl } from '@/lib/utils';
-import { getCategories } from '@/lib/seo-data';
+import { getCategories, getFeaturedBooks } from '@/lib/seo-data';
 
 export const revalidate = 300;
 
@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     languages: {
       'ar': siteUrl,
       'en': `${siteUrl}/en`,
+      'x-default': siteUrl,
     },
   },
   other: {
@@ -24,6 +25,9 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const categories = await getCategories('ar');
-  return <ArabicHomePage initialCategories={categories} />;
+  const [categories, featuredBooks] = await Promise.all([
+    getCategories('ar'),
+    getFeaturedBooks(12, 'ar')
+  ]);
+  return <ArabicHomePage initialCategories={categories} initialFeaturedBooks={featuredBooks} />;
 }

@@ -8,6 +8,7 @@ import AdsterraSocialBar from '@/components/AdsterraSocialBar';
 import LanguageRedirector from '@/components/LanguageRedirector';
 import DocumentLanguageSetter from '@/components/DocumentLanguageSetter';
 import { Analytics } from "@vercel/analytics/react";
+import { getSiteUrl } from '@/lib/utils';
 
 const tajawal = Tajawal({
   subsets: ['arabic'],
@@ -34,6 +35,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: 'مكتبة الهدى',
   description: 'موسوعة شاملة للكتب والرسائل والمخطوطات الإسلامية - قراءة مباشرة وتحميل من Archive.org',
   keywords: ['كتب إسلامية', 'مكتبة', 'تحميل كتب', 'قراءة كتب', 'Archive.org', 'مكتبة الهدى'],

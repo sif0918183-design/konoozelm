@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import EnglishHomePage from '@/components/home/EnglishHomePage';
 import { getSiteUrl } from '@/lib/utils';
-import { getCategories } from '@/lib/seo-data';
+import { getCategories, getFeaturedBooks } from '@/lib/seo-data';
 
 export const revalidate = 300;
 
@@ -15,11 +15,15 @@ export const metadata: Metadata = {
     languages: {
       'ar': siteUrl,
       'en': `${siteUrl}/en`,
+      'x-default': `${siteUrl}/en`,
     },
   },
 };
 
 export default async function Home() {
-  const categories = await getCategories('en');
-  return <EnglishHomePage initialCategories={categories} />;
+  const [categories, featuredBooks] = await Promise.all([
+    getCategories('en'),
+    getFeaturedBooks(12, 'en')
+  ]);
+  return <EnglishHomePage initialCategories={categories} initialFeaturedBooks={featuredBooks} />;
 }

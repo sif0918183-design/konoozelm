@@ -81,6 +81,23 @@ export async function getSeoBooks(lang: string = 'ar'): Promise<SeoBook[]> {
   }));
 }
 
+export async function getFeaturedBooks(limit: number = 12, lang: string = 'ar'): Promise<SeoBook[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('seo_books')
+    .select('*')
+    .eq('lang', lang)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return data.map(b => ({
+    ...b,
+    archiveId: b.archive_id,
+    seoTitle: b.seo_title
+  }));
+}
+
 export async function saveSeoBook(book: SeoBook) {
   if (!supabaseAdmin) {
     console.error('❌ Cannot save book: SUPABASE_SERVICE_ROLE_KEY is missing');

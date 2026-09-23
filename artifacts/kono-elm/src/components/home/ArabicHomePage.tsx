@@ -13,7 +13,8 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import AdverticaAd from '@/components/AdverticaAd';
-
+import { SeoBook } from '@/lib/seo-data';
+import { getShortSlug } from '@/lib/slug-utils';
 
 interface CategoryItem {
   title: string;
@@ -23,9 +24,10 @@ interface CategoryItem {
 
 interface Props {
   initialCategories?: CategoryItem[];
+  initialFeaturedBooks?: SeoBook[];
 }
 
-export default function Home({ initialCategories = [] }: Props) {
+export default function Home({ initialCategories = [], initialFeaturedBooks = [] }: Props) {
   const lang = 'ar';
   const t = translations[lang];
   const [query, setQuery] = useState('');
@@ -207,6 +209,39 @@ export default function Home({ initialCategories = [] }: Props) {
         {!hasSearched && !isLoading && (
           <div className="mb-12">
             <RecentBooks />
+          </div>
+        )}
+
+        {/* Featured Books Section for SSR Crawlability */}
+        {!hasSearched && !isLoading && initialFeaturedBooks.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-primary-900 mb-8 border-r-4 border-gold-500 pr-4">
+              أحدث الكتب المضافة
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {initialFeaturedBooks.map((book) => {
+                const deterministicSlug = book.new_slug || getShortSlug(book.title, book.archiveId, 'ar');
+                return (
+                  <BookCard
+                    key={book.archiveId}
+                    book={{
+                      identifier: book.archiveId,
+                      title: book.title,
+                      author: book.author,
+                      previewLink: `https://archive.org/details/${book.archiveId}`,
+                      coverImage: `https://archive.org/services/img/${book.archiveId}`,
+                    }}
+                    initialSeoSlug={deterministicSlug}
+                    initialFiles={[
+                      {
+                        name: book.title,
+                        url: `https://archive.org/download/${book.archiveId}/${book.archiveId}.pdf`
+                      }
+                    ]}
+                  />
+                );
+              })}
+            </div>
           </div>
         )}
 
