@@ -45,19 +45,6 @@ export default function DownloadModal({
       containerRef.current.scrollTop = 0;
     }
 
-    // Preconnect to ad CDN for fast resource loading
-    const preconnect1 = document.createElement('link');
-    preconnect1.rel = 'preconnect';
-    preconnect1.href = 'https://fond-appointment.com';
-    preconnect1.crossOrigin = 'anonymous';
-
-    const dnsPrefetch = document.createElement('link');
-    dnsPrefetch.rel = 'dns-prefetch';
-    dnsPrefetch.href = 'https://fond-appointment.com';
-
-    document.head.appendChild(preconnect1);
-    document.head.appendChild(dnsPrefetch);
-
     const duration = 15000; // 15 seconds
     const interval = 100;
     const increment = (interval / duration) * 100;
@@ -75,8 +62,6 @@ export default function DownloadModal({
 
     return () => {
       clearInterval(timer);
-      if (document.head.contains(preconnect1)) document.head.removeChild(preconnect1);
-      if (document.head.contains(dnsPrefetch)) document.head.removeChild(dnsPrefetch);
     };
   }, [isOpen]);
 
@@ -174,40 +159,6 @@ export default function DownloadModal({
                 </div>
               </div>
 
-            </div>
-          </div>
-
-          {/* 6 Advertisements Grid Section (Placed Above Educational Notice on Mobile & Desktop) */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between px-2">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                {lang === 'ar' ? 'إعلانات راعية' : 'Sponsored Ads'}
-              </span>
-              <span className="text-xs font-medium text-gold-700 bg-gold-50 px-3 py-1 rounded-full border border-gold-200">
-                {lang === 'ar' ? 'يدعم استمرار المكتبة المجانية' : 'Supports free access'}
-              </span>
-            </div>
-
-            {/* Grid displaying 6 Ad Slots */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd className="my-0" />
-              </div>
-              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd className="my-0" />
-              </div>
-              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd className="my-0" />
-              </div>
-              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd className="my-0" />
-              </div>
-              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd className="my-0" />
-              </div>
-              <div className="p-2 bg-white rounded-3xl border border-gray-200 shadow-sm flex items-center justify-center w-full overflow-hidden transition-all hover:shadow-md">
-                <AdverticaAd className="my-0" />
-              </div>
             </div>
           </div>
 
