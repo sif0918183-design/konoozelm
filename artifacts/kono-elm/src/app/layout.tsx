@@ -70,9 +70,7 @@ export default function RootLayout({
 }) {
   return (
     <html className={`${tajawal.variable} ${amiri.variable} ${inter.variable} ${playfair.variable}`}>
-      <head>
-        <script src="https://pl30089135.profitableratecpmnetwork.com/bd/fa/32/bdfa32cdd990b0f31e1df6d03d7e336a.js" async />
-      </head>
+      <head />
       <body className="min-h-screen bg-[#f8f9fa] font-tajawal overflow-x-hidden">
         <LanguageRedirector />
         <DocumentLanguageSetter />
