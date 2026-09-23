@@ -1,13 +1,11 @@
 import { getSeoBooks, getCategories, getAuthors } from '@/lib/seo-data';
 import { getShortSlug } from '@/lib/slug-utils';
+import { getSiteUrl } from '@/lib/utils';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 3600; // Cache sitemap for 1 hour for fast TTFB
 
-export async function GET(request: Request) {
-  const { host } = new URL(request.url);
-  const protocol = host.includes('localhost') ? 'http' : 'https';
-  const BASE_URL = `${protocol}://${host}`;
+export async function GET() {
+  const BASE_URL = getSiteUrl();
 
   const [arBooks, arCategories, arAuthors, enBooks, enCategories, enAuthors] = await Promise.all([
     getSeoBooks('ar'),
@@ -83,8 +81,8 @@ export async function GET(request: Request) {
 
   return new Response(sitemap, {
     headers: {
-      'Content-Type': 'application/xml',
-      'Cache-Control': 'public, max-age=0, s-maxage=0, must-revalidate',
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
     },
   });
 }

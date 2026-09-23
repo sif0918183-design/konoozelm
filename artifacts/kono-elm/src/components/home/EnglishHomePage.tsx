@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Search, BookOpen, Download, Loader2, AlertCircle, ArrowRight, Globe } from 'lucide-react';
+import { Search, BookOpen, Download, Loader2, AlertCircle, ArrowLeft, Globe } from 'lucide-react';
 import { searchBooks, type Book } from '@/lib/archive-api';
-import { logSearch } from '@/lib/supabase';
 import BookCard from '@/components/BookCard';
 import SearchSkeleton from '@/components/SearchSkeleton';
 import RecentBooks from '@/components/RecentBooks';
@@ -13,7 +12,8 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import AdverticaAd from '@/components/AdverticaAd';
-
+import { SeoBook } from '@/lib/seo-data';
+import { getShortSlug } from '@/lib/slug-utils';
 
 interface CategoryItem {
   title: string;
@@ -23,9 +23,10 @@ interface CategoryItem {
 
 interface Props {
   initialCategories?: CategoryItem[];
+  initialFeaturedBooks?: SeoBook[];
 }
 
-export default function EnglishHome({ initialCategories = [] }: Props) {
+export default function EnglishHomePage({ initialCategories = [], initialFeaturedBooks = [] }: Props) {
   const lang = 'en';
   const t = translations[lang];
   const [query, setQuery] = useState('');
@@ -73,11 +74,8 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
       setBooks([]);
     }
 
-    const startTime = Date.now();
-
     try {
       const results = await searchBooks(searchQuery, pageNum);
-      const searchDurationMs = Date.now() - startTime;
 
       if (pageNum === 1) {
         setBooks(results.books);
@@ -89,11 +87,6 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
       setHasMore(results.hasMore);
       setPage(results.page);
       setHasSearched(true);
-
-      // Log search to Supabase
-      if (pageNum === 1) {
-        await logSearch(searchQuery, results.totalResults, searchDurationMs);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t.error_search);
     } finally {
@@ -128,7 +121,7 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
   useEffect(() => {
     if (initialCategories.length > 0) return;
 
-    fetch(`/api/admin/categories?lang=${lang}`)
+    fetch('/api/admin/categories?lang=en')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -136,14 +129,14 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
         }
       })
       .catch(() => {});
-  }, [initialCategories, lang]);
+  }, [initialCategories]);
 
   const filteredCategories = featuredCategories.filter(c => c.slug !== 'عام' && c.slug !== 'general');
   const islamicCategories = filteredCategories.filter(c => c.section_type !== 'general');
   const generalCategories = filteredCategories.filter(c => c.section_type === 'general');
 
   return (
-    <div className="min-h-screen bg-transparent">
+    <div className="min-h-screen bg-transparent font-tajawal" dir="ltr">
       {/* Header */}
       <header className="bg-primary-900 text-white pt-2 pb-20 md:pb-24 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -166,7 +159,7 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
           {/* Search Form */}
           <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto group w-full">
             <div className="text-left pl-2 mb-4 flex flex-col gap-1">
-              <h2 className="text-2xl md:text-3xl font-inter font-bold bg-gradient-to-r from-amber-200 via-gold-500 to-amber-200 bg-clip-text text-transparent drop-shadow-sm">
+              <h2 className="text-2xl md:text-3xl font-playfair font-bold bg-gradient-to-r from-amber-200 via-gold-500 to-amber-200 bg-clip-text text-transparent drop-shadow-sm">
                 {t.search_header_title}
               </h2>
               <p className="text-xs md:text-sm text-gold-100/90 font-medium leading-relaxed">
@@ -179,13 +172,13 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
               </p>
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-900/40 w-5 h-5 group-focus-within:text-primary-900 transition-colors" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-900/40 w-5 h-5 group-focus-within:text-primary-900 transition-colors" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t.search_placeholder}
-                className="w-full pr-20 md:pr-24 pl-10 md:pl-12 py-4 text-left text-base md:text-lg text-gray-900 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl focus:outline-none focus:ring-4 focus:ring-gold-500/30 transition-all border-2 border-transparent focus:border-gold-500/50 block"
+                className="w-full pl-12 md:pl-14 pr-24 md:pr-32 py-4 text-left text-base md:text-lg text-gray-900 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl focus:outline-none focus:ring-4 focus:ring-gold-500/30 transition-all border-2 border-transparent focus:border-gold-500/50 block"
                 dir="ltr"
               />
               <button
@@ -207,6 +200,40 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
         {!hasSearched && !isLoading && (
           <div className="mb-12">
             <RecentBooks lang="en" />
+          </div>
+        )}
+
+        {/* Featured Books Section for SSR Crawlability */}
+        {!hasSearched && !isLoading && initialFeaturedBooks.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-primary-900 mb-8 border-l-4 border-gold-500 pl-4">
+              Featured Books
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {initialFeaturedBooks.map((book) => {
+                const deterministicSlug = book.new_slug || getShortSlug(book.title, book.archiveId, 'en');
+                return (
+                  <BookCard
+                    key={book.archiveId}
+                    lang="en"
+                    book={{
+                      identifier: book.archiveId,
+                      title: book.title,
+                      author: book.author,
+                      previewLink: `https://archive.org/details/${book.archiveId}`,
+                      coverImage: `https://archive.org/services/img/${book.archiveId}`,
+                    }}
+                    initialSeoSlug={deterministicSlug}
+                    initialFiles={[
+                      {
+                        name: book.title,
+                        url: `https://archive.org/download/${book.archiveId}/${book.archiveId}.pdf`
+                      }
+                    ]}
+                  />
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -301,7 +328,7 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
               onClick={handleResetSearch}
               className="flex items-center gap-2 px-4 py-2 rounded-full text-xs md:text-sm bg-white hover:bg-gold-50 text-primary-900 transition-all border border-primary-900/20 font-bold shadow-md active:scale-95"
             >
-              <ArrowRight className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" />
               {t.back_to_home}
             </button>
           </div>
@@ -316,7 +343,7 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
         {books.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {books.map((book) => (
-              <BookCard key={book.identifier} book={book} lang="en" />
+              <BookCard key={book.identifier} lang="en" book={book} />
             ))}
           </div>
         )}
@@ -349,7 +376,7 @@ export default function EnglishHome({ initialCategories = [] }: Props) {
           </div>
         )}
 
-        {/* Initial State (Placeholder if no recent books) */}
+        {/* Initial State */}
         {!hasSearched && !isLoading && books.length === 0 && (
           <div className="text-center py-8">
             <div className="bg-primary-50 inline-flex p-4 rounded-full mb-4">

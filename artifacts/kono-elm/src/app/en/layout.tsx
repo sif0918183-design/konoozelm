@@ -7,6 +7,7 @@ import AdsterraPopunder from '@/components/AdsterraPopunder';
 import AdsterraSocialBar from '@/components/AdsterraSocialBar';
 import LanguageRedirector from '@/components/LanguageRedirector';
 import DocumentLanguageSetter from '@/components/DocumentLanguageSetter';
+import { getSiteUrl } from '@/lib/utils';
 
 const tajawal = Tajawal({
   subsets: ['arabic', 'latin'],
@@ -21,6 +22,7 @@ const amiri = Amiri({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: 'Huda Library',
   description: 'Comprehensive Electronic Library for Islamic Books - Read Online & Download from Archive.org',
   keywords: ['Islamic books', 'Library', 'Download books', 'Read books', 'Archive.org'],

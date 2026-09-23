@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Book as BookIcon, Download, Loader2, Layers, BookOpen } from 'lucide-react';
-import { slugify } from '@/lib/utils';
 import { getShortSlug } from '@/lib/slug-utils';
 import { type Book, type BookFile, getBookFiles } from '@/lib/archive-api';
 import { cn } from '@/lib/utils';
@@ -32,19 +31,6 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
   const [selectedFile, setSelectedFile] = useState<BookFile | null>(null);
 
   useEffect(() => {
-    const fetchSeoData = async () => {
-      if (initialSeoSlug !== undefined) return;
-      try {
-        const res = await fetch(`/api/admin/books?archiveId=${book.identifier}&lang=${lang}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.slug) {
-            setSeoSlug(data.slug);
-          }
-        }
-      } catch (e) {}
-    };
-
     const fetchFiles = async () => {
       if (initialFiles !== undefined) return;
       setIsLoadingFiles(true);
@@ -58,9 +44,8 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
       }
     };
 
-    fetchSeoData();
     fetchFiles();
-  }, [book.identifier, lang, initialFiles, initialSeoSlug]);
+  }, [book.identifier, lang, initialFiles]);
 
   const handleRead = () => {
     if (files.length > 1) {
@@ -70,7 +55,6 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
       const readerUrl = `/reader?pdf=${encodeURIComponent(files[0].url)}&title=${encodeURIComponent(book.title)}&lang=${lang}`;
       router.push(readerUrl);
     } else {
-      // If no files found, inform user if they are online, or just do nothing to avoid Archive.org redirect
       if (typeof window !== 'undefined' && !navigator.onLine) {
         alert(t.offline_notice);
       } else if (files.length === 0 && !isLoadingFiles) {
@@ -94,13 +78,8 @@ export default function BookCard({ book, lang = 'ar', initialFiles, initialSeoSl
     setShowDownloadModal(true);
   };
 
-  // Use new_slug if available, otherwise generate a temporary legacy slug for JIT creation.
-  // If the book exists in our SEO database, we use the clean deterministic slug.
-  // If it's a new book (e.g. from search results), we use the legacy title--id format
-  // so the server can extract the Archive ID and generate the page on the fly.
   const idealSlug = getShortSlug(book.title, book.identifier, lang);
-  const legacySlug = `${slugify(book.title)}--${book.identifier}`;
-  const finalSlug = seoSlug || legacySlug;
+  const finalSlug = seoSlug || idealSlug;
 
   const detailsHref = lang === 'en'
     ? `/en/book/${encodeURIComponent(finalSlug)}`

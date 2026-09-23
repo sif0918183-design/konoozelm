@@ -84,6 +84,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       languages: {
         'ar': `${siteUrl}/book/${encodeURIComponent(seoBook?.new_slug || arIdeal)}`,
         'en': `${siteUrl}/en/book/${encodeURIComponent(seoBook?.new_slug || enIdeal)}`,
+        'x-default': `${siteUrl}/book/${encodeURIComponent(seoBook?.new_slug || arIdeal)}`,
       },
     },
     openGraph: {

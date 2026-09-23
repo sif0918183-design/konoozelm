@@ -2,19 +2,19 @@ import React, { Fragment } from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import { BookOpen, ChevronRight, Book as BookIcon, Globe } from 'lucide-react';
+import { BookOpen, ChevronRight } from 'lucide-react';
 import { getCategoryBySlug, getBooksByCategory } from '@/lib/seo-data';
 import SearchStateCleaner from '@/components/SearchStateCleaner';
 import BookCard from '@/components/BookCard';
-
-export const revalidate = 120;
 import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Logo from '@/components/Logo';
 import { getSiteUrl } from '@/lib/utils';
+import { getShortSlug } from '@/lib/slug-utils';
 import Footer from '@/components/Footer';
 import AdverticaAd from '@/components/AdverticaAd';
+
+export const revalidate = 120;
 
 interface Props {
   params: { categorySlug: string };
@@ -22,7 +22,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const slug = decodeURIComponent(params.categorySlug);
-  const category = await getCategoryBySlug(slug);
+  const category = await getCategoryBySlug(slug, 'ar');
   if (!category) return { title: 'التصنيف غير موجود' };
 
   const siteUrl = getSiteUrl();
@@ -35,6 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       languages: {
         'ar': `${siteUrl}/${params.categorySlug}`,
         'en': `${siteUrl}/en/${params.categorySlug}`,
+        'x-default': `${siteUrl}/${params.categorySlug}`,
       },
     },
   };
@@ -94,37 +95,40 @@ export default async function CategoryPage({ params }: Props) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {books.map((book, index) => (
-            <Fragment key={book.archiveId}>
-              <div>
-                <BookCard
-                  book={{
-                    identifier: book.archiveId,
-                    title: book.title,
-                    author: book.author,
-                    previewLink: `https://archive.org/details/${book.archiveId}`,
-                    coverImage: `https://archive.org/services/img/${book.archiveId}`,
-                  }}
-                  initialSeoSlug={book.slug}
-                  initialFiles={[
-                    {
-                      name: book.title,
-                      url: `https://archive.org/download/${book.archiveId}/${book.archiveId}.pdf`
-                    }
-                  ]}
-                />
-              </div>
-              {(index + 1) % 6 === 0 && (
-                <div className="col-span-full my-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-                    <AdverticaAd className="my-0" />
-                    <AdverticaAd className="my-0 hidden md:flex" />
-                    <AdverticaAd className="my-0 hidden md:flex" />
-                  </div>
+          {books.map((book, index) => {
+            const deterministicSlug = book.new_slug || getShortSlug(book.title, book.archiveId, lang);
+            return (
+              <Fragment key={book.archiveId}>
+                <div>
+                  <BookCard
+                    book={{
+                      identifier: book.archiveId,
+                      title: book.title,
+                      author: book.author,
+                      previewLink: `https://archive.org/details/${book.archiveId}`,
+                      coverImage: `https://archive.org/services/img/${book.archiveId}`,
+                    }}
+                    initialSeoSlug={deterministicSlug}
+                    initialFiles={[
+                      {
+                        name: book.title,
+                        url: `https://archive.org/download/${book.archiveId}/${book.archiveId}.pdf`
+                      }
+                    ]}
+                  />
                 </div>
-              )}
-            </Fragment>
-          ))}
+                {(index + 1) % 6 === 0 && (
+                  <div className="col-span-full my-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                      <AdverticaAd className="my-0" />
+                      <AdverticaAd className="my-0 hidden md:flex" />
+                      <AdverticaAd className="my-0 hidden md:flex" />
+                    </div>
+                  </div>
+                )}
+              </Fragment>
+            );
+          })}
         </div>
 
         {books.length === 0 && (
