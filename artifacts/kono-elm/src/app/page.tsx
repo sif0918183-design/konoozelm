@@ -3,7 +3,7 @@ import ArabicHomePage from '@/components/home/ArabicHomePage';
 import { getSiteUrl } from '@/lib/utils';
 import { getCategories, getFeaturedBooks } from '@/lib/seo-data';
 
-export const revalidate = 300;
+export const revalidate = 1800;
 
 const siteUrl = getSiteUrl();
 
