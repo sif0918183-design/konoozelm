@@ -60,12 +60,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (!response.ok && response.status !== 206) {
-      return new NextResponse(`Error: ${response.status}`, { status: response.status });
+      return new NextResponse(`Error: ${response.status}`, {
+        status: response.status,
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+      });
     }
 
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');
-    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    headers.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
 
     ['content-type', 'content-length', 'content-range', 'accept-ranges', 'last-modified', 'etag'].forEach(h => {
       const v = response.headers.get(h);

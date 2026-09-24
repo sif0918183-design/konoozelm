@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { normalizeYear, safeFetch } from './utils';
 
 export interface BookFile {
@@ -198,9 +199,11 @@ export async function searchBooks(
 /**
  * Get all PDF files for a book
  */
-export async function getBookFiles(identifier: string): Promise<BookFile[]> {
+async function getBookFilesUncached(identifier: string): Promise<BookFile[]> {
   try {
-    const response = await safeFetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
+    const response = await safeFetch(`${ARCHIVE_METADATA_BASE}${identifier}`, {
+      next: { revalidate: 86400 }
+    } as any);
     if (!response || !response.ok) return [];
 
     const data = await response.json();
@@ -224,12 +227,16 @@ export async function getBookFiles(identifier: string): Promise<BookFile[]> {
   }
 }
 
+export const getBookFiles = cache(getBookFilesUncached);
+
 /**
  * Get book metadata with download links
  */
-export async function getBookDetails(identifier: string): Promise<Book | null> {
+async function getBookDetailsUncached(identifier: string): Promise<Book | null> {
   try {
-    const response = await safeFetch(`${ARCHIVE_METADATA_BASE}${identifier}`);
+    const response = await safeFetch(`${ARCHIVE_METADATA_BASE}${identifier}`, {
+      next: { revalidate: 86400 }
+    } as any);
     if (!response || !response.ok) return null;
 
     const data = await response.json();
@@ -278,3 +285,5 @@ export async function getBookDetails(identifier: string): Promise<Book | null> {
     return null;
   }
 }
+
+export const getBookDetails = cache(getBookDetailsUncached);

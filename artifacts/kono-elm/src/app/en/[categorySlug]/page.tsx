@@ -14,7 +14,7 @@ import { getShortSlug } from '@/lib/slug-utils';
 import Footer from '@/components/Footer';
 import AdverticaAd from '@/components/AdverticaAd';
 
-export const revalidate = 120;
+export const revalidate = 1800;
 
 interface Props {
   params: { categorySlug: string };
