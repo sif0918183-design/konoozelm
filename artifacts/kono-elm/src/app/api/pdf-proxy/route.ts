@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');
-    headers.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
+    headers.set('Cache-Control', 'private, no-transform, max-age=31536000');
 
     ['content-type', 'content-length', 'content-range', 'accept-ranges', 'last-modified', 'etag'].forEach(h => {
       const v = response.headers.get(h);

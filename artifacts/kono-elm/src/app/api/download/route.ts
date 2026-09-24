@@ -66,7 +66,7 @@ function streamResponse(response: Response, filename: string) {
   const encodedFilename = encodeURIComponent(filename);
   headers.set('Content-Disposition', `attachment; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`);
   headers.set('Access-Control-Allow-Origin', '*');
-  headers.set('Cache-Control', 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800');
+  headers.set('Cache-Control', 'private, no-transform');
 
   return new NextResponse(response.body, {
     status: 200,
