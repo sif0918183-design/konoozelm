@@ -138,6 +138,9 @@ export default {
 
       responseHeaders.set('Access-Control-Allow-Origin', '*');
       responseHeaders.set('Cache-Control', 'private, no-transform');
+      if ((request as any).cf?.colo) {
+        responseHeaders.set('x-cf-colo', (request as any).cf.colo);
+      }
 
       // Return pure ReadableStream response without memory buffering
       return new Response(upstreamResponse.body, {
