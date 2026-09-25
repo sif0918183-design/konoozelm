@@ -12,41 +12,56 @@ export async function GET(request: NextRequest) {
   try {
     const parsedUrl = new URL(url);
 
-    if (!parsedUrl.hostname.endsWith('archive.org')) {
+    if (
+      parsedUrl.hostname !== 'archive.org' &&
+      !parsedUrl.hostname.endsWith('.archive.org')
+    ) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-      redirect: 'follow',
-    });
+    let targetPdfUrl = url;
 
-    if (!response.ok) {
-      // Try metadata discovery if direct link fails
-      const idMatch = url.match(/archive\.org\/download\/([^\/]+)/);
-      if (idMatch) {
-        const identifier = idMatch[1];
-        const metadataRes = await fetch(`https://archive.org/metadata/${identifier}`);
-        if (metadataRes.ok) {
-          const metadata = await metadataRes.json();
-          const pdfFile = metadata.files?.find((f: any) => f.name.toLowerCase().endsWith('.pdf'));
-          if (pdfFile) {
-             const newRes = await fetch(`https://archive.org/download/${identifier}/${pdfFile.name}`, {
-                headers: { 'User-Agent': 'Mozilla/5.0' },
-                redirect: 'follow'
-             });
-             if (newRes.ok) {
-                return streamResponse(newRes, filename);
-             }
+    // 1. Try a lightweight HEAD request to check if the direct URL exists
+    try {
+      const headRes = await fetch(url, {
+        method: 'HEAD',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        },
+        redirect: 'follow',
+      });
+
+      if (!headRes.ok) {
+        // 2. If guessed URL returns 404/503, resolve actual PDF via Archive.org Metadata API
+        const idMatch = url.match(/archive\.org\/download\/([^\/]+)/);
+        if (idMatch) {
+          const identifier = idMatch[1];
+          try {
+            const metadataRes = await fetch(`https://archive.org/metadata/${identifier}`);
+            if (metadataRes.ok) {
+              const metadata = await metadataRes.json();
+              const pdfFiles = metadata.files?.filter((f: any) => f.name.toLowerCase().endsWith('.pdf')) || [];
+              const bestPdf = pdfFiles.find((f: any) => f.format?.toLowerCase() === 'text pdf') ||
+                              pdfFiles.find((f: any) => !f.name.includes('_bw.pdf')) ||
+                              pdfFiles[0];
+
+              if (bestPdf) {
+                targetPdfUrl = `https://archive.org/download/${identifier}/${encodeURIComponent(bestPdf.name)}`;
+              }
+            }
+          } catch (e) {
+            console.error('Metadata fallback error:', e);
           }
         }
       }
-      return new NextResponse(`Failed: ${response.status}`, { status: response.status });
+    } catch (e) {
+      // Ignore network/HEAD errors
     }
 
-    return streamResponse(response, filename);
+    // Redirect to Standalone Cloudflare Download Worker (download.hudalibrary.com)
+    // Zero PDF bytes are read or streamed through Vercel
+    const workerDownloadUrl = `https://download.hudalibrary.com/download?url=${encodeURIComponent(targetPdfUrl)}&filename=${encodeURIComponent(filename)}`;
+    return NextResponse.redirect(workerDownloadUrl, 302);
   } catch (error) {
     console.error('Download Proxy Error:', error);
     return new NextResponse('Error', { status: 500 });
