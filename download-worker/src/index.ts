@@ -14,7 +14,31 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const urlObj = new URL(request.url);
 
-    // Only handle GET and HEAD requests
+    // Handle CORS OPTIONS preflight request
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Max-Age': '86400',
+        },
+      });
+    }
+
+    // Fast healthcheck / ping endpoint for client reachability probe
+    if (urlObj.pathname === '/ping') {
+      return new Response('pong', {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    // Only handle GET and HEAD requests for download
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response('Method Not Allowed', { status: 405 });
     }
