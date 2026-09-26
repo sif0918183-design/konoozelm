@@ -80,12 +80,15 @@ export default function DownloadModal({
     };
   }, [isOpen]);
 
-  const handleStartDownload = useCallback(() => {
+  const getDownloadUrl = useCallback((isFallbackRoute: boolean) => {
     const optimizedUrl = optimizeArchiveUrl(fileUrl);
     const downloadName = bookTitle.endsWith('.pdf') ? bookTitle : `${bookTitle}.pdf`;
+    return `/api/download?url=${encodeURIComponent(optimizedUrl)}&filename=${encodeURIComponent(downloadName)}${isFallbackRoute ? '&fallback=true' : ''}`;
+  }, [fileUrl, bookTitle]);
 
-    // Use our local API proxy to bypass CORS and force download
-    const proxyUrl = `/api/download?url=${encodeURIComponent(optimizedUrl)}&filename=${encodeURIComponent(downloadName)}`;
+  const handleStartDownload = useCallback((isFallbackRoute = false) => {
+    const downloadName = bookTitle.endsWith('.pdf') ? bookTitle : `${bookTitle}.pdf`;
+    const proxyUrl = getDownloadUrl(isFallbackRoute);
 
     const link = document.createElement('a');
     link.href = proxyUrl;
@@ -94,7 +97,7 @@ export default function DownloadModal({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [fileUrl, bookTitle]);
+  }, [bookTitle, getDownloadUrl]);
 
   // Trigger automatic download when complete, but do NOT close the window automatically
   useEffect(() => {
@@ -171,6 +174,16 @@ export default function DownloadModal({
                     </span>
                   )}
                   <span>{isComplete ? (isEnglish ? 'Download starting automatically...' : 'جاري بدء التحميل تلقائياً...') : t.dont_close_page}</span>
+                  {isComplete && (
+                    <div className="mt-3 pt-3 border-t border-white/10 flex flex-col items-center gap-1.5 w-full">
+                      <button
+                        onClick={() => handleStartDownload(true)}
+                        className="text-gold-300 hover:text-amber-200 text-xs font-bold underline transition-colors"
+                      >
+                        {isEnglish ? 'If download does not start, click here for direct download' : 'إذا لم يبدأ التحميل، اضغط هنا للتحميل المباشر من السيرفر البديل'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
