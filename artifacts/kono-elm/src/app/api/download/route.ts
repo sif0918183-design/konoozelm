@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     let targetPdfUrl = url;
 
-    // 1. Try a lightweight HEAD request to check if the direct URL exists
+    // 1. Try a lightweight HEAD request to check if the direct URL exists and resolve final data node URL
     try {
       const headRes = await fetch(url, {
         method: 'HEAD',
@@ -31,7 +31,9 @@ export async function GET(request: NextRequest) {
         redirect: 'follow',
       });
 
-      if (!headRes.ok) {
+      if (headRes.ok) {
+        targetPdfUrl = headRes.url;
+      } else {
         // 2. If guessed URL returns 404/503, resolve actual PDF via Archive.org Metadata API
         const idMatch = url.match(/archive\.org\/download\/([^\/]+)/);
         if (idMatch) {
@@ -46,7 +48,13 @@ export async function GET(request: NextRequest) {
                               pdfFiles[0];
 
               if (bestPdf) {
-                targetPdfUrl = `https://archive.org/download/${identifier}/${encodeURIComponent(bestPdf.name)}`;
+                const resolvedDirect = `https://archive.org/download/${identifier}/${encodeURIComponent(bestPdf.name)}`;
+                const resolvedHead = await fetch(resolvedDirect, {
+                  method: 'HEAD',
+                  headers: { 'User-Agent': 'Mozilla/5.0' },
+                  redirect: 'follow',
+                });
+                targetPdfUrl = resolvedHead.ok ? resolvedHead.url : resolvedDirect;
               }
             }
           } catch (e) {
@@ -58,8 +66,15 @@ export async function GET(request: NextRequest) {
       // Ignore network/HEAD errors
     }
 
-    // Redirect to Standalone Cloudflare Download Worker (download.hudalibrary.com)
-    // Zero PDF bytes are read or streamed through Vercel
+    const isFallback = searchParams.get('fallback') === 'true' || searchParams.get('fallback') === '1';
+
+    // Fallback Path: 302 Direct Redirect to resolved real Archive.org URL (e.g. dn*.archive.org/...pdf)
+    if (isFallback) {
+      return NextResponse.redirect(targetPdfUrl, 302);
+    }
+
+    // Primary Path: 302 Redirect to Standalone Cloudflare Download Worker (download.hudalibrary.com)
+    // Zero PDF bytes are read or streamed through Vercel in both primary and fallback paths
     const workerDownloadUrl = `https://download.hudalibrary.com/download?url=${encodeURIComponent(targetPdfUrl)}&filename=${encodeURIComponent(filename)}`;
     return NextResponse.redirect(workerDownloadUrl, 302);
   } catch (error) {

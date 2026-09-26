@@ -80,12 +80,30 @@ export default function DownloadModal({
     };
   }, [isOpen]);
 
-  const handleStartDownload = useCallback(() => {
+  const handleStartDownload = useCallback(async () => {
     const optimizedUrl = optimizeArchiveUrl(fileUrl);
     const downloadName = bookTitle.endsWith('.pdf') ? bookTitle : `${bookTitle}.pdf`;
 
-    // Use our local API proxy to bypass CORS and force download
-    const proxyUrl = `/api/download?url=${encodeURIComponent(optimizedUrl)}&filename=${encodeURIComponent(downloadName)}`;
+    let useFallback = false;
+
+    // Fast connectivity check to verify if Cloudflare Download Worker is reachable
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+      const testWorkerUrl = `https://download.hudalibrary.com/download?url=${encodeURIComponent(optimizedUrl)}`;
+      await fetch(testWorkerUrl, {
+        method: 'HEAD',
+        signal: controller.signal,
+        mode: 'no-cors',
+      });
+      clearTimeout(timeoutId);
+    } catch (err) {
+      // If Worker is blocked or unreachable (e.g. restricted network / Sudan ISP block), fallback
+      useFallback = true;
+    }
+
+    const proxyUrl = `/api/download?url=${encodeURIComponent(optimizedUrl)}&filename=${encodeURIComponent(downloadName)}${useFallback ? '&fallback=true' : ''}`;
 
     const link = document.createElement('a');
     link.href = proxyUrl;
