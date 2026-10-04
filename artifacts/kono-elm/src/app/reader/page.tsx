@@ -254,16 +254,51 @@ function ReaderContent() {
           : optimizedUrl;
       }
 
-      const loadingTask = pdfjsLib.getDocument({
-        ...(typeof pdfSource === 'string' ? { url: pdfSource } : pdfSource),
-        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-        cMapPacked: true,
-        standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
-        disableRange: false,
-        disableStream: false,
-      });
+      let pdfDoc: any;
+      try {
+        const loadingTask = pdfjsLib.getDocument({
+          ...(typeof pdfSource === 'string' ? { url: pdfSource } : pdfSource),
+          cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+          cMapPacked: true,
+          standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+          disableRange: false,
+          disableStream: false,
+        });
+        pdfDoc = await loadingTask.promise;
+      } catch (firstErr: any) {
+        // Fallback: If direct load failed and we have an archive identifier, try Metadata API resolution
+        if (typeof pdfSource === 'string' && pdfSource.includes('archive.org') && bookIdentifier) {
+          const metaRes = await fetch(`https://archive.org/metadata/${bookIdentifier}`);
+          if (metaRes.ok) {
+            const metadata = await metaRes.json();
+            const pdfFiles = metadata.files?.filter((f: any) => f.name.toLowerCase().endsWith('.pdf')) || [];
+            const bestPdf = pdfFiles.find((f: any) => f.format?.toLowerCase() === 'text pdf') ||
+                            pdfFiles.find((f: any) => !f.name.includes('_bw.pdf')) ||
+                            pdfFiles[0];
 
-      const pdfDoc = await loadingTask.promise;
+            if (bestPdf) {
+              const realArchiveUrl = `https://archive.org/download/${bookIdentifier}/${encodeURIComponent(bestPdf.name)}`;
+              const resolvedWorkerUrl = `https://download.hudalibrary.com/download?url=${encodeURIComponent(realArchiveUrl)}`;
+              const retryTask = pdfjsLib.getDocument({
+                url: resolvedWorkerUrl,
+                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                cMapPacked: true,
+                standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+                disableRange: false,
+                disableStream: false,
+              });
+              pdfDoc = await retryTask.promise;
+            } else {
+              throw firstErr;
+            }
+          } else {
+            throw firstErr;
+          }
+        } else {
+          throw firstErr;
+        }
+      }
+
       setPdf(pdfDoc);
       setNumPages(pdfDoc.numPages);
 
