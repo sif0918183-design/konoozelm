@@ -254,42 +254,69 @@ function ReaderContent() {
           : optimizedUrl;
       }
 
-      let pdfDoc: any;
-      try {
-        const loadingTask = pdfjsLib.getDocument({
-          ...(typeof pdfSource === 'string' ? { url: pdfSource } : pdfSource),
+      const isNetworkError = (e: any) => {
+        const msg = (e?.message || e?.name || '').toLowerCase();
+        return msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('network error') || msg.includes('fetch failed');
+      };
+
+      const loadPdfWithParams = async (sourceUrl: string) => {
+        const task = pdfjsLib.getDocument({
+          url: sourceUrl,
           cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
           cMapPacked: true,
           standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
           disableRange: false,
           disableStream: false,
         });
-        pdfDoc = await loadingTask.promise;
-      } catch (firstErr: any) {
-        // Fallback: If direct load failed and we have an archive identifier, try Metadata API resolution
-        if (typeof pdfSource === 'string' && pdfSource.includes('archive.org') && bookIdentifier) {
-          const metaRes = await fetch(`https://archive.org/metadata/${bookIdentifier}`);
-          if (metaRes.ok) {
-            const metadata = await metaRes.json();
-            const pdfFiles = metadata.files?.filter((f: any) => f.name.toLowerCase().endsWith('.pdf')) || [];
-            const bestPdf = pdfFiles.find((f: any) => f.format?.toLowerCase() === 'text pdf') ||
-                            pdfFiles.find((f: any) => !f.name.includes('_bw.pdf')) ||
-                            pdfFiles[0];
+        return await task.promise;
+      };
 
-            if (bestPdf) {
-              const realArchiveUrl = `https://archive.org/download/${bookIdentifier}/${encodeURIComponent(bestPdf.name)}`;
-              const resolvedWorkerUrl = `https://download.hudalibrary.com/download?url=${encodeURIComponent(realArchiveUrl)}`;
-              const retryTask = pdfjsLib.getDocument({
-                url: resolvedWorkerUrl,
-                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-                cMapPacked: true,
-                standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
-                disableRange: false,
-                disableStream: false,
-              });
-              pdfDoc = await retryTask.promise;
-            } else {
-              throw firstErr;
+      let pdfDoc: any;
+      try {
+        pdfDoc = await loadPdfWithParams(typeof pdfSource === 'string' ? pdfSource : (pdfSource as any).url || pdfSource);
+      } catch (firstErr: any) {
+        if (typeof pdfSource === 'string' && pdfSource.includes('download.hudalibrary.com')) {
+          // If pure network failure connecting to Cloudflare Worker, fallback directly to Vercel pdf-proxy
+          if (isNetworkError(firstErr)) {
+            const vercelFallbackUrl = `/api/pdf-proxy?url=${encodeURIComponent(optimizeArchiveUrl(url))}`;
+            pdfDoc = await loadPdfWithParams(vercelFallbackUrl);
+          } else if (bookIdentifier) {
+            // For non-network failures (e.g. 503 from bad guessed filename), resolve real PDF name via Archive.org metadata
+            try {
+              const metaRes = await fetch(`https://archive.org/metadata/${bookIdentifier}`);
+              if (metaRes.ok) {
+                const metadata = await metaRes.json();
+                const pdfFiles = metadata.files?.filter((f: any) => f.name.toLowerCase().endsWith('.pdf')) || [];
+                const bestPdf = pdfFiles.find((f: any) => f.format?.toLowerCase() === 'text pdf') ||
+                                pdfFiles.find((f: any) => !f.name.includes('_bw.pdf')) ||
+                                pdfFiles[0];
+
+                if (bestPdf) {
+                  const realArchiveUrl = `https://archive.org/download/${bookIdentifier}/${encodeURIComponent(bestPdf.name)}`;
+                  const resolvedWorkerUrl = `https://download.hudalibrary.com/download?url=${encodeURIComponent(realArchiveUrl)}`;
+                  try {
+                    pdfDoc = await loadPdfWithParams(resolvedWorkerUrl);
+                  } catch (secondWorkerErr: any) {
+                    if (isNetworkError(secondWorkerErr)) {
+                      const vercelFallbackUrl = `/api/pdf-proxy?url=${encodeURIComponent(realArchiveUrl)}`;
+                      pdfDoc = await loadPdfWithParams(vercelFallbackUrl);
+                    } else {
+                      throw secondWorkerErr;
+                    }
+                  }
+                } else {
+                  throw firstErr;
+                }
+              } else {
+                throw firstErr;
+              }
+            } catch (metaErr: any) {
+              if (isNetworkError(metaErr)) {
+                const vercelFallbackUrl = `/api/pdf-proxy?url=${encodeURIComponent(optimizeArchiveUrl(url))}`;
+                pdfDoc = await loadPdfWithParams(vercelFallbackUrl);
+              } else {
+                throw firstErr;
+              }
             }
           } else {
             throw firstErr;
