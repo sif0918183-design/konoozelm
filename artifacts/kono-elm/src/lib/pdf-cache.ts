@@ -18,7 +18,7 @@ export async function cachePDF(url: string): Promise<boolean> {
     // Use proxy for Archive.org URLs to avoid CORS
     const optimizedUrl = optimizeArchiveUrl(url);
     const fetchUrl = optimizedUrl.includes('archive.org')
-      ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
+      ? `https://download.hudalibrary.com/download?url=${encodeURIComponent(optimizedUrl)}`
       : optimizedUrl;
 
     const response = await fetch(fetchUrl);

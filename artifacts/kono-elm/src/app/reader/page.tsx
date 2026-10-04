@@ -250,7 +250,7 @@ function ReaderContent() {
       } else {
         const optimizedUrl = optimizeArchiveUrl(url);
         pdfSource = optimizedUrl.includes('archive.org')
-          ? `/api/pdf-proxy?url=${encodeURIComponent(optimizedUrl)}`
+          ? `https://download.hudalibrary.com/download?url=${encodeURIComponent(optimizedUrl)}`
           : optimizedUrl;
       }
 
