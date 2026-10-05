@@ -254,12 +254,13 @@ function ReaderContent() {
           : optimizedUrl;
       }
 
-      const isNetworkError = (e: any) => {
+      const isNetworkError = (e: any, isTimedOut: boolean) => {
+        if (isTimedOut) return true;
         const msg = (e?.message || e?.name || '').toLowerCase();
         return msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('network error') || msg.includes('fetch failed');
       };
 
-      const loadPdfWithParams = async (sourceUrl: string) => {
+      const loadPdfWithParams = async (sourceUrl: string, enableBlackholeDetector: boolean = false) => {
         const task = pdfjsLib.getDocument({
           url: sourceUrl,
           cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
@@ -268,18 +269,69 @@ function ReaderContent() {
           disableRange: false,
           disableStream: false,
         });
-        return await task.promise;
+
+        let isTimedOut = false;
+        let timer: any = null;
+
+        if (enableBlackholeDetector) {
+          let headersReceived = false;
+
+          const disarmTimer = () => {
+            if (!headersReceived) {
+              headersReceived = true;
+              if (timer) {
+                clearTimeout(timer);
+                timer = null;
+              }
+            }
+          };
+
+          if (typeof task.onHeadersReceived === 'function') {
+            task.onHeadersReceived = () => {
+              disarmTimer();
+            };
+          }
+
+          task.onProgress = () => {
+            disarmTimer();
+          };
+
+          timer = setTimeout(() => {
+            if (!headersReceived) {
+              isTimedOut = true;
+              try {
+                task.destroy();
+              } catch (e) {}
+            }
+          }, 10000);
+        }
+
+        try {
+          const doc = await task.promise;
+          if (timer) clearTimeout(timer);
+          return doc;
+        } catch (err: any) {
+          if (timer) clearTimeout(timer);
+          if (isTimedOut) {
+            err.isConnectionTimedOut = true;
+          }
+          throw err;
+        }
       };
 
       let pdfDoc: any;
       try {
-        pdfDoc = await loadPdfWithParams(typeof pdfSource === 'string' ? pdfSource : (pdfSource as any).url || pdfSource);
+        const initialUrl = typeof pdfSource === 'string' ? pdfSource : (pdfSource as any).url || pdfSource;
+        const isWorkerTarget = typeof initialUrl === 'string' && initialUrl.includes('download.hudalibrary.com');
+        pdfDoc = await loadPdfWithParams(initialUrl, isWorkerTarget);
       } catch (firstErr: any) {
         if (typeof pdfSource === 'string' && pdfSource.includes('download.hudalibrary.com')) {
-          // If pure network failure connecting to Cloudflare Worker, fallback directly to Vercel pdf-proxy
-          if (isNetworkError(firstErr)) {
+          const wasTimedOut = !!firstErr?.isConnectionTimedOut;
+
+          // If network error or blackhole timeout connecting to Cloudflare Worker, fallback to Vercel pdf-proxy
+          if (isNetworkError(firstErr, wasTimedOut)) {
             const vercelFallbackUrl = `/api/pdf-proxy?url=${encodeURIComponent(optimizeArchiveUrl(url))}`;
-            pdfDoc = await loadPdfWithParams(vercelFallbackUrl);
+            pdfDoc = await loadPdfWithParams(vercelFallbackUrl, false);
           } else if (bookIdentifier) {
             // For non-network failures (e.g. 503 from bad guessed filename), resolve real PDF name via Archive.org metadata
             try {
@@ -295,11 +347,12 @@ function ReaderContent() {
                   const realArchiveUrl = `https://archive.org/download/${bookIdentifier}/${encodeURIComponent(bestPdf.name)}`;
                   const resolvedWorkerUrl = `https://download.hudalibrary.com/download?url=${encodeURIComponent(realArchiveUrl)}`;
                   try {
-                    pdfDoc = await loadPdfWithParams(resolvedWorkerUrl);
+                    pdfDoc = await loadPdfWithParams(resolvedWorkerUrl, true);
                   } catch (secondWorkerErr: any) {
-                    if (isNetworkError(secondWorkerErr)) {
+                    const secondTimedOut = !!secondWorkerErr?.isConnectionTimedOut;
+                    if (isNetworkError(secondWorkerErr, secondTimedOut)) {
                       const vercelFallbackUrl = `/api/pdf-proxy?url=${encodeURIComponent(realArchiveUrl)}`;
-                      pdfDoc = await loadPdfWithParams(vercelFallbackUrl);
+                      pdfDoc = await loadPdfWithParams(vercelFallbackUrl, false);
                     } else {
                       throw secondWorkerErr;
                     }
@@ -311,9 +364,9 @@ function ReaderContent() {
                 throw firstErr;
               }
             } catch (metaErr: any) {
-              if (isNetworkError(metaErr)) {
+              if (isNetworkError(metaErr, wasTimedOut)) {
                 const vercelFallbackUrl = `/api/pdf-proxy?url=${encodeURIComponent(optimizeArchiveUrl(url))}`;
-                pdfDoc = await loadPdfWithParams(vercelFallbackUrl);
+                pdfDoc = await loadPdfWithParams(vercelFallbackUrl, false);
               } else {
                 throw firstErr;
               }
