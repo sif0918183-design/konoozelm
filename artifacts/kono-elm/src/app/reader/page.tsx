@@ -82,13 +82,6 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
 
   const renderPage = async () => {
     if (isRendered || isRendering) return;
-
-    // Use image fallback if identifier is available
-    if (identifier) {
-      setIsRendering(true);
-      return;
-    }
-
     if (!pdf || !canvasRef.current) return;
 
     try {
@@ -123,7 +116,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
   };
 
   useEffect(() => {
-    if (!identifier && (isRendered || isRendering)) {
+    if (isRendered || isRendering) {
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
       }
@@ -138,11 +131,7 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [scale, identifier]);
-
-  const imageUrl = identifier
-    ? `https://archive.org/download/${identifier}/page/n${pageNumber - 1}.jpg`
-    : null;
+  }, [scale]);
 
   return (
     <div
@@ -157,9 +146,8 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
           !isRendered && "flex items-center justify-center bg-gray-50 border border-gray-100"
         )}
         style={{
-          width: identifier ? `${600 * scale}px` : 'auto',
+          width: 'auto',
           maxWidth: '95vw',
-          aspectRatio: identifier ? '1/1.4' : 'auto'
         }}
       >
         {!isRendered && (
@@ -169,35 +157,13 @@ const PageItem = memo(function PageItem({ pageNumber, pdf, identifier, scale, is
           </div>
         )}
 
-        {identifier ? (
-          (isRendering || isRendered) && (
-            <img
-              src={imageUrl!}
-              alt={`Page ${pageNumber}`}
-              className={cn(
-                "w-full h-full object-contain transition-opacity duration-500",
-                isRendered ? "opacity-100" : "opacity-0"
-              )}
-              onLoad={() => {
-                setIsRendered(true);
-                setIsRendering(false);
-              }}
-              onError={() => {
-                setIsRendering(false);
-                setIsRendered(false);
-              }}
-              loading="lazy"
-            />
-          )
-        ) : (
-          <canvas
-            ref={canvasRef}
-            className={cn(
-              "max-w-full h-auto transition-opacity duration-500",
-              isRendered ? "opacity-100" : "opacity-0"
-            )}
-          />
-        )}
+        <canvas
+          ref={canvasRef}
+          className={cn(
+            "max-w-full h-auto transition-opacity duration-500",
+            isRendered ? "opacity-100" : "opacity-0"
+          )}
+        />
       </div>
       <div className="mt-2 text-xs text-gray-400 font-mono">
         {pageNumber}
